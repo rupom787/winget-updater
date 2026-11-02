@@ -41,9 +41,11 @@ from winget_updater.gui.components import (
     StatCardDeck,
 )
 from winget_updater.gui.dialogs import (
+    BindWingetSourceDialog,
     ExclusionManagerDialog,
     ScheduleConfigDialog,
     prompt_downgrade_confirmation,
+    prompt_unverified_allow_confirmation,
     prompt_vendor_installer_confirmation,
 )
 from winget_updater.gui.rounded_widgets import (
@@ -56,6 +58,7 @@ from winget_updater.models import PackageType, ProgramItem, UpdateAction, Update
 from winget_updater.utils.logger import get_logger
 from winget_updater.winget.client import WingetClient
 from winget_updater.winget.matcher import PackageMatcher
+from winget_updater.winget.version_comparator import compare_versions
 
 logger = get_logger()
 
@@ -443,6 +446,9 @@ class MainWindow(tk.Tk):
             on_exclude_item=self._handle_context_exclude,
             on_uninstall_item=self._handle_context_uninstall,
             on_toast_message=self._show_floating_toast,
+            on_bind_source=self._open_bind_source_dialog,
+            on_allow_unverified=self._handle_allow_unverified,
+            on_open_website=self._handle_open_website,
         )
         self.drawer.pack(fill=tk.X)
 
@@ -552,6 +558,11 @@ class MainWindow(tk.Tk):
                     self._on_update_completed(data)
                 elif msg_type == "CATALOG_RESULTS":
                     self._on_catalog_results(data)
+                elif msg_type == "REFRESH_ITEM":
+                    self.table.update_item(data)
+                    if self.drawer.current_item and self.drawer.current_item.name == data.name:
+                        self.drawer.set_item(data)
+                    self._refresh_counts()
                 elif msg_type == "ERROR":
                     self.status_lbl.config(text=f"Error: {data}", fg=self.current_theme.accent_crimson)
                     self._show_floating_toast(f"Error: {data}", "✕")
@@ -1043,6 +1054,76 @@ class MainWindow(tk.Tk):
             self.drawer.set_item(item)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _open_bind_source_dialog(self, item: ProgramItem) -> None:
+        """Opens dialog to search the repository and bind an unverified or no-source application."""
+        BindWingetSourceDialog(
+            parent=self,
+            item=item,
+            config=self.config,
+            on_bound=lambda bound_id: self._on_package_source_bound(item, bound_id),
+            theme=self.current_theme,
+            winget_client=self.winget,
+        )
+
+    def _on_package_source_bound(self, item: ProgramItem, bound_id: str) -> None:
+        """Handles user binding a program to an official Winget package ID."""
+        if not bound_id:
+            item.is_user_bound = False
+            item.action = UpdateAction.NO_SOURCE
+            self.table.update_item(item)
+            self.drawer.set_item(item)
+            self._refresh_counts()
+            return
+
+        self._show_floating_toast(f"Linked '{item.name}' to {bound_id}", "✓")
+
+        def worker():
+            details = self.winget.get_package_details(bound_id)
+            if details:
+                item.latest_version = details.version
+                comp = compare_versions(item.installed_version, details.version)
+                if comp is not None and comp < 0:
+                    item.action = UpdateAction.AVAILABLE
+                else:
+                    item.action = UpdateAction.UP_TO_DATE
+                item.is_verified_winget = True
+                item.source = "winget"
+                item.unavailability_reason = None
+            else:
+                item.action = UpdateAction.AVAILABLE
+                item.is_verified_winget = True
+                item.unavailability_reason = None
+            self.msg_queue.put(("REFRESH_ITEM", item))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _handle_allow_unverified(self, item: ProgramItem) -> None:
+        """Allows user to explicitly review and approve an unverified or ambiguous package match."""
+        if prompt_unverified_allow_confirmation(self, item):
+            item.is_verified_winget = True
+            item.action = UpdateAction.AVAILABLE
+            item.unavailability_reason = None
+            item.notes = "Approved by user after review"
+            self.table.update_item(item)
+            self.drawer.set_item(item)
+            self._refresh_counts()
+            self._show_floating_toast(f"Approved '{item.name}' for updates", "✓")
+            self._handle_context_update(item)
+
+    def _handle_open_website(self, item: ProgramItem) -> None:
+        """Opens the official website or search page in the user's browser."""
+        import urllib.parse
+        import webbrowser
+        if item.vendor_installer_url:
+            webbrowser.open(item.vendor_installer_url)
+            return
+        query = f"{item.name} official download"
+        if item.publisher:
+            query = f"{item.publisher} {item.name} official download"
+        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        webbrowser.open(url)
+        self._show_floating_toast(f"Opening official download page for {item.name}", "🌐")
 
     def _export_report_dialog(self) -> None:
         if not self.all_programs:

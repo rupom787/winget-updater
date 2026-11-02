@@ -134,3 +134,39 @@ def test_package_matcher_workflow(tmp_path):
     assert p_driver.action == UpdateAction.LIST_ONLY
     assert p_driver.outcome == UpdateOutcome.LISTED_ONLY
 
+
+def test_smart_publisher_matching_and_custom_bindings(tmp_path):
+    config = ConfigManager(base_dir=tmp_path)
+    config.bind_custom_mapping("LegacyApp", "CustomVendor.LegacyApp")
+    
+    matcher = PackageMatcher(config)
+
+    upgrades = {
+        "customvendor.legacyapp": WingetPackageEntry(
+            name="Legacy App", id="CustomVendor.LegacyApp", version="1.0", available_version="2.0", source="winget"
+        ),
+        "google.chrome": WingetPackageEntry(
+            name="Google Chrome", id="Google.Chrome", version="125.0", available_version="126.0", source="winget", publisher="Google"
+        ),
+    }
+    installed = {}
+
+    programs = [
+        # Bound app
+        ProgramItem(name="LegacyApp", installed_version="1.0", package_type=PackageType.WIN32_EXE),
+        # Smart publisher match: "Google LLC" vs "Google"
+        ProgramItem(name="Google Chrome", installed_version="125.0", publisher="Google LLC", package_type=PackageType.WIN32_EXE),
+    ]
+
+    matched = matcher.match_all(programs, upgrades, installed)
+    
+    # Bound app should resolve to CustomVendor.LegacyApp and be AVAILABLE
+    assert matched[0].id == "CustomVendor.LegacyApp"
+    assert matched[0].action == UpdateAction.AVAILABLE
+    assert matched[0].latest_version == "2.0"
+
+    # Chrome should not trigger publisher mismatch false alarm
+    assert matched[1].action == UpdateAction.AVAILABLE
+    assert matched[1].latest_version == "126.0"
+
+

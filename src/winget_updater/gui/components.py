@@ -395,6 +395,9 @@ class DetailsDrawer(tk.Frame):
         on_exclude_item: Optional[Callable[[ProgramItem], None]] = None,
         on_uninstall_item: Optional[Callable[[ProgramItem], None]] = None,
         on_toast_message: Optional[Callable[[str, str], None]] = None,
+        on_bind_source: Optional[Callable[[ProgramItem], None]] = None,
+        on_allow_unverified: Optional[Callable[[ProgramItem], None]] = None,
+        on_open_website: Optional[Callable[[ProgramItem], None]] = None,
     ):
         super().__init__(
             parent,
@@ -408,6 +411,9 @@ class DetailsDrawer(tk.Frame):
         self.on_exclude_item = on_exclude_item
         self.on_uninstall_item = on_uninstall_item
         self.on_toast_message = on_toast_message
+        self.on_bind_source = on_bind_source
+        self.on_allow_unverified = on_allow_unverified
+        self.on_open_website = on_open_website
         self.current_item: Optional[ProgramItem] = None
         self.theme: ThemeColors = LIGHT_THEME
 
@@ -441,7 +447,7 @@ class DetailsDrawer(tk.Frame):
 
         # Metadata grid
         self.meta_frame = tk.Frame(self.details_container, bg="#faf6f6")
-        self.meta_frame.pack(fill=tk.X, pady=(5, 0))
+        self.meta_frame.pack(fill=tk.X, pady=(4, 0))
 
         self.lbl_pub = tk.Label(
             self.meta_frame,
@@ -461,7 +467,7 @@ class DetailsDrawer(tk.Frame):
             font=("Segoe UI", 9),
             anchor="w",
         )
-        self.lbl_versions.pack(anchor=tk.W, pady=(2, 0))
+        self.lbl_versions.pack(anchor=tk.W, pady=(1, 0))
 
         self.lbl_id_path = tk.Label(
             self.meta_frame,
@@ -471,7 +477,7 @@ class DetailsDrawer(tk.Frame):
             font=("Segoe UI", 8),
             anchor="w",
         )
-        self.lbl_id_path.pack(anchor=tk.W, pady=(2, 0))
+        self.lbl_id_path.pack(anchor=tk.W, pady=(1, 0))
 
         self.lbl_notes = tk.Label(
             self.meta_frame,
@@ -481,7 +487,36 @@ class DetailsDrawer(tk.Frame):
             font=("Segoe UI", 8),
             anchor="w",
         )
-        self.lbl_notes.pack(anchor=tk.W, pady=(2, 0))
+        self.lbl_notes.pack(anchor=tk.W, pady=(1, 0))
+
+        # Dedicated Diagnostic Explanation Alert Box (Shows why item cannot update)
+        self.diagnostic_box = tk.Frame(
+            self.details_container,
+            bg="#fffbeb",
+            highlightbackground="#fef3c7",
+            highlightthickness=1,
+            padx=10,
+            pady=4,
+        )
+        self.lbl_diag_icon = tk.Label(
+            self.diagnostic_box,
+            text="ℹ️",
+            bg="#fffbeb",
+            font=("Segoe UI", 9),
+        )
+        self.lbl_diag_icon.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.lbl_diag_text = tk.Label(
+            self.diagnostic_box,
+            text="",
+            bg="#fffbeb",
+            fg="#92400e",
+            font=("Segoe UI", 8),
+            anchor="w",
+            wraplength=600,
+            justify=tk.LEFT,
+        )
+        self.lbl_diag_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Right / Actions Container
         self.actions_container = tk.Frame(self, bg="#faf6f6")
@@ -497,16 +532,16 @@ class DetailsDrawer(tk.Frame):
             hover_bg="#9f1239",
             radius=8,
             font=("Segoe UI", 9, "bold"),
-            width=165,
+            width=180,
             height=32,
             parent_bg="#faf6f6",
         )
         self.btn_update.pack(fill=tk.X, pady=(0, 4))
         self.btn_update.config(state="disabled")
 
-        # Secondary Actions Row
+        # Row 2: Secondary Standard Actions
         self.secondary_actions = tk.Frame(self.actions_container, bg="#faf6f6")
-        self.secondary_actions.pack(fill=tk.X)
+        self.secondary_actions.pack(fill=tk.X, pady=(0, 4))
 
         self.btn_exclude = RoundedButton(
             self.secondary_actions,
@@ -518,11 +553,11 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=70,
-            height=28,
+            width=58,
+            height=26,
             parent_bg="#faf6f6",
         )
-        self.btn_exclude.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_exclude.pack(side=tk.LEFT, padx=(0, 3))
         self.btn_exclude.config(state="disabled")
 
         self.btn_open_folder = RoundedButton(
@@ -535,11 +570,11 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=65,
-            height=28,
+            width=54,
+            height=26,
             parent_bg="#faf6f6",
         )
-        self.btn_open_folder.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_open_folder.pack(side=tk.LEFT, padx=(0, 3))
         self.btn_open_folder.config(state="disabled")
 
         self.btn_copy_id = RoundedButton(
@@ -552,29 +587,62 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=65,
-            height=28,
+            width=58,
+            height=26,
             parent_bg="#faf6f6",
         )
-        self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_copy_id.pack(side=tk.LEFT)
         self.btn_copy_id.config(state="disabled")
 
-        self.btn_uninstall = RoundedButton(
-            self.secondary_actions,
-            text="Uninstall",
-            command=self._on_uninstall_click,
-            bg_color="#ffffff",
-            fg_color="#be123c",
-            hover_bg="#fee2e2",
-            border_color="#fecdd3",
+        # Row 3: Extended Package Resolution & Fallback Actions
+        self.resolution_actions = tk.Frame(self.actions_container, bg="#faf6f6")
+        self.resolution_actions.pack(fill=tk.X)
+
+        self.btn_bind = RoundedButton(
+            self.resolution_actions,
+            text="🔗 Bind Winget ID",
+            command=self._on_bind_click,
+            bg_color="#ecfdf5",
+            fg_color="#065f46",
+            hover_bg="#d1fae5",
+            border_color="#a7f3d0",
             radius=6,
             font=("Segoe UI", 8, "bold"),
-            width=75,
-            height=28,
+            width=100,
+            height=26,
             parent_bg="#faf6f6",
         )
-        self.btn_uninstall.pack(side=tk.LEFT)
-        self.btn_uninstall.config(state="disabled")
+        self.btn_bind.pack(side=tk.LEFT, padx=(0, 3))
+
+        self.btn_allow_unverified = RoundedButton(
+            self.resolution_actions,
+            text="⚡ Allow Update",
+            command=self._on_allow_click,
+            bg_color="#fef3c7",
+            fg_color="#92400e",
+            hover_bg="#fde68a",
+            border_color="#fcd34d",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            width=90,
+            height=26,
+            parent_bg="#faf6f6",
+        )
+
+        self.btn_website = RoundedButton(
+            self.resolution_actions,
+            text="🌐 Visit Site",
+            command=self._on_website_click,
+            bg_color="#f0f9ff",
+            fg_color="#0369a1",
+            hover_bg="#e0f2fe",
+            border_color="#bae6fd",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=75,
+            height=26,
+            parent_bg="#faf6f6",
+        )
 
     def set_item(self, item: Optional[ProgramItem]) -> None:
         """Populates the details drawer with program metadata and activates permissible actions."""
@@ -590,7 +658,10 @@ class DetailsDrawer(tk.Frame):
             self.btn_exclude.config(state="disabled")
             self.btn_open_folder.config(state="disabled")
             self.btn_copy_id.config(state="disabled")
-            self.btn_uninstall.config(state="disabled")
+            self.btn_bind.config(state="disabled")
+            self.diagnostic_box.pack_forget()
+            self.btn_allow_unverified.pack_forget()
+            self.btn_website.pack_forget()
             return
 
         # Name & Publisher
@@ -622,6 +693,14 @@ class DetailsDrawer(tk.Frame):
         self.status_pill.set_badge(status_text, bg_color=pill_bg, fg_color=pill_fg)
         self.lbl_notes.config(text=f"Note: {item.notes}" if item.notes else "")
 
+        # Diagnostic Explanation Box
+        reason = item.get_diagnostic_reason()
+        if (not item.can_auto_update()) and item.action != UpdateAction.UP_TO_DATE:
+            self.lbl_diag_text.config(text=f"Why can't this update automatically? {reason}")
+            self.diagnostic_box.pack(fill=tk.X, pady=(5, 0))
+        else:
+            self.diagnostic_box.pack_forget()
+
         # Update button state
         can_update = item.can_auto_update() or (
             item.action == UpdateAction.AVAILABLE
@@ -639,7 +718,20 @@ class DetailsDrawer(tk.Frame):
         self.btn_exclude.config(state="normal", text="Un-exclude" if is_ignored else "Exclude")
         self.btn_open_folder.config(state="normal" if item.install_location else "disabled")
         self.btn_copy_id.config(state="normal")
-        self.btn_uninstall.config(state="normal")
+        self.btn_bind.config(state="normal")
+
+        # Contextual action buttons pack / forget
+        if item.action == UpdateAction.UNVERIFIED:
+            self.btn_allow_unverified.pack(side=tk.LEFT, padx=(0, 3))
+            self.btn_allow_unverified.config(state="normal")
+        else:
+            self.btn_allow_unverified.pack_forget()
+
+        if item.action in (UpdateAction.NO_SOURCE, UpdateAction.UNVERIFIED, UpdateAction.LIST_ONLY):
+            self.btn_website.pack(side=tk.LEFT)
+            self.btn_website.config(state="normal")
+        else:
+            self.btn_website.pack_forget()
 
     def _get_status_pill_info(self, item: ProgramItem) -> tuple[str, str, str]:
         if item.outcome == UpdateOutcome.UPDATED:
@@ -700,6 +792,18 @@ class DetailsDrawer(tk.Frame):
         if self.current_item and self.on_uninstall_item:
             self.on_uninstall_item(self.current_item)
 
+    def _on_bind_click(self) -> None:
+        if self.current_item and self.on_bind_source:
+            self.on_bind_source(self.current_item)
+
+    def _on_allow_click(self) -> None:
+        if self.current_item and self.on_allow_unverified:
+            self.on_allow_unverified(self.current_item)
+
+    def _on_website_click(self) -> None:
+        if self.current_item and self.on_open_website:
+            self.on_open_website(self.current_item)
+
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
         self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
@@ -714,7 +818,15 @@ class DetailsDrawer(tk.Frame):
         self.lbl_notes.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
         self.actions_container.config(bg=theme.bg_sidebar)
         self.secondary_actions.config(bg=theme.bg_sidebar)
+        self.resolution_actions.config(bg=theme.bg_sidebar)
         self.status_pill.config(bg=theme.bg_sidebar)
+        if hasattr(self, "diagnostic_box"):
+            box_bg = "#261908" if theme.name == "dark" else "#fffbeb"
+            box_border = "#78350f" if theme.name == "dark" else "#fef3c7"
+            box_fg = "#fef3c7" if theme.name == "dark" else "#92400e"
+            self.diagnostic_box.config(bg=box_bg, highlightbackground=box_border)
+            self.lbl_diag_icon.config(bg=box_bg)
+            self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
 
 
 class ProgramTableView(tk.Frame):

@@ -441,3 +441,316 @@ def prompt_vendor_installer_confirmation(parent: tk.Widget, item: ProgramItem) -
         icon="question",
         parent=parent,
     )
+
+
+def prompt_unverified_allow_confirmation(parent: tk.Widget, item: ProgramItem) -> bool:
+    """Confirmation to review and approve unverified or ambiguous packages."""
+    pkg_id = item.id or item.name
+    msg = (
+        f"Application: '{item.name}'\n"
+        f"Candidate Package ID: {pkg_id}\n"
+        f"Installed Publisher: {item.publisher or 'Unknown'}\n\n"
+        f"Review Reason:\n{item.notes or item.get_diagnostic_reason()}\n\n"
+        f"Do you want to approve this package identifier and enable updating it?"
+    )
+    return messagebox.askyesno(
+        "Review & Approve Package Source",
+        msg,
+        icon="warning",
+        parent=parent,
+    )
+
+
+class BindWingetSourceDialog(tk.Toplevel):
+    """Modal dialog allowing users to search Winget and bind any software to an official package ID."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        item: ProgramItem,
+        config: ConfigManager,
+        on_bound: Optional[Callable[[str], None]] = None,
+        theme: Optional[ThemeColors] = None,
+        winget_client=None,
+    ):
+        super().__init__(parent)
+        self.title(f"Bind Winget Source — {item.name}")
+        self.geometry("680x520")
+        self.minsize(580, 420)
+        self.item = item
+        self.config = config
+        self.on_bound = on_bound
+        self.theme = theme or LIGHT_THEME
+        self.winget_client = winget_client
+        self.configure(bg=self.theme.bg_root)
+
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+        self._initial_search()
+
+    def _build_ui(self) -> None:
+        t = self.theme
+        frame = tk.Frame(self, bg=t.bg_root, padx=20, pady=16)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        lbl_title = tk.Label(
+            frame,
+            text=f"Bind Package Source: {self.item.name}",
+            bg=t.bg_root,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 12, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            frame,
+            text="Search the official Windows Package Manager (winget) catalog to link this application to its verified package identifier.",
+            bg=t.bg_root,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+            wraplength=620,
+            justify=tk.LEFT,
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 10))
+
+        # Search bar row
+        search_row = tk.Frame(frame, bg=t.bg_root)
+        search_row.pack(fill=tk.X, pady=(0, 10))
+
+        self.entry_query = tk.Entry(
+            search_row,
+            font=("Segoe UI", 10),
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            relief=tk.FLAT,
+            highlightbackground=t.border,
+            highlightthickness=1,
+        )
+        self.entry_query.insert(0, self.item.name)
+        self.entry_query.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6, padx=(0, 8))
+        self.entry_query.bind("<Return>", lambda e: self._do_search())
+
+        btn_search = RoundedButton(
+            search_row,
+            text="Search Catalog",
+            command=self._do_search,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9, "bold"),
+            padding=(16, 6),
+        )
+        btn_search.pack(side=tk.RIGHT)
+
+        # Status label
+        self.lbl_search_status = tk.Label(
+            frame,
+            text="Ready to search repository...",
+            bg=t.bg_root,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_search_status.pack(anchor=tk.W, pady=(0, 6))
+
+        # Results Treeview
+        table_frame = tk.Frame(
+            frame,
+            bg=t.bg_card,
+            highlightbackground=t.border,
+            highlightthickness=1,
+        )
+        table_frame.pack(fill=tk.BOTH, expand=True)
+
+        cols = ("Name", "Package ID", "Version", "Source")
+        self.tree = ttk.Treeview(
+            table_frame,
+            columns=cols,
+            show="headings",
+            selectmode="browse",
+        )
+        self.tree.heading("Name", text="Application Name")
+        self.tree.heading("Package ID", text="Winget Identifier")
+        self.tree.heading("Version", text="Latest Version")
+        self.tree.heading("Source", text="Repository")
+
+        self.tree.column("Name", width=180, anchor="w")
+        self.tree.column("Package ID", width=220, anchor="w")
+        self.tree.column("Version", width=90, anchor="center")
+        self.tree.column("Source", width=80, anchor="center")
+
+        scroll = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.tree.bind("<<TreeviewSelect>>", self._on_select_item)
+
+        # Bottom manual entry and action buttons
+        bottom_box = tk.Frame(frame, bg=t.bg_root, pady=10)
+        bottom_box.pack(fill=tk.X)
+
+        manual_row = tk.Frame(bottom_box, bg=t.bg_root)
+        manual_row.pack(fill=tk.X, pady=(0, 10))
+
+        tk.Label(
+            manual_row,
+            text="Direct Package ID:",
+            bg=t.bg_root,
+            fg=t.fg_secondary,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side=tk.LEFT, padx=(0, 8))
+
+        self.entry_manual_id = tk.Entry(
+            manual_row,
+            font=("Segoe UI", 9),
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            relief=tk.FLAT,
+            highlightbackground=t.border,
+            highlightthickness=1,
+        )
+        existing_id = self.config.get_custom_mapping(self.item.name, self.item.id) or self.item.id or ""
+        self.entry_manual_id.insert(0, existing_id)
+        self.entry_manual_id.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
+
+        btn_row = tk.Frame(bottom_box, bg=t.bg_root)
+        btn_row.pack(fill=tk.X)
+
+        self.btn_bind = RoundedButton(
+            btn_row,
+            text="Bind & Save Source",
+            command=self._apply_binding,
+            bg_color="#059669",
+            fg_color="#ffffff",
+            radius=6,
+            height=34,
+            font=("Segoe UI", 9, "bold"),
+            padding=(16, 6),
+        )
+        self.btn_bind.pack(side=tk.LEFT, padx=(0, 8))
+
+        if self.config.get_custom_mapping(self.item.name, self.item.id):
+            btn_unbind = RoundedButton(
+                btn_row,
+                text="Remove Binding",
+                command=self._remove_binding,
+                bg_color="#fee2e2",
+                fg_color="#991b1b",
+                border_color="#fecdd3",
+                radius=6,
+                height=34,
+                font=("Segoe UI", 9),
+                padding=(14, 6),
+            )
+            btn_unbind.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_cancel = RoundedButton(
+            btn_row,
+            text="Cancel",
+            command=self.destroy,
+            bg_color="#ffffff",
+            fg_color=t.fg_secondary,
+            border_color=t.border,
+            radius=6,
+            height=34,
+            font=("Segoe UI", 9),
+            padding=(16, 6),
+        )
+        btn_cancel.pack(side=tk.RIGHT)
+
+    def _initial_search(self) -> None:
+        self.after(100, self._do_search)
+
+    def _do_search(self) -> None:
+        q = self.entry_query.get().strip()
+        if not q:
+            return
+
+        self.lbl_search_status.config(text=f"Searching repository for '{q}'...", fg=self.theme.accent_burgundy)
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        import threading
+
+        def _worker():
+            results = []
+            if self.winget_client:
+                try:
+                    results = self.winget_client.search_catalog(q)
+                except Exception:
+                    results = []
+            self.after(0, lambda: self._show_results(results, q))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _show_results(self, results, query: str) -> None:
+        if not results:
+            self.lbl_search_status.config(
+                text=f"No packages found matching '{query}'. You can enter the exact Package ID manually below.",
+                fg=self.theme.fg_muted,
+            )
+            return
+
+        self.lbl_search_status.config(
+            text=f"Found {len(results)} candidate package(s) in repository:",
+            fg="#059669",
+        )
+        for r in results:
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(r.name, r.id, r.version or "—", r.source or "winget"),
+            )
+
+    def _on_select_item(self, event) -> None:
+        sel = self.tree.selection()
+        if not sel:
+            return
+        vals = self.tree.item(sel[0], "values")
+        if vals and len(vals) >= 2:
+            self.entry_manual_id.delete(0, tk.END)
+            self.entry_manual_id.insert(0, vals[1])
+
+    def _apply_binding(self) -> None:
+        bound_id = self.entry_manual_id.get().strip()
+        if not bound_id:
+            messagebox.showwarning("Validation Error", "Please select or type a valid Winget Package ID.", parent=self)
+            return
+
+        self.config.bind_custom_mapping(self.item.name, bound_id)
+        self.item.id = bound_id
+        self.item.is_user_bound = True
+        self.item.is_verified_winget = True
+
+        if self.on_bound:
+            self.on_bound(bound_id)
+
+        messagebox.showinfo(
+            "Source Bound",
+            f"Successfully linked '{self.item.name}' to Winget package '{bound_id}'.\n"
+            "This application is now verified and eligible for updates.",
+            parent=self,
+        )
+        self.destroy()
+
+    def _remove_binding(self) -> None:
+        self.config.remove_custom_mapping(self.item.name)
+        if self.item.id:
+            self.config.remove_custom_mapping(self.item.id)
+
+        if self.on_bound:
+            self.on_bound("")
+
+        messagebox.showinfo(
+            "Binding Removed",
+            f"Removed custom package binding for '{self.item.name}'.",
+            parent=self,
+        )
+        self.destroy()

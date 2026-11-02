@@ -35,7 +35,7 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.11 MB | `4F5CF09F96F196C39222B3C7088C2B50DBA2512D4E7F17BC430E7A159ECC59B2` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.17 MB | `36BDC7AE9DC3947F7B18878D875F1C9449DC3468E347A20E099AD65ED96CDF2D` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
 1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
@@ -73,6 +73,18 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Downgrade Protection:** Automatically detects if your installed application is newer than the repository version, preventing unintended downgrades unless explicitly approved.
 - **Exclusion Management (`exclusions.json`):** Easily ignore specific programs from all future scans and updates.
 - **Daily Automated Scheduling:** Configure an automated background check via Windows Task Scheduler that runs only on AC power and interactive sign-in sessions.
+
+### 🔗 5. Source Resolution & Package Binding ("Could Not Verify" Solutions)
+- **Intelligent Publisher Matching:** Bidirectionally normalizes corporate suffixes (`LLC`, `Corp`, `Inc`, `GmbH`) eliminating false-positive publisher mismatches.
+- **Curated Package Aliases:** Built-in alias dictionary instantly matches 70+ essential Windows applications to their verified Winget identifiers.
+- **In-App "Bind Winget ID":** Click **"🔗 Bind Winget ID"** in the drawer to live-search the 6,000+ Winget catalog and link any unverified or unmapped software permanently (`custom_mappings.json`).
+- **Review & Allow Action:** Manually review candidate packages and grant update permission with a single click.
+- **1-Click Official Download Web Link:** Instantly launch verified official vendor download pages in your browser for software without public repository packages.
+
+### 💎 6. Windows 11 Acrylic & Frosted Glass Backdrops
+- **Native Acrylic / Mica System Backdrops:** Automatically configures Windows 11 `DWMWA_SYSTEMBACKDROP_TYPE` (Attribute 38) for native desktop translucent blur.
+- **Interactive Micro-Animations:** Responsive spring depression dynamics on buttons, hover border illumination, and status badges with breathing indicator lights.
+- **Diagnostic Explanation Alert Box:** Transparent card in the details drawer clearly explaining why any software is listed-only or requires manual binding.
 
 ---
 
@@ -120,7 +132,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-4F5CF09F96F196C39222B3C7088C2B50DBA2512D4E7F17BC430E7A159ECC59B2
+36BDC7AE9DC3947F7B18878D875F1C9449DC3468E347A20E099AD65ED96CDF2D
 ```
 
 ---

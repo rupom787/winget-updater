@@ -207,9 +207,42 @@ class GpuAccelerationManager:
                 WS_EX_COMPOSITED = 0x02000000
                 cur_style = ctypes.windll.user32.GetWindowLongW(target_hwnd, GWL_EXSTYLE)
                 ctypes.windll.user32.SetWindowLongW(target_hwnd, GWL_EXSTYLE, cur_style | WS_EX_COMPOSITED)
+                
+                # Apply Windows 11 Acrylic / Frosted Glass Backdrop
+                cls.enable_windows11_glass_backdrop(window, backdrop_type=3)
                 return True
         except Exception as e:
             logger.debug(f"Hardware window acceleration note: {e}")
 
         return False
+
+    @classmethod
+    def enable_windows11_glass_backdrop(cls, window, backdrop_type: int = 3) -> bool:
+        """Applies Windows 11 system backdrop (Acrylic frosted glass / Mica).
+        backdrop_type: 2 = Mica, 3 = Acrylic (Frosted Glass), 4 = Mica Alt.
+        """
+        if sys.platform != "win32":
+            return False
+
+        try:
+            window.update_idletasks()
+            hwnd = window.winfo_id()
+            if not hwnd:
+                return False
+            parent_hwnd = ctypes.windll.user32.GetParent(hwnd)
+            target_hwnd = parent_hwnd if parent_hwnd else hwnd
+
+            # DWMWA_SYSTEMBACKDROP_TYPE = 38
+            DWMWA_SYSTEMBACKDROP_TYPE = 38
+            val = ctypes.c_int(backdrop_type)
+            hr = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                target_hwnd,
+                DWMWA_SYSTEMBACKDROP_TYPE,
+                ctypes.byref(val),
+                ctypes.sizeof(val),
+            )
+            return hr == 0
+        except Exception as e:
+            logger.debug(f"Glass backdrop attribute note: {e}")
+            return False
 

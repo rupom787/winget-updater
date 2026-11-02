@@ -266,5 +266,53 @@ def test_exclusion_dialog():
     root.destroy()
 
 
+def test_bind_winget_source_dialog_and_drawer(monkeypatch):
+    import tempfile
+    from pathlib import Path
+    import tkinter as tk
+    from tkinter import messagebox
+    from winget_updater.config import ConfigManager
+    from winget_updater.gui.components import DetailsDrawer
+    from winget_updater.gui.dialogs import BindWingetSourceDialog
+    from winget_updater.models import ProgramItem, UpdateAction
+
+    monkeypatch.setattr(messagebox, "showinfo", lambda *args, **kwargs: True)
+    monkeypatch.setattr(messagebox, "showwarning", lambda *args, **kwargs: True)
+
+    root = tk.Tk()
+    root.withdraw()
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        cfg = ConfigManager(base_dir=Path(tmp_dir))
+        item = ProgramItem(name="Unverified Tool", installed_version="1.0", action=UpdateAction.UNVERIFIED)
+
+        # 1. Test Details Drawer with diagnostic box
+        drawer = DetailsDrawer(root)
+        drawer.set_item(item)
+        assert drawer.lbl_diag_text.cget("text") != ""
+
+        # 2. Test BindWingetSourceDialog
+        bound_id_received = []
+        dlg = BindWingetSourceDialog(
+            root,
+            item,
+            cfg,
+            on_bound=lambda b: bound_id_received.append(b),
+        )
+        dlg.withdraw()
+
+        # Simulate typing an ID and binding
+        dlg.entry_manual_id.delete(0, tk.END)
+        dlg.entry_manual_id.insert(0, "ToolVendor.UnverifiedTool")
+        dlg._apply_binding()
+
+        assert "unverified tool" in cfg.custom_mappings
+        assert cfg.custom_mappings["unverified tool"] == "ToolVendor.UnverifiedTool"
+        assert bound_id_received == ["ToolVendor.UnverifiedTool"]
+
+    root.destroy()
+
+
+
 
 

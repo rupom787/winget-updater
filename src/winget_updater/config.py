@@ -14,6 +14,7 @@ logger = get_logger()
 DEFAULT_EXCLUSIONS_FILE = "exclusions.json"
 DEFAULT_SOURCES_FILE = "sources.json"
 DEFAULT_CONFIG_FILE = "config.json"
+DEFAULT_MAPPINGS_FILE = "custom_mappings.json"
 
 
 @dataclass
@@ -55,10 +56,12 @@ class ConfigManager:
         self.exclusions_path = exclusions_path or (self.base_dir / DEFAULT_EXCLUSIONS_FILE)
         self.sources_path = sources_path or (self.base_dir / DEFAULT_SOURCES_FILE)
         self.config_path = self.base_dir / DEFAULT_CONFIG_FILE
+        self.mappings_path = self.base_dir / DEFAULT_MAPPINGS_FILE
         
         self.theme: str = "light"
         self.exclusions: List[ExclusionRule] = []
         self.vendor_sources: List[VendorSourceEntry] = []
+        self.custom_mappings: Dict[str, str] = {}
         self.portable_directories: List[str] = self._get_default_portable_dirs()
         
         self.load_all()
@@ -81,10 +84,58 @@ class ConfigManager:
         return [d for d in dirs if os.path.exists(d)]
 
     def load_all(self) -> None:
-        """Loads configuration settings, exclusions, and vendor sources from disk."""
+        """Loads configuration settings, exclusions, vendor sources, and custom mappings from disk."""
         self.load_settings()
         self.load_exclusions()
         self.load_vendor_sources()
+        self.load_custom_mappings()
+
+    def load_custom_mappings(self) -> Dict[str, str]:
+        """Loads user-bound program-to-winget package ID mappings."""
+        self.custom_mappings = {}
+        if self.mappings_path.exists():
+            try:
+                with open(self.mappings_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self.custom_mappings = {k.lower(): str(v).strip() for k, v in data.items()}
+                logger.info(f"Loaded {len(self.custom_mappings)} custom package mappings from {self.mappings_path.name}")
+            except Exception as e:
+                logger.error(f"Error reading custom mappings file {self.mappings_path}: {e}")
+        return self.custom_mappings
+
+    def save_custom_mappings(self) -> None:
+        """Persists custom package mappings to custom_mappings.json."""
+        try:
+            with open(self.mappings_path, "w", encoding="utf-8") as f:
+                json.dump(self.custom_mappings, f, indent=2)
+            logger.info(f"Saved {len(self.custom_mappings)} custom package mappings to {self.mappings_path.name}")
+        except Exception as e:
+            logger.error(f"Error saving custom mappings file {self.mappings_path}: {e}")
+
+    def bind_custom_mapping(self, app_key: str, winget_id: str) -> None:
+        """Binds a discovered program name or identifier directly to a verified Winget package ID."""
+        if not app_key or not winget_id:
+            return
+        self.custom_mappings[app_key.strip().lower()] = winget_id.strip()
+        self.save_custom_mappings()
+
+    def get_custom_mapping(self, app_name: str, app_id: Optional[str] = None) -> Optional[str]:
+        """Retrieves manually bound Winget package ID for an application if one exists."""
+        if app_id and app_id.strip().lower() in self.custom_mappings:
+            return self.custom_mappings[app_id.strip().lower()]
+        if app_name and app_name.strip().lower() in self.custom_mappings:
+            return self.custom_mappings[app_name.strip().lower()]
+        return None
+
+    def remove_custom_mapping(self, app_key: str) -> bool:
+        """Removes a custom package mapping by app name or identifier."""
+        key = app_key.strip().lower()
+        if key in self.custom_mappings:
+            del self.custom_mappings[key]
+            self.save_custom_mappings()
+            return True
+        return False
 
     def load_settings(self) -> None:
         """Loads persistent user configuration preferences like theme."""

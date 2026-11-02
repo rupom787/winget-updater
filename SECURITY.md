@@ -14,3 +14,4 @@ Only the latest release of **Software & Package Updater** receives security upda
 If you discover a security vulnerability or security bug, please **do not open a public issue**. 
 
 Instead, report it directly via GitHub Private Vulnerability Reporting or contact the maintainer directly. We will investigate and respond to security advisories promptly.
+

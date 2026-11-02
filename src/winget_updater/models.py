@@ -84,6 +84,31 @@ class ProgramItem:
     requires_admin: bool = True
     is_ambiguous: bool = False
     supports_rollback: bool = False
+    unavailability_reason: Optional[str] = None
+    vendor_url: Optional[str] = None
+    is_user_bound: bool = False
+
+    def get_diagnostic_reason(self) -> str:
+        """Returns clear, human-readable reason why an application cannot be updated automatically."""
+        if self.unavailability_reason:
+            return self.unavailability_reason
+        if self.action == UpdateAction.UP_TO_DATE:
+            return "Application is already running the latest verified release."
+        if self.action == UpdateAction.EXCLUDED:
+            return "Application is excluded by user filter rule."
+        if self.action == UpdateAction.UNVERIFIED:
+            return "Package could not be verified automatically (ambiguous name or publisher mismatch). You can bind its Winget ID or review manually."
+        if self.action == UpdateAction.NO_SOURCE:
+            return "No public package source found in Winget or Store repositories. Use 'Bind Winget ID' or 'Visit Website'."
+        if self.package_type == PackageType.DRIVER:
+            return "Device drivers are OEM-signed and maintained safely via Windows Update or vendor firmware."
+        if self.package_type == PackageType.BROWSER_EXTENSION:
+            return "Browser extensions are updated automatically through their respective browser web store."
+        if self.package_type == PackageType.PORTABLE:
+            return "Standalone portable executable without package installer manifest."
+        if not self.compatibility.is_compatible:
+            return f"Incompatible system environment: {'; '.join(self.compatibility.reasons)}"
+        return "Not eligible for automatic update."
 
     def can_auto_update(self) -> bool:
         """Determines if the program qualifies for single-approval automatic update.
