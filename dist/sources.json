@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {
+      "name": "Custom Vendor Utility",
+      "match_name": "CustomUtility*",
+      "installer_url": "https://example.com/downloads/CustomUtilitySetup.exe",
+      "version": "2.1.0",
+      "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_publisher": "Example Corp",
+      "target_arch": "x64",
+      "notes": "Optional fallback when winget has no package. Never installed silently."
+    }
+  ]
+}
+

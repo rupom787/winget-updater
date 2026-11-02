@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build intermediates (keep dist/WingetUpdater.exe)
+build/
+*.spec
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local state & logs
+run_state.json
+dist/run_state.json
+dist/config.json
+dist/WingetUpdater/
+*.log
+dist/*.log
+
+# Environment & Virtualenvs
+.venv/
+env/
+venv/
+ENV/
+
+# IDE & OS files
+.vscode/
+.idea/
+.agents/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini

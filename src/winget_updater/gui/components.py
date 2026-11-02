@@ -1,0 +1,1122 @@
+"""Clean, human-crafted modern UI components for Software & Package Updater.
+Features smooth rounded widgets, refined typography, two-column layout, and bottom details drawer.
+"""
+
+import os
+import tkinter as tk
+from tkinter import messagebox, ttk
+from typing import Callable, Dict, List, Optional
+from winget_updater.gui.animations import (
+    AnimatedSkeletonOverlay,
+    DeckCounterAnimator,
+    FluentFloatingToast,
+    PulsingWarningBeacon,
+    ToastNotificationHelper,
+    VectorIconDrawer,
+)
+from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge, draw_rounded_rect
+from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
+from winget_updater.models import CompatibilityStatus, PackageType, ProgramItem, UpdateAction, UpdateOutcome
+
+
+class SidebarNavigation(tk.Frame):
+    """Clean left sidebar navigation with smooth rounded filter cards, search box, and live counts."""
+
+    # Human-readable filter view definitions
+    FILTERS = [
+        ("All Software", "All applications"),
+        ("Updates Available", "Updates available"),
+        ("Up to Date", "Installed & current"),
+        ("Ignored Updates", "Excluded applications"),
+        ("Software Catalog", "Discover & install"),
+    ]
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_filter_changed: Callable[[str], None],
+        on_search_changed: Callable[[str], None],
+        on_category_changed: Callable[[str], None],
+        sys_info=None,
+    ):
+        super().__init__(
+            parent,
+            bg="#faf6f6",
+            width=260,
+            padx=14,
+            pady=16,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.pack_propagate(False)
+        self.on_filter_changed = on_filter_changed
+        self.on_search_changed = on_search_changed
+        self.on_category_changed = on_category_changed
+        self.sys_info = sys_info
+        self.theme: ThemeColors = LIGHT_THEME
+
+        self.current_filter = "All Software"
+        self._debounce_timer: Optional[str] = None
+
+        # 1. App Title / Brand
+        self.brand_frame = tk.Frame(self, bg="#faf6f6")
+        self.brand_frame.pack(fill=tk.X, pady=(0, 16))
+
+        self.lbl_title = tk.Label(
+            self.brand_frame,
+            text="Software Updater",
+            bg="#faf6f6",
+            fg="#881337",
+            font=("Segoe UI", 12, "bold"),
+            justify=tk.LEFT,
+            anchor="w",
+        )
+        self.lbl_title.pack(anchor=tk.W)
+
+        self.lbl_version_tag = tk.Label(
+            self.brand_frame,
+            text="Windows 11 Edition",
+            bg="#faf6f6",
+            fg="#64748b",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_version_tag.pack(anchor=tk.W, pady=(2, 0))
+
+        # 2. Section Header: Navigation
+        self.lbl_nav_header = tk.Label(
+            self,
+            text="NAVIGATION",
+            bg="#faf6f6",
+            fg="#94a3b8",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_nav_header.pack(fill=tk.X, pady=(2, 6))
+
+        # Navigation Buttons Container
+        self.nav_buttons_frame = tk.Frame(self, bg="#faf6f6")
+        self.nav_buttons_frame.pack(fill=tk.X)
+
+        self.filter_buttons: Dict[str, Dict[str, tk.Widget]] = {}
+
+        for internal_name, display_label in self.FILTERS:
+            btn_canvas = tk.Canvas(
+                self.nav_buttons_frame,
+                bg="#faf6f6",
+                height=38,
+                highlightthickness=0,
+                cursor="hand2",
+            )
+            btn_canvas.pack(fill=tk.X, pady=2)
+
+            self.filter_buttons[internal_name] = {
+                "canvas": btn_canvas,
+                "display_label": display_label,
+                "count": "0",
+            }
+
+            btn_canvas.bind("<Button-1>", lambda e, f=internal_name: self._on_filter_click(f))
+
+        # Separator line
+        self.sep1 = tk.Frame(self, bg="#f3d5d9", height=1)
+        self.sep1.pack(fill=tk.X, pady=14)
+
+        # 3. Section: Search Box
+        self.lbl_search_header = tk.Label(
+            self,
+            text="SEARCH",
+            bg="#faf6f6",
+            fg="#94a3b8",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_search_header.pack(fill=tk.X, pady=(0, 4))
+
+        self.search_container = tk.Frame(
+            self,
+            bg="#ffffff",
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+            padx=8,
+            pady=4,
+        )
+        self.search_container.pack(fill=tk.X)
+
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", self._on_search_changed)
+
+        self.search_entry = tk.Entry(
+            self.search_container,
+            textvariable=self.search_var,
+            bg="#ffffff",
+            fg="#0f172a",
+            insertbackground="#881337",
+            relief=tk.FLAT,
+            font=("Segoe UI", 9),
+        )
+        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.btn_clear_search = tk.Button(
+            self.search_container,
+            text="×",
+            command=self._clear_search,
+            bg="#ffffff",
+            fg="#94a3b8",
+            activebackground="#ffffff",
+            activeforeground="#881337",
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
+            font=("Segoe UI", 10, "bold"),
+            padx=2,
+            pady=0,
+        )
+        self.btn_clear_search.pack(side=tk.RIGHT)
+
+        # 4. Section: Categories Dropdown
+        self.lbl_cat_header = tk.Label(
+            self,
+            text="CATEGORIES",
+            bg="#faf6f6",
+            fg="#94a3b8",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_cat_header.pack(fill=tk.X, pady=(14, 4))
+
+        self.cat_var = tk.StringVar(value="All Categories")
+        self.category_combo = ttk.Combobox(
+            self,
+            textvariable=self.cat_var,
+            state="readonly",
+            values=[
+                "All Categories",
+                "Win32 Applications",
+                "Microsoft Store / MSIX",
+                "Portable Applications",
+                "Drivers & Extensions",
+            ],
+            font=("Segoe UI", 9),
+        )
+        self.category_combo.pack(fill=tk.X)
+        self.category_combo.bind("<<ComboboxSelected>>", self._on_category_select)
+
+        # 5. Bottom System Telemetry Frame
+        self.telemetry_box = tk.Frame(
+            self,
+            bg="#ffffff",
+            padx=10,
+            pady=8,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.telemetry_box.pack(side=tk.BOTTOM, fill=tk.X, pady=(10, 0))
+
+        bld = "26300"
+        arch = "64-bit"
+        if self.sys_info:
+            try:
+                bld = self.sys_info.get_windows_build()
+                arch = "64-bit" if "64" in str(self.sys_info.get_architecture()) else "32-bit"
+            except Exception:
+                pass
+
+        self.lbl_tele_sys = tk.Label(
+            self.telemetry_box,
+            text=f"Windows 11 Build {bld} ({arch})",
+            bg="#ffffff",
+            fg="#166534",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_tele_sys.pack(anchor=tk.W)
+
+        try:
+            from winget_updater.engine.gpu import GpuAccelerationManager
+            primary_gpu = GpuAccelerationManager.get_primary_gpu()
+            gpu_display = primary_gpu.name
+            if len(gpu_display) > 28:
+                gpu_display = gpu_display.replace("NVIDIA ", "").replace("Graphics", "").strip()
+            gpu_text = f"GPU: {gpu_display} (DirectX 12)"
+        except Exception:
+            gpu_text = "GPU: Hardware Accelerated"
+
+        self.lbl_tele_gpu = tk.Label(
+            self.telemetry_box,
+            text=gpu_text,
+            bg="#ffffff",
+            fg="#0369a1",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_tele_gpu.pack(anchor=tk.W, pady=(2, 0))
+
+        self.lbl_tele_mode = tk.Label(
+            self.telemetry_box,
+            text="Administrator privileges active",
+            bg="#ffffff",
+            fg="#64748b",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_tele_mode.pack(anchor=tk.W, pady=(2, 0))
+
+        # Initial render
+        self._render_navigation_items()
+
+    def _render_navigation_items(self) -> None:
+        """Draws rounded pill tabs for each sidebar navigation item."""
+        for internal_name, data in self.filter_buttons.items():
+            canvas = data["canvas"]
+            display_label = data["display_label"]
+            count = data["count"]
+            is_active = (internal_name == self.current_filter)
+
+            canvas.delete("all")
+            w = canvas.winfo_width() or 230
+            h = 36
+
+            if is_active:
+                # Rounded burgundy pill
+                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#881337")
+                text_color = "#ffffff"
+                badge_bg = "#9f1239"
+                badge_fg = "#ffffff"
+            else:
+                # Clean white rounded card
+                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#ffffff", outline="#f3d5d9", width=1)
+                text_color = "#1e293b"
+                if internal_name == "Updates Available" and count not in ("0", ""):
+                    badge_bg = "#fef2f2"
+                    badge_fg = "#991b1b"
+                else:
+                    badge_bg = "#faf6f6"
+                    badge_fg = "#64748b"
+
+            # Label text
+            canvas.create_text(
+                14,
+                h / 2,
+                text=display_label,
+                fill=text_color,
+                font=("Segoe UI", 9, "bold" if is_active else "normal"),
+                anchor="w",
+            )
+
+            # Badge pill on right
+            badge_text = str(count)
+            badge_w = max(24, len(badge_text) * 7 + 12)
+            bx2 = w - 12
+            bx1 = bx2 - badge_w
+            by1 = (h - 20) / 2
+            by2 = by1 + 20
+
+            draw_rounded_rect(canvas, bx1, by1, bx2, by2, radius=10, fill=badge_bg)
+            canvas.create_text(
+                (bx1 + bx2) / 2,
+                (by1 + by2) / 2,
+                text=badge_text,
+                fill=badge_fg,
+                font=("Segoe UI", 8, "bold"),
+                anchor="center",
+            )
+
+    def _on_filter_click(self, filter_name: str) -> None:
+        self.current_filter = filter_name
+        self._render_navigation_items()
+        if self.on_filter_changed:
+            self.on_filter_changed(filter_name)
+
+    def _on_search_changed(self, *args) -> None:
+        if self._debounce_timer:
+            self.after_cancel(self._debounce_timer)
+        self._debounce_timer = self.after(150, self._trigger_search)
+
+    def _trigger_search(self) -> None:
+        self._debounce_timer = None
+        if self.on_search_changed:
+            self.on_search_changed(self.search_var.get().strip())
+
+    def _clear_search(self) -> None:
+        self.search_var.set("")
+        if self.on_search_changed:
+            self.on_search_changed("")
+
+    def _on_category_select(self, event=None) -> None:
+        if self.on_category_changed:
+            self.on_category_changed(self.cat_var.get())
+
+    def update_counts(self, total: int, updates: int, uptodate: int, ignored: int) -> None:
+        """Updates live numeric badges on sidebar navigation items."""
+        if "All Software" in self.filter_buttons:
+            self.filter_buttons["All Software"]["count"] = str(total)
+        if "Updates Available" in self.filter_buttons:
+            self.filter_buttons["Updates Available"]["count"] = str(updates)
+        if "Up to Date" in self.filter_buttons:
+            self.filter_buttons["Up to Date"]["count"] = str(uptodate)
+        if "Ignored Updates" in self.filter_buttons:
+            self.filter_buttons["Ignored Updates"]["count"] = str(ignored)
+        if "Software Catalog" in self.filter_buttons:
+            self.filter_buttons["Software Catalog"]["count"] = "6k+"
+        self._render_navigation_items()
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
+        self.brand_frame.config(bg=theme.bg_sidebar)
+        self.lbl_title.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
+        self.lbl_version_tag.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        self.lbl_nav_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        self.nav_buttons_frame.config(bg=theme.bg_sidebar)
+        self.sep1.config(bg=theme.border)
+        self.lbl_search_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        self.search_container.config(bg=theme.bg_input, highlightbackground=theme.border)
+        self.search_entry.config(bg=theme.bg_input, fg=theme.fg_primary, insertbackground=theme.accent_burgundy)
+        self.btn_clear_search.config(bg=theme.bg_input, fg=theme.fg_muted)
+        self.lbl_cat_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        self.telemetry_box.config(bg=theme.bg_card, highlightbackground=theme.border)
+        self.lbl_tele_sys.config(bg=theme.bg_card, fg=theme.accent_emerald)
+        if hasattr(self, "lbl_tele_gpu"):
+            self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#38bdf8" if theme.name == "dark" else "#0369a1")
+        self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
+        for d in self.filter_buttons.values():
+            d["canvas"].config(bg=theme.bg_sidebar)
+        self._render_navigation_items()
+
+
+class DetailsDrawer(tk.Frame):
+    """Bottom slide-up details drawer showing selected program icon, metadata, and rounded action buttons."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_single_update: Optional[Callable[[ProgramItem], None]] = None,
+        on_exclude_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_uninstall_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_toast_message: Optional[Callable[[str, str], None]] = None,
+    ):
+        super().__init__(
+            parent,
+            bg="#faf6f6",
+            padx=18,
+            pady=12,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.on_single_update = on_single_update
+        self.on_exclude_item = on_exclude_item
+        self.on_uninstall_item = on_uninstall_item
+        self.on_toast_message = on_toast_message
+        self.current_item: Optional[ProgramItem] = None
+        self.theme: ThemeColors = LIGHT_THEME
+
+        # Left / Details Container
+        self.details_container = tk.Frame(self, bg="#faf6f6")
+        self.details_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Header Row: Program Avatar, Title, and Rounded Status Pill
+        self.header_row = tk.Frame(self.details_container, bg="#faf6f6")
+        self.header_row.pack(fill=tk.X, anchor=tk.W)
+
+        # Rounded Avatar Canvas
+        self.avatar_canvas = tk.Canvas(self.header_row, width=34, height=34, bg="#faf6f6", highlightthickness=0)
+        self.avatar_canvas.pack(side=tk.LEFT, padx=(0, 10))
+        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill="#fff1f2", outline="#f3d5d9", width=1)
+        self.avatar_canvas.create_text(17, 17, text="A", fill="#881337", font=("Segoe UI", 11, "bold"))
+
+        self.lbl_name = tk.Label(
+            self.header_row,
+            text="Select an application to view details",
+            bg="#faf6f6",
+            fg="#0f172a",
+            font=("Segoe UI", 11, "bold"),
+            anchor="w",
+        )
+        self.lbl_name.pack(side=tk.LEFT)
+
+        # Rounded Status Pill Badge
+        self.status_pill = RoundedPillBadge(self.header_row, text="", bg_color="#f1f5f9", fg_color="#475569", parent_bg="#faf6f6")
+        self.status_pill.pack(side=tk.LEFT, padx=(12, 0))
+
+        # Metadata grid
+        self.meta_frame = tk.Frame(self.details_container, bg="#faf6f6")
+        self.meta_frame.pack(fill=tk.X, pady=(5, 0))
+
+        self.lbl_pub = tk.Label(
+            self.meta_frame,
+            text="Publisher: —",
+            bg="#faf6f6",
+            fg="#475569",
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.lbl_pub.pack(anchor=tk.W)
+
+        self.lbl_versions = tk.Label(
+            self.meta_frame,
+            text="Installed: —  •  Latest: —  •  Source: —",
+            bg="#faf6f6",
+            fg="#1e293b",
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.lbl_versions.pack(anchor=tk.W, pady=(2, 0))
+
+        self.lbl_id_path = tk.Label(
+            self.meta_frame,
+            text="Package ID: —  •  Location: —",
+            bg="#faf6f6",
+            fg="#64748b",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_id_path.pack(anchor=tk.W, pady=(2, 0))
+
+        self.lbl_notes = tk.Label(
+            self.meta_frame,
+            text="",
+            bg="#faf6f6",
+            fg="#881337",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_notes.pack(anchor=tk.W, pady=(2, 0))
+
+        # Right / Actions Container
+        self.actions_container = tk.Frame(self, bg="#faf6f6")
+        self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
+
+        # Rounded Primary Action Button
+        self.btn_update = RoundedButton(
+            self.actions_container,
+            text="Update application",
+            command=self._on_update_click,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            font=("Segoe UI", 9, "bold"),
+            width=165,
+            height=32,
+            parent_bg="#faf6f6",
+        )
+        self.btn_update.pack(fill=tk.X, pady=(0, 4))
+        self.btn_update.config(state="disabled")
+
+        # Secondary Actions Row
+        self.secondary_actions = tk.Frame(self.actions_container, bg="#faf6f6")
+        self.secondary_actions.pack(fill=tk.X)
+
+        self.btn_exclude = RoundedButton(
+            self.secondary_actions,
+            text="Exclude",
+            command=self._on_exclude_click,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=70,
+            height=28,
+            parent_bg="#faf6f6",
+        )
+        self.btn_exclude.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_exclude.config(state="disabled")
+
+        self.btn_open_folder = RoundedButton(
+            self.secondary_actions,
+            text="Folder",
+            command=self._on_open_folder_click,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=65,
+            height=28,
+            parent_bg="#faf6f6",
+        )
+        self.btn_open_folder.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_open_folder.config(state="disabled")
+
+        self.btn_copy_id = RoundedButton(
+            self.secondary_actions,
+            text="Copy ID",
+            command=self._on_copy_id_click,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=65,
+            height=28,
+            parent_bg="#faf6f6",
+        )
+        self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_copy_id.config(state="disabled")
+
+        self.btn_uninstall = RoundedButton(
+            self.secondary_actions,
+            text="Uninstall",
+            command=self._on_uninstall_click,
+            bg_color="#ffffff",
+            fg_color="#be123c",
+            hover_bg="#fee2e2",
+            border_color="#fecdd3",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            width=75,
+            height=28,
+            parent_bg="#faf6f6",
+        )
+        self.btn_uninstall.pack(side=tk.LEFT)
+        self.btn_uninstall.config(state="disabled")
+
+    def set_item(self, item: Optional[ProgramItem]) -> None:
+        """Populates the details drawer with program metadata and activates permissible actions."""
+        self.current_item = item
+        if not item:
+            self.lbl_name.config(text="Select an application to view details", fg="#64748b")
+            self.lbl_pub.config(text="Publisher: —")
+            self.lbl_versions.config(text="Installed: —  •  Latest: —  •  Source: —")
+            self.lbl_id_path.config(text="Package ID: —  •  Location: —")
+            self.lbl_notes.config(text="")
+            self.status_pill.set_badge("", "#faf6f6", "#faf6f6")
+            self.btn_update.config(state="disabled", text="Update application")
+            self.btn_exclude.config(state="disabled")
+            self.btn_open_folder.config(state="disabled")
+            self.btn_copy_id.config(state="disabled")
+            self.btn_uninstall.config(state="disabled")
+            return
+
+        # Name & Publisher
+        self.lbl_name.config(text=item.name, fg="#0f172a")
+        pub_text = item.publisher or "Standard Publisher"
+        self.lbl_pub.config(text=f"Publisher: {pub_text}")
+
+        # Update initial avatar
+        initial = (item.name.strip()[0] if item.name else "A").upper()
+        self.avatar_canvas.delete("all")
+        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill="#fff1f2", outline="#f3d5d9", width=1)
+        self.avatar_canvas.create_text(17, 17, text=initial, fill="#881337", font=("Segoe UI", 11, "bold"))
+
+        # Versions & Source
+        cur_v = item.installed_version or "Unknown"
+        lat_v = item.latest_version or "—"
+        src = item.source or "winget"
+        pkg_id = item.id or item.name
+
+        loc = item.install_location or "Standard system directory"
+        compat = item.compatibility.status.value
+
+        self.lbl_pub.config(text=f"Publisher: {pub_text}   •   Package Identifier: {pkg_id}")
+        self.lbl_versions.config(text=f"Installed Version: {cur_v}   →   Available Release: {lat_v}   (Source: {src})")
+        self.lbl_id_path.config(text=f"Compatibility: {compat}   •   Location: {loc}")
+
+        # Status pill badge
+        status_text, pill_bg, pill_fg = self._get_status_pill_info(item)
+        self.status_pill.set_badge(status_text, bg_color=pill_bg, fg_color=pill_fg)
+        self.lbl_notes.config(text=f"Note: {item.notes}" if item.notes else "")
+
+        # Update button state
+        can_update = item.can_auto_update() or (
+            item.action == UpdateAction.AVAILABLE
+            and item.compatibility.is_compatible
+            and item.is_verified_winget
+        )
+
+        if can_update:
+            self.btn_update.config(state="normal", text="Update application", bg="#881337", fg="#ffffff")
+        else:
+            txt = "Up to date" if item.action == UpdateAction.UP_TO_DATE else "Update unavailable"
+            self.btn_update.config(state="disabled", text=txt)
+
+        is_ignored = item.action == UpdateAction.EXCLUDED
+        self.btn_exclude.config(state="normal", text="Un-exclude" if is_ignored else "Exclude")
+        self.btn_open_folder.config(state="normal" if item.install_location else "disabled")
+        self.btn_copy_id.config(state="normal")
+        self.btn_uninstall.config(state="normal")
+
+    def _get_status_pill_info(self, item: ProgramItem) -> tuple[str, str, str]:
+        if item.outcome == UpdateOutcome.UPDATED:
+            return "Updated", "#ecfdf5", "#065f46"
+        if item.outcome == UpdateOutcome.SIMULATED:
+            return "Simulated", "#ecfdf5", "#065f46"
+        if item.outcome == UpdateOutcome.FAILED:
+            return "Failed", "#fee2e2", "#991b1b"
+        if item.action == UpdateAction.AVAILABLE:
+            return "Update available", "#ffe4e6", "#9f1239"
+        if item.action == UpdateAction.UP_TO_DATE:
+            return "Up to date", "#ecfdf5", "#065f46"
+        if item.action == UpdateAction.UNVERIFIED:
+            return "Could not verify", "#fef3c7", "#92400e"
+        if item.action == UpdateAction.SCAN_FAILED:
+            return "Scan failed", "#fee2e2", "#991b1b"
+        if item.action == UpdateAction.EXCLUDED:
+            return "Excluded", "#f3e8ff", "#6b21a8"
+        if item.action == UpdateAction.NEWER_THAN_SOURCE:
+            return "Newer than source", "#fef3c7", "#92400e"
+        if item.action == UpdateAction.VENDOR_FALLBACK:
+            return "Vendor fallback", "#eff6ff", "#1e40af"
+        if item.action == UpdateAction.NO_SOURCE:
+            return "No update source", "#f1f5f9", "#475569"
+        return item.action.value, "#f1f5f9", "#475569"
+
+    def _on_update_click(self) -> None:
+        if self.current_item and self.on_single_update:
+            self.on_single_update(self.current_item)
+
+    def _on_exclude_click(self) -> None:
+        if self.current_item and self.on_exclude_item:
+            self.on_exclude_item(self.current_item)
+
+    def _on_open_folder_click(self) -> None:
+        if self.current_item and self.current_item.install_location:
+            loc = self.current_item.install_location
+            if os.path.exists(loc):
+                try:
+                    os.startfile(loc)
+                except Exception:
+                    pass
+            else:
+                if self.on_toast_message:
+                    self.on_toast_message(f"Directory not found: {loc}", "info")
+
+    def _on_copy_id_click(self) -> None:
+        if self.current_item:
+            cid = self.current_item.id or self.current_item.name
+            self.clipboard_clear()
+            self.clipboard_append(cid)
+            if self.on_toast_message:
+                self.on_toast_message(f"Copied package ID: {cid}", "info")
+            else:
+                ToastNotificationHelper.show_toast(self.lbl_name, f"Copied: {cid}")
+
+    def _on_uninstall_click(self) -> None:
+        if self.current_item and self.on_uninstall_item:
+            self.on_uninstall_item(self.current_item)
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
+        self.details_container.config(bg=theme.bg_sidebar)
+        self.header_row.config(bg=theme.bg_sidebar)
+        self.avatar_canvas.config(bg=theme.bg_sidebar)
+        self.lbl_name.config(bg=theme.bg_sidebar, fg=theme.fg_primary if self.current_item else theme.fg_muted)
+        self.meta_frame.config(bg=theme.bg_sidebar)
+        self.lbl_pub.config(bg=theme.bg_sidebar, fg=theme.fg_secondary)
+        self.lbl_versions.config(bg=theme.bg_sidebar, fg=theme.fg_primary)
+        self.lbl_id_path.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        self.lbl_notes.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
+        self.actions_container.config(bg=theme.bg_sidebar)
+        self.secondary_actions.config(bg=theme.bg_sidebar)
+        self.status_pill.config(bg=theme.bg_sidebar)
+
+
+class ProgramTableView(tk.Frame):
+    """4-Column Installed Software Table view with clear status pills and virtualized rendering.
+    Columns: Application Name, Installed Version, Available Version, Status.
+    """
+
+    COLUMNS = [
+        ("name", "Application Name", 330),
+        ("installed", "Installed Version", 130),
+        ("latest", "Available Version", 130),
+        ("status", "Status", 160),
+    ]
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_double_click: Optional[Callable[[ProgramItem], None]] = None,
+        on_select_item: Optional[Callable[[Optional[ProgramItem]], None]] = None,
+        on_exclude_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_single_update: Optional[Callable[[ProgramItem], None]] = None,
+        on_uninstall_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_toast_message: Optional[Callable[[str, str], None]] = None,
+    ):
+        super().__init__(parent, bg="#ffffff")
+        self.theme: ThemeColors = LIGHT_THEME
+        self.on_double_click = on_double_click
+        self.on_select_item = on_select_item
+        self.on_exclude_item = on_exclude_item
+        self.on_single_update = on_single_update
+        self.on_uninstall_item = on_uninstall_item
+        self.on_toast_message = on_toast_message
+        self.items_by_iid: Dict[str, ProgramItem] = {}
+        self._current_generation: int = 0
+
+        # Configure High-Contrast Clean Treeview Style
+        style = ttk.Style()
+        style.configure(
+            "CleanWine.Treeview",
+            background="#ffffff",
+            foreground="#0f172a",
+            fieldbackground="#ffffff",
+            rowheight=34,
+            font=("Segoe UI", 9),
+            borderwidth=0,
+        )
+        style.configure(
+            "CleanWine.Treeview.Heading",
+            background="#faf6f6",
+            foreground="#881337",
+            relief="flat",
+            borderwidth=1,
+            font=("Segoe UI", 9, "bold"),
+        )
+        style.map(
+            "CleanWine.Treeview.Heading",
+            background=[("active", "#fff1f2")],
+            foreground=[("active", "#9f1239")],
+        )
+        style.map(
+            "CleanWine.Treeview",
+            background=[("selected", "#ffe4e6")],
+            foreground=[("selected", "#881337")],
+        )
+
+        cols = [c[0] for c in self.COLUMNS]
+        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse", style="CleanWine.Treeview")
+
+        for col_id, col_text, col_width in self.COLUMNS:
+            self.tree.heading(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
+            self.tree.column(col_id, width=col_width, anchor=tk.W)
+
+        # Clear Status Badge Tags
+        self.tree.tag_configure("tag_available", background="#fef2f2", foreground="#991b1b")
+        self.tree.tag_configure("tag_uptodate", background="#ffffff", foreground="#166534")
+        self.tree.tag_configure("tag_uptodate_alt", background="#fdfafa", foreground="#166534")
+        self.tree.tag_configure("tag_downgrade", background="#fffbeb", foreground="#92400e")
+        self.tree.tag_configure("tag_fallback", background="#eff6ff", foreground="#1e40af")
+        self.tree.tag_configure("tag_unverified", background="#fffbeb", foreground="#92400e")
+        self.tree.tag_configure("tag_ignored", background="#f5f3ff", foreground="#5b21b6")
+        self.tree.tag_configure("tag_incompat", background="#fef2f2", foreground="#991b1b")
+        self.tree.tag_configure("tag_nosource", background="#ffffff", foreground="#475569")
+        self.tree.tag_configure("tag_nosource_alt", background="#fdfafa", foreground="#475569")
+
+        # Scrollbars
+        vsb = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview)
+        hsb = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+        # Shimmering Skeleton Loader Screen
+        self.skeleton = AnimatedSkeletonOverlay(self)
+        self.skeleton.grid(row=0, column=0, sticky="nsew")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Bind events
+        self.tree.bind("<Double-1>", self._handle_double_click)
+        self.tree.bind("<Button-3>", self._show_context_menu)
+        self.tree.bind("<<TreeviewSelect>>", self._handle_select)
+        self.tree.bind("<MouseWheel>", self._on_mousewheel)
+
+        # Clean Context Menu
+        self.context_menu = tk.Menu(self, tearoff=0, bg="#ffffff", fg="#0f172a", activebackground="#fff1f2", activeforeground="#881337")
+        self.context_menu.add_command(label="View application details", command=self._menu_view_details)
+        self.context_menu.add_command(label="Update this application", command=self._menu_update_single)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Exclude from updates", command=self._menu_exclude)
+        self.context_menu.add_command(label="Open installation folder", command=self._menu_open_folder)
+        self.context_menu.add_command(label="Copy package identifier", command=self._menu_copy_info)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Uninstall application", command=self._menu_uninstall)
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        self.config(bg=theme.bg_root)
+        style = ttk.Style()
+        style.configure(
+            "CleanWine.Treeview",
+            background=theme.bg_table,
+            foreground=theme.fg_primary,
+            fieldbackground=theme.bg_table,
+        )
+        style.configure(
+            "CleanWine.Treeview.Heading",
+            background=theme.bg_sidebar,
+            foreground=theme.accent_burgundy,
+        )
+        style.map(
+            "CleanWine.Treeview",
+            background=[("selected", theme.bg_card_selected)],
+            foreground=[("selected", theme.accent_burgundy)],
+        )
+
+        self.tree.tag_configure("tag_available", background=theme.tag_available_bg, foreground=theme.tag_available_fg)
+        self.tree.tag_configure("tag_uptodate", background=theme.bg_table, foreground=theme.tag_uptodate_fg)
+        self.tree.tag_configure("tag_uptodate_alt", background=theme.bg_table_alt, foreground=theme.tag_uptodate_alt_fg)
+        self.tree.tag_configure("tag_downgrade", background=theme.tag_downgrade_bg, foreground=theme.tag_downgrade_fg)
+        self.tree.tag_configure("tag_fallback", background=theme.tag_fallback_bg, foreground=theme.tag_fallback_fg)
+        self.tree.tag_configure("tag_unverified", background=theme.tag_unverified_bg, foreground=theme.tag_unverified_fg)
+        self.tree.tag_configure("tag_ignored", background=theme.tag_ignored_bg, foreground=theme.tag_ignored_fg)
+        self.tree.tag_configure("tag_incompat", background=theme.tag_incompat_bg, foreground=theme.tag_incompat_fg)
+        self.tree.tag_configure("tag_nosource", background=theme.bg_table, foreground=theme.tag_listed_fg)
+        self.tree.tag_configure("tag_nosource_alt", background=theme.bg_table_alt, foreground=theme.tag_listed_fg)
+
+        self.skeleton.apply_theme(theme)
+        self.context_menu.config(bg=theme.bg_card, fg=theme.fg_primary, activebackground=theme.bg_card_hover, activeforeground=theme.accent_burgundy)
+
+    def show_skeleton(self) -> None:
+        self.skeleton.lift()
+        self.skeleton.start_shimmer()
+
+    def hide_skeleton(self) -> None:
+        self.skeleton.stop_shimmer()
+        self.skeleton.lower()
+
+    def _on_mousewheel(self, event):
+        self.tree.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        return "break"
+
+    def populate(self, items: List[ProgramItem], chunk_size: int = 50) -> None:
+        """Progressive chunked population preventing UI hitches on 300+ item inventories."""
+        self.hide_skeleton()
+        self._current_generation += 1
+        gen_id = self._current_generation
+
+        self.tree.delete(*self.tree.get_children())
+        self.items_by_iid.clear()
+
+        total = len(items)
+        if total == 0:
+            if self.on_select_item:
+                self.on_select_item(None)
+            return
+
+        def _insert_chunk(start_idx: int):
+            if gen_id != self._current_generation:
+                return
+
+            end_idx = min(start_idx + chunk_size, total)
+            for idx in range(start_idx, end_idx):
+                item = items[idx]
+                iid = f"item_{idx}"
+                self.items_by_iid[iid] = item
+
+                # Determine badge string and color tag
+                if item.outcome == UpdateOutcome.UPDATED:
+                    status_str = "Updated"
+                    tag = "tag_uptodate"
+                elif item.outcome == UpdateOutcome.SIMULATED:
+                    status_str = "Simulated"
+                    tag = "tag_uptodate"
+                elif item.outcome == UpdateOutcome.FAILED:
+                    status_str = "Failed"
+                    tag = "tag_incompat"
+                elif item.action == UpdateAction.AVAILABLE:
+                    status_str = "Update available"
+                    tag = "tag_available"
+                elif item.action == UpdateAction.UP_TO_DATE:
+                    status_str = "Up to date"
+                    tag = "tag_uptodate" if (idx % 2 == 0) else "tag_uptodate_alt"
+                elif item.action == UpdateAction.UNVERIFIED:
+                    status_str = "Could not verify"
+                    tag = "tag_unverified"
+                elif item.action == UpdateAction.SCAN_FAILED:
+                    status_str = "Scan failed"
+                    tag = "tag_incompat"
+                elif item.action == UpdateAction.EXCLUDED:
+                    status_str = "Excluded"
+                    tag = "tag_ignored"
+                elif item.action == UpdateAction.NEWER_THAN_SOURCE:
+                    status_str = "Newer than source"
+                    tag = "tag_downgrade"
+                elif item.action == UpdateAction.VENDOR_FALLBACK:
+                    status_str = "Vendor fallback"
+                    tag = "tag_fallback"
+                elif item.action == UpdateAction.NO_SOURCE:
+                    status_str = "No update source"
+                    tag = "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
+                else:
+                    status_str = item.action.value
+                    tag = "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
+
+                values = (
+                    item.name,
+                    item.installed_version or "Unknown",
+                    item.latest_version or "—",
+                    status_str,
+                )
+                self.tree.insert("", tk.END, iid=iid, values=values, tags=(tag,))
+
+            if end_idx < total:
+                self.after(6, lambda: _insert_chunk(end_idx))
+            else:
+                if self.on_select_item:
+                    self.on_select_item(None)
+
+        _insert_chunk(0)
+
+    def _get_selected_item(self) -> Optional[ProgramItem]:
+        sel = self.tree.selection()
+        if not sel:
+            return None
+        return self.items_by_iid.get(sel[0])
+
+    def _handle_select(self, event) -> None:
+        item = self._get_selected_item()
+        if self.on_select_item:
+            self.on_select_item(item)
+
+    def _handle_double_click(self, event) -> None:
+        item = self._get_selected_item()
+        if item and self.on_double_click:
+            self.on_double_click(item)
+
+    def _show_context_menu(self, event) -> None:
+        iid = self.tree.identify_row(event.y)
+        if iid:
+            self.tree.selection_set(iid)
+            self._handle_select(None)
+            self.context_menu.post(event.x_root, event.y_root)
+
+    def _menu_view_details(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_double_click:
+            self.on_double_click(item)
+
+    def _menu_update_single(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_single_update:
+            self.on_single_update(item)
+
+    def _menu_exclude(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_exclude_item:
+            self.on_exclude_item(item)
+
+    def _menu_open_folder(self) -> None:
+        item = self._get_selected_item()
+        if not item or not item.install_location:
+            if self.on_toast_message:
+                self.on_toast_message("No registered install directory", "info")
+            return
+        loc = item.install_location
+        if os.path.exists(loc):
+            try:
+                os.startfile(loc)
+            except Exception:
+                pass
+        else:
+            if self.on_toast_message:
+                self.on_toast_message(f"Directory not found: {loc}", "warning")
+
+    def _menu_copy_info(self) -> None:
+        item = self._get_selected_item()
+        if not item:
+            return
+        info = f"{item.name} | ID: {item.id or 'N/A'} | Version: {item.installed_version}"
+        self.clipboard_clear()
+        self.clipboard_append(info)
+        if self.on_toast_message:
+            self.on_toast_message(f"Copied package ID: {item.name}", "info")
+
+    def _menu_uninstall(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_uninstall_item:
+            self.on_uninstall_item(item)
+
+    def _sort_column(self, col: str, reverse: bool) -> None:
+        l = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
+        l.sort(reverse=reverse)
+        for index, (_, k) in enumerate(l):
+            self.tree.move(k, "", index)
+        self.tree.heading(col, command=lambda: self._sort_column(col, not reverse))
+
+
+# --- Legacy / Backwards-Compatibility Component Aliases ---
+class ElevationBanner(tk.Frame):
+    def __init__(self, parent: tk.Widget, sys_info=None, on_toggle_theme: Optional[Callable[[], None]] = None):
+        super().__init__(parent, bg="#ffffff", padx=16, pady=6, highlightbackground="#f3d5d9", highlightthickness=1)
+        self.sys_info = sys_info
+        self.on_toggle_theme = on_toggle_theme
+        self.theme: ThemeColors = LIGHT_THEME
+        self.pack(fill=tk.X)
+
+        self.lbl_logo = tk.Label(self, text="Software & Package Updater", font=("Segoe UI", 11, "bold"), bg="#ffffff", fg="#881337")
+        self.lbl_logo.pack(side=tk.LEFT)
+
+        self.btn_theme = tk.Button(self, text="Dark mode", command=self._on_click, font=("Segoe UI", 8, "bold"), bg="#faf6f6", fg="#1e293b", relief=tk.FLAT, bd=0, padx=8, pady=3, cursor="hand2")
+        self.btn_theme.pack(side=tk.RIGHT)
+
+    def _on_click(self):
+        if self.on_toggle_theme:
+            self.on_toggle_theme()
+
+    def apply_theme(self, theme: ThemeColors):
+        self.theme = theme
+        self.config(bg=theme.bg_header, highlightbackground=theme.border)
+        self.lbl_logo.config(bg=theme.bg_header, fg=theme.accent_burgundy)
+        txt = "Light mode" if theme.name == "dark" else "Dark mode"
+        self.btn_theme.config(text=txt, bg=theme.bg_button, fg=theme.fg_primary)
+
+
+class StatCard(tk.Frame):
+    def __init__(self, parent, tag_num, title, subtitle, accent_color, filter_name, on_click, icon_type="cpu"):
+        super().__init__(parent, bg="#ffffff")
+        self.title = title
+        self.lbl = tk.Label(self, text=title, bg="#ffffff", fg="#0f172a")
+        self.lbl.pack()
+
+    def set_value(self, val: int):
+        pass
+
+    def apply_theme(self, theme):
+        self.config(bg=theme.bg_card)
+
+
+class StatCardDeck(tk.Frame):
+    def __init__(self, parent, on_select_filter):
+        super().__init__(parent, bg="#fafafa")
+        self.on_select_filter = on_select_filter
+
+    def update_metrics(self, **kwargs):
+        pass
+
+    def apply_theme(self, theme):
+        self.config(bg=theme.bg_root)
+
+
+class SearchFilterBar(tk.Frame):
+    def __init__(self, parent, on_filter_change, on_export_click=None):
+        super().__init__(parent, bg="#fafafa")
+        self.on_filter_change = on_filter_change
+
+    def get_search_query(self) -> str:
+        return ""
+
+    def get_selected_category(self) -> str:
+        return "All Categories"
+
+    def apply_theme(self, theme):
+        pass
+
+
+class LiveWarningBar(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent, bg="#fafafa")
+
+    def show_warning(self, msg):
+        pass
+
+    def hide_warning(self):
+        pass
+
+    def apply_theme(self, theme):
+        pass
+
+
+class InspectorPane(DetailsDrawer):
+    """Backwards compatibility alias for DetailsDrawer."""
+    pass

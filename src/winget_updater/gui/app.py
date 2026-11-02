@@ -1,0 +1,1106 @@
+"""Software & Package Updater — Clean High-Contrast Desktop Application.
+Features a two-column sidebar navigation, 4-column installed software table,
+prominent burgundy 'Scan for Updates' button, and a bottom details drawer.
+"""
+
+import csv
+import json
+import os
+import queue
+import threading
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+from typing import List, Optional, Set
+from winget_updater.adapters import SourceManager
+from winget_updater.compatibility.checker import CompatibilityChecker
+from winget_updater.compatibility.system_info import SystemInfoProvider
+from winget_updater.config import ConfigManager
+from winget_updater.discovery.composite import CompositeScanner
+from winget_updater.engine.cleanup import DiskCleanupManager
+from winget_updater.engine.process_lock import ProcessLockDetector
+from winget_updater.engine.restore_point import RestorePointManager
+from winget_updater.engine.scheduler import SchedulerManager
+from winget_updater.engine.state_manager import StateManager
+from winget_updater.engine.updater import UpdateEngine, UpdateRunSummary
+from winget_updater.gui.animations import (
+    CyberLaserHeaderCanvas,
+    FluentFloatingToast,
+    ScanningPulseAnimator,
+    SmoothLerpProgressBar,
+    SoftwareEngineeringHeroScene,
+    TimelinePipelineHUD,
+)
+from winget_updater.gui.components import (
+    DetailsDrawer,
+    ElevationBanner,
+    InspectorPane,
+    LiveWarningBar,
+    ProgramTableView,
+    SearchFilterBar,
+    SidebarNavigation,
+    StatCardDeck,
+)
+from winget_updater.gui.dialogs import (
+    ExclusionManagerDialog,
+    ScheduleConfigDialog,
+    prompt_downgrade_confirmation,
+    prompt_vendor_installer_confirmation,
+)
+from winget_updater.gui.rounded_widgets import (
+    RoundedButton,
+    RoundedPillBadge,
+    apply_native_window_styling,
+)
+from winget_updater.gui.theme import LIGHT_THEME, ThemeColors, get_theme
+from winget_updater.models import PackageType, ProgramItem, UpdateAction, UpdateOutcome
+from winget_updater.utils.logger import get_logger
+from winget_updater.winget.client import WingetClient
+from winget_updater.winget.matcher import PackageMatcher
+
+logger = get_logger()
+
+
+class MainWindow(tk.Tk):
+    """Primary application GUI window with a Clean White and Burgundy two-column design."""
+
+    def __init__(self, config_manager: Optional[ConfigManager] = None):
+        super().__init__()
+        self.title("Software & Package Updater")
+        self.geometry("1260x820")
+        self.minsize(1040, 680)
+
+        # Apply native Windows 11 rounded window borders and titlebar styling
+        try:
+            apply_native_window_styling(self)
+        except Exception:
+            pass
+
+        # Apply GPU hardware acceleration and DWM DirectComposition
+        try:
+            from winget_updater.engine.gpu import GpuAccelerationManager
+            GpuAccelerationManager.apply_hardware_window_acceleration(self)
+        except Exception:
+            pass
+
+        # Style configuration
+        self.style = ttk.Style()
+        try:
+            self.style.theme_use("clam")
+        except Exception:
+            pass
+
+        # Core services
+        self.config = config_manager or ConfigManager()
+        self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "light"))
+        self.winget = WingetClient()
+        self.sys_info = SystemInfoProvider()
+        self.checker = CompatibilityChecker(system_info=self.sys_info)
+        self.state_mgr = StateManager()
+        self.scheduler = SchedulerManager(sys_info=self.sys_info)
+        self.source_manager = SourceManager(config=self.config)
+        self.engine = UpdateEngine(
+            winget_client=self.winget,
+            compatibility_checker=self.checker,
+            state_manager=self.state_mgr,
+        )
+
+        # State data
+        self.all_programs: List[ProgramItem] = []
+        self.filtered_programs: List[ProgramItem] = []
+        self.active_filter: str = "All Software"
+        self.search_query: str = ""
+        self.active_category: str = "All Categories"
+        self.selected_item: Optional[ProgramItem] = None
+        self.updating_package_ids: Set[str] = set()
+        self.is_busy = False
+        self.msg_queue: queue.Queue = queue.Queue()
+
+        self._build_layout()
+        self._poll_queue()
+
+        # Non-blocking initial scan
+        self.after(50, self._on_ready_startup)
+
+    def _on_ready_startup(self) -> None:
+        self.start_scan()
+
+    def _show_floating_toast(self, text: str, icon: str = "✓") -> None:
+        """Presents a clean floating notification dropping from top."""
+        FluentFloatingToast.show(self, text=text, icon=icon, duration_ms=2800)
+        if hasattr(self, "status_lbl"):
+            self.status_lbl.config(text=text)
+
+    def _build_layout(self) -> None:
+        self.configure(bg=self.current_theme.bg_root)
+
+        # 1. Top Title Bar Frame
+        self.top_bar = tk.Frame(self, bg="#ffffff", padx=18, pady=8, highlightbackground="#f3d5d9", highlightthickness=1)
+        self.top_bar.pack(fill=tk.X)
+
+        from winget_updater.engine.gpu import GpuAccelerationManager
+        self.primary_gpu = GpuAccelerationManager.get_primary_gpu()
+        gpu_display = self.primary_gpu.name
+        if len(gpu_display) > 28:
+            gpu_display = gpu_display.replace("NVIDIA ", "").replace("Graphics", "").strip()
+
+        self.lbl_app_title = tk.Label(
+            self.top_bar,
+            text="Software & Package Updater",
+            bg="#ffffff",
+            fg="#881337",
+            font=("Segoe UI", 12, "bold"),
+            anchor="w",
+        )
+        self.lbl_app_title.pack(side=tk.LEFT)
+
+        self.lbl_app_sub = tk.Label(
+            self.top_bar,
+            text=f"  •  Windows 11  •  Hardware Accelerated ({gpu_display})",
+            bg="#ffffff",
+            fg="#64748b",
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.lbl_app_sub.pack(side=tk.LEFT)
+
+        # Top Right Controls
+        self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
+        self.top_controls.pack(side=tk.RIGHT)
+
+        self.btn_theme = RoundedButton(
+            self.top_controls,
+            text="Dark mode",
+            command=self.toggle_theme,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_theme.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_schedule = RoundedButton(
+            self.top_controls,
+            text="Schedule",
+            command=self._open_schedule,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_schedule.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_exclusions = RoundedButton(
+            self.top_controls,
+            text="Exclusions",
+            command=self._open_exclusions,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_exclusions.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_sources = RoundedButton(
+            self.top_controls,
+            text="Refresh sources",
+            command=self._refresh_sources_dialog,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_sources.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_export = RoundedButton(
+            self.top_controls,
+            text="Export report",
+            command=self._export_report_dialog,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_export.pack(side=tk.RIGHT)
+
+        # 2. Main Two-Column Container
+        self.main_body = tk.Frame(self, bg="#ffffff")
+        self.main_body.pack(fill=tk.BOTH, expand=True)
+
+        # Left Column: Sidebar Navigation
+        self.sidebar = SidebarNavigation(
+            self.main_body,
+            on_filter_changed=self._on_sidebar_filter_changed,
+            on_search_changed=self._on_sidebar_search_changed,
+            on_category_changed=self._on_sidebar_category_changed,
+            sys_info=self.sys_info,
+        )
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
+
+        # Right Column: Main Content Container
+        self.right_container = tk.Frame(self.main_body, bg="#ffffff")
+        self.right_container.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # 3. Right Action Header Bar above the table
+        self.action_header = tk.Frame(
+            self.right_container,
+            bg="#ffffff",
+            padx=16,
+            pady=12,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.action_header.pack(fill=tk.X)
+
+        # Left Title / Counter
+        self.header_title_box = tk.Frame(self.action_header, bg="#ffffff")
+        self.header_title_box.pack(side=tk.LEFT)
+
+        self.lbl_view_title = tk.Label(
+            self.header_title_box,
+            text="All Software",
+            bg="#ffffff",
+            fg="#111827",
+            font=("Segoe UI", 12, "bold"),
+            anchor="w",
+        )
+        self.lbl_view_title.pack(anchor=tk.W)
+
+        self.lbl_view_subtitle = tk.Label(
+            self.header_title_box,
+            text="Loading discovered software...",
+            bg="#ffffff",
+            fg="#6b7280",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_view_subtitle.pack(anchor=tk.W, pady=(2, 0))
+
+        # Right Action Buttons
+        self.header_btn_box = tk.Frame(self.action_header, bg="#ffffff")
+        self.header_btn_box.pack(side=tk.RIGHT)
+
+        # Prominent "Scan for Updates" Button (Deep Red-Wine / Burgundy)
+        self.btn_scan = RoundedButton(
+            self.header_btn_box,
+            text="Check for updates",
+            command=self.start_scan,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            height=36,
+            font=("Segoe UI", 10, "bold"),
+            padding=(16, 8),
+        )
+        self.btn_scan.pack(side=tk.RIGHT, padx=(10, 0))
+
+        # "Update All Available" Button
+        self.btn_update = RoundedButton(
+            self.header_btn_box,
+            text="Update all eligible",
+            command=self.start_update_approved,
+            bg_color="#fef2f2",
+            fg_color="#881337",
+            hover_bg="#fee2e2",
+            border_color="#fca5a5",
+            radius=8,
+            height=36,
+            font=("Segoe UI", 9, "bold"),
+            padding=(14, 8),
+        )
+        self.btn_update.config(state="disabled")
+        self.btn_update.pack(side=tk.RIGHT, padx=(10, 0))
+
+        # "Update Selected" Button
+        self.btn_update_selected = RoundedButton(
+            self.header_btn_box,
+            text="Update selected",
+            command=self._on_update_selected_clicked,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#cbd5e1",
+            radius=8,
+            height=36,
+            font=("Segoe UI", 9),
+            padding=(12, 8),
+        )
+        self.btn_update_selected.config(state="disabled")
+        self.btn_update_selected.pack(side=tk.RIGHT, padx=(10, 0))
+
+        # Checkbox Options: Dry Run, System Restore Point, Auto-Close Apps
+        self.dry_run_var = tk.BooleanVar(value=False)
+        self.chk_dry_run = tk.Checkbutton(
+            self.header_btn_box,
+            text="Dry run (simulate only)",
+            variable=self.dry_run_var,
+            bg="#ffffff",
+            fg="#4b5563",
+            activebackground="#ffffff",
+            activeforeground="#111827",
+            font=("Segoe UI", 8),
+            cursor="hand2",
+        )
+        self.chk_dry_run.pack(side=tk.RIGHT, padx=(0, 4))
+
+        self.restore_point_var = tk.BooleanVar(value=False)
+        self.chk_restore_point = tk.Checkbutton(
+            self.header_btn_box,
+            text="Create restore point",
+            variable=self.restore_point_var,
+            bg="#ffffff",
+            fg="#4b5563",
+            activebackground="#ffffff",
+            activeforeground="#111827",
+            font=("Segoe UI", 8),
+            cursor="hand2",
+        )
+        self.chk_restore_point.pack(side=tk.RIGHT, padx=(0, 4))
+
+        self.auto_close_var = tk.BooleanVar(value=True)
+        self.chk_auto_close = tk.Checkbutton(
+            self.header_btn_box,
+            text="Auto-close running apps",
+            variable=self.auto_close_var,
+            bg="#ffffff",
+            fg="#4b5563",
+            activebackground="#ffffff",
+            activeforeground="#111827",
+            font=("Segoe UI", 8),
+            cursor="hand2",
+        )
+        self.chk_auto_close.pack(side=tk.RIGHT, padx=(0, 6))
+
+        # 4. Progress bar frame for scanning / updates
+        self.progress_frame = tk.Frame(self.right_container, bg="#ffffff", padx=16, pady=2)
+        self.progress_frame.pack(fill=tk.X)
+
+        self.status_lbl = tk.Label(
+            self.progress_frame,
+            text="Ready.",
+            bg="#ffffff",
+            fg="#6b7280",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.status_lbl.pack(side=tk.LEFT)
+
+        self.progress_bar = SmoothLerpProgressBar(self.progress_frame, width=180, height=14)
+        self.progress_bar.pack(side=tk.RIGHT)
+
+        self.lbl_gpu_badge = tk.Label(
+            self.progress_frame,
+            text=f"DirectX 12 GPU: {self.primary_gpu.name}",
+            bg="#ffffff",
+            fg="#059669",
+            font=("Segoe UI", 8, "bold"),
+            anchor="e",
+        )
+        self.lbl_gpu_badge.pack(side=tk.RIGHT, padx=(0, 12))
+
+        # Animated status pulse
+        self.scan_animator = ScanningPulseAnimator(self.status_lbl, "Scanning software and repositories...")
+
+        # 5. Installed-Software Table (4 Columns: Name, Current Version, Latest Version, Status)
+        self.table_container = tk.Frame(self.right_container, bg="#ffffff", padx=16, pady=4)
+        self.table_container.pack(fill=tk.BOTH, expand=True)
+
+        self.table = ProgramTableView(
+            self.table_container,
+            on_double_click=self._handle_row_double_click,
+            on_select_item=self._on_row_selected,
+            on_exclude_item=self._handle_context_exclude,
+            on_single_update=self._handle_context_update,
+            on_uninstall_item=self._handle_context_uninstall,
+            on_toast_message=self._show_floating_toast,
+        )
+        self.table.pack(fill=tk.BOTH, expand=True)
+
+        # 6. Bottom Details Drawer
+        self.drawer = DetailsDrawer(
+            self.right_container,
+            on_single_update=self._handle_context_update,
+            on_exclude_item=self._handle_context_exclude,
+            on_uninstall_item=self._handle_context_uninstall,
+            on_toast_message=self._show_floating_toast,
+        )
+        self.drawer.pack(fill=tk.X)
+
+        # Backwards-compatibility helper references
+        self.inspector = self.drawer
+        self.elevation_banner = ElevationBanner(self.main_body, sys_info=self.sys_info)
+        self.elevation_banner.pack_forget()
+        self.hero_scene = SoftwareEngineeringHeroScene(self.main_body, height=1)
+        self.hero_scene.pack_forget()
+        self.timeline = TimelinePipelineHUD(self.main_body, height=1)
+        self.timeline.pack_forget()
+        self.laser_header = CyberLaserHeaderCanvas(self.main_body, height=1)
+        self.laser_header.pack_forget()
+        self.stat_cards = StatCardDeck(self.main_body, on_select_filter=lambda f: None)
+        self.stat_cards.pack_forget()
+        self.warning_bar = LiveWarningBar(self.main_body)
+        self.warning_bar.pack_forget()
+        self.filter_bar = SearchFilterBar(self.main_body, on_filter_change=lambda: None)
+        self.filter_bar.pack_forget()
+
+        self.set_theme(self.current_theme.name)
+
+    def set_theme(self, mode: str) -> None:
+        """Sets the application theme to either 'light' or 'dark' and updates all UI modules."""
+        self.current_theme = get_theme(mode)
+        t = self.current_theme
+
+        self.configure(bg=t.bg_root)
+        self.top_bar.config(bg=t.bg_header, highlightbackground=t.border)
+        self.lbl_app_title.config(bg=t.bg_header, fg=t.accent_burgundy)
+        self.lbl_app_sub.config(bg=t.bg_header, fg=t.fg_muted)
+        self.top_controls.config(bg=t.bg_header)
+
+        btn_txt = "Light mode" if t.name == "dark" else "Dark mode"
+        self.btn_theme.config(text=btn_txt, bg=t.bg_button, fg=t.fg_primary)
+        self.btn_schedule.config(bg=t.bg_button, fg=t.fg_primary)
+        self.btn_exclusions.config(bg=t.bg_button, fg=t.fg_primary)
+        if hasattr(self, "btn_sources"):
+            self.btn_sources.config(bg=t.bg_button, fg=t.fg_primary)
+        self.btn_export.config(bg=t.bg_button, fg=t.fg_primary)
+
+        self.main_body.config(bg=t.bg_root)
+        self.right_container.config(bg=t.bg_root)
+        self.action_header.config(bg=t.bg_card, highlightbackground=t.border)
+        self.header_title_box.config(bg=t.bg_card)
+        self.header_btn_box.config(bg=t.bg_card)
+        self.lbl_view_title.config(bg=t.bg_card, fg=t.fg_primary)
+        self.lbl_view_subtitle.config(bg=t.bg_card, fg=t.fg_muted)
+        self.chk_dry_run.config(bg=t.bg_card, fg=t.fg_secondary, selectcolor=t.bg_input)
+        if hasattr(self, "chk_restore_point"):
+            self.chk_restore_point.config(bg=t.bg_card, fg=t.fg_secondary, selectcolor=t.bg_input)
+        if hasattr(self, "chk_auto_close"):
+            self.chk_auto_close.config(bg=t.bg_card, fg=t.fg_secondary, selectcolor=t.bg_input)
+        self.progress_frame.config(bg=t.bg_card)
+        self.status_lbl.config(bg=t.bg_card, fg=t.fg_muted)
+        if hasattr(self, "lbl_gpu_badge"):
+            self.lbl_gpu_badge.config(bg=t.bg_card, fg="#10b981" if t.name == "dark" else "#059669")
+        self.table_container.config(bg=t.bg_root)
+
+        # Propagate to sub-components
+        self.sidebar.apply_theme(t)
+        self.table.apply_theme(t)
+        self.drawer.apply_theme(t)
+        self.progress_bar.apply_theme(t)
+
+        self.config.set_theme(t.name)
+
+    def toggle_theme(self) -> None:
+        """Toggles between Dark Mode and Light Mode."""
+        new_theme = "dark" if self.current_theme.name == "light" else "light"
+        self.set_theme(new_theme)
+        self._show_floating_toast(f"Switched to {new_theme.capitalize()} Mode", "✓")
+
+    def _refresh_sources_dialog(self) -> None:
+        """Triggers a background refresh of winget sources and package manager indices."""
+        if self.is_busy:
+            return
+        self.status_lbl.config(text="Refreshing package sources and manifests...")
+        self._show_floating_toast("Refreshing repository sources...", "i")
+
+        def worker():
+            success, msg = self.winget.update_sources()
+            if success:
+                self.msg_queue.put(("STATUS", "Repository sources updated successfully."))
+                self._show_floating_toast("Repository sources up to date", "✓")
+            else:
+                self.msg_queue.put(("STATUS", f"Source update note: {msg}"))
+                self._show_floating_toast("Source check completed", "i")
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _poll_queue(self) -> None:
+        """Batch-drains messages from worker threads onto the UI thread."""
+        try:
+            while True:
+                msg_type, data = self.msg_queue.get_nowait()
+                if msg_type == "STATUS":
+                    if self.is_busy:
+                        self.scan_animator.update_text(data)
+                    else:
+                        self.status_lbl.config(text=data)
+                elif msg_type == "PROGRESS":
+                    self.progress_bar.set_progress(data)
+                elif msg_type == "SCAN_COMPLETE":
+                    self._on_scan_completed(data)
+                elif msg_type == "UPDATE_COMPLETE":
+                    self._on_update_completed(data)
+                elif msg_type == "CATALOG_RESULTS":
+                    self._on_catalog_results(data)
+                elif msg_type == "ERROR":
+                    self.status_lbl.config(text=f"Error: {data}", fg=self.current_theme.accent_crimson)
+                    self._show_floating_toast(f"Error: {data}", "✕")
+        except queue.Empty:
+            pass
+        self.after(40, self._poll_queue)
+
+    def _on_sidebar_filter_changed(self, filter_name: str) -> None:
+        self.active_filter = filter_name
+        self.lbl_view_title.config(text=filter_name)
+        if filter_name == "Software Catalog":
+            self.lbl_view_subtitle.config(text="Search and install from over 6,000 official Windows packages")
+            self.btn_update.config(state="disabled")
+            self.btn_update_selected.config(state="disabled")
+            self._search_catalog(self.search_query.strip() or "popular")
+        elif filter_name == "Updates Available":
+            self.lbl_view_subtitle.config(text="Compatible updates verified against official package repositories")
+            self.apply_filter()
+        elif filter_name == "Up to Date":
+            self.lbl_view_subtitle.config(text="Applications currently running their latest available release")
+            self.apply_filter()
+        elif filter_name == "Ignored Updates":
+            self.lbl_view_subtitle.config(text="Applications excluded from automated update checks")
+            self.apply_filter()
+        else:
+            self.lbl_view_subtitle.config(text="All discovered software applications across this computer")
+            self.apply_filter()
+
+    def _on_sidebar_search_changed(self, query: str) -> None:
+        self.search_query = query
+        if self.active_filter == "Software Catalog":
+            self._search_catalog(query)
+        else:
+            self.apply_filter()
+
+    def _on_sidebar_category_changed(self, category: str) -> None:
+        self.active_category = category
+        self.apply_filter()
+
+    def _on_row_selected(self, item: Optional[ProgramItem]) -> None:
+        self.selected_item = item
+        self.drawer.set_item(item)
+
+        if self.active_filter == "Software Catalog" and item:
+            self.drawer.btn_update.config(
+                state="normal",
+                text="Install software",
+                bg="#881337",
+                fg="#ffffff",
+            )
+            self.btn_update_selected.config(
+                state="normal",
+                text="Install selected",
+                bg="#881337",
+                fg="#ffffff",
+            )
+            return
+
+        if item and (item.can_auto_update() or (item.action == UpdateAction.AVAILABLE and item.is_verified_winget)):
+            self.btn_update_selected.config(
+                state="normal",
+                text="Update selected",
+                bg="#881337",
+                fg="#ffffff",
+            )
+        else:
+            self.btn_update_selected.config(
+                state="disabled",
+                text="Update selected",
+                bg="#ffffff",
+                fg="#9ca3af",
+            )
+
+    def _on_update_selected_clicked(self) -> None:
+        if self.selected_item:
+            self._handle_context_update(self.selected_item)
+
+    def _search_catalog(self, query: str) -> None:
+        q = query.strip() or "popular"
+        self.status_lbl.config(text=f"Searching repository catalog for '{q}'...")
+        self.table.show_skeleton()
+
+        def worker():
+            entries = self.winget.search_packages(q, count=30)
+            items = []
+            for entry in entries:
+                it = ProgramItem(
+                    name=entry.name,
+                    id=entry.id,
+                    installed_version="Not Installed",
+                    latest_version=entry.version or "Latest",
+                    package_type=PackageType.WIN32_EXE,
+                    source=entry.source or "winget",
+                    action=UpdateAction.AVAILABLE,
+                    notes="Official winget package ready to install",
+                )
+                items.append(it)
+            self.msg_queue.put(("CATALOG_RESULTS", items))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_catalog_results(self, items: List[ProgramItem]) -> None:
+        self.table.populate(items)
+        self.lbl_view_subtitle.config(text=f"Found {len(items)} catalog packages")
+        self.status_lbl.config(text=f"Catalog ready: {len(items)} packages found.")
+
+    def start_scan(self) -> None:
+        if self.is_busy:
+            return
+        self.is_busy = True
+        self.btn_scan.config(state="disabled")
+        self.btn_update.config(state="disabled")
+        self.btn_update_selected.config(state="disabled")
+        self.progress_bar.set_progress(0)
+        self.table.show_skeleton()
+        self.scan_animator.start("Scanning discovered software inventory...")
+        self.lbl_view_subtitle.config(text="Auditing installed packages across system...")
+
+        threading.Thread(target=self._scan_worker, daemon=True).start()
+
+    def _scan_worker(self) -> None:
+        try:
+            self.msg_queue.put(("STATUS", "Discovering installed programs across registry and system..."))
+            scanner = CompositeScanner(portable_directories=self.config.portable_directories)
+            items = scanner.scan_all()
+
+            self.msg_queue.put(("PROGRESS", 40))
+            self.msg_queue.put(("STATUS", "Querying Windows Package Manager (winget) repositories..."))
+            upgrades = self.winget.get_available_upgrades()
+
+            self.msg_queue.put(("PROGRESS", 70))
+            self.msg_queue.put(("STATUS", "Querying installed package registry..."))
+            installed = self.winget.get_installed_packages()
+
+            self.msg_queue.put(("PROGRESS", 85))
+            self.msg_queue.put(("STATUS", "Correlating software against verified sources and fallbacks..."))
+            matcher = PackageMatcher(self.config)
+            matched_items = matcher.match_all(items, upgrades, installed)
+
+            # Pre-evaluate compatibility
+            for item in matched_items:
+                if item.action == UpdateAction.AVAILABLE:
+                    self.checker.check(item)
+
+            self.msg_queue.put(("PROGRESS", 100))
+            self.msg_queue.put(("SCAN_COMPLETE", matched_items))
+        except Exception as e:
+            logger.error(f"Scan worker encountered error: {e}")
+            self.msg_queue.put(("ERROR", str(e)))
+            self.msg_queue.put(("STATUS", "Scan failed."))
+
+    def _on_scan_completed(self, items: List[ProgramItem]) -> None:
+        self.all_programs = items
+        self.is_busy = False
+        self.btn_scan.config(state="normal", bg="#881337", fg="#ffffff")
+        self.scan_animator.stop()
+
+        total = len(items)
+        updates = sum(1 for it in items if it.can_auto_update())
+        uptodate = sum(1 for it in items if it.action == UpdateAction.UP_TO_DATE)
+        ignored = sum(1 for it in items if it.action == UpdateAction.EXCLUDED)
+
+        # Update sidebar live counts
+        self.sidebar.update_counts(total=total, updates=updates, uptodate=uptodate, ignored=ignored)
+
+        self.apply_filter()
+
+        if updates > 0:
+            self.btn_update.config(state="normal", bg="#881337", fg="#ffffff")
+            self.lbl_view_subtitle.config(text=f"{total} programs scanned • {updates} verified updates ready")
+            self.status_lbl.config(text=f"Scan complete: {updates} updates available.")
+            self._show_floating_toast(f"Scan complete: {updates} updates ready", "✓")
+        else:
+            self.btn_update.config(state="disabled", bg="#fef2f2", fg="#9ca3af")
+            self.lbl_view_subtitle.config(text=f"{total} programs scanned • All software up to date")
+            self.status_lbl.config(text="Scan complete: All software is up to date.")
+            self._show_floating_toast(f"Scan complete: {total} items analyzed", "✓")
+
+    def apply_filter(self) -> None:
+        """Filters the items based on sidebar view, search keyword, and category."""
+        keyword = self.search_query.strip().lower()
+        filter_mode = self.active_filter
+        cat_mode = self.active_category
+
+        filtered = []
+        for item in self.all_programs:
+            # 1. Search Query filter (by name or publisher)
+            if keyword:
+                name_match = keyword in item.name.lower()
+                pub_match = item.publisher and keyword in item.publisher.lower()
+                id_match = item.id and keyword in item.id.lower()
+                if not (name_match or pub_match or id_match):
+                    continue
+
+            # 2. Sidebar Navigation Filter
+            if filter_mode == "Updates Available":
+                if item.action != UpdateAction.AVAILABLE:
+                    continue
+            elif filter_mode == "Up to Date":
+                if item.action != UpdateAction.UP_TO_DATE:
+                    continue
+            elif filter_mode == "Ignored Updates":
+                if item.action != UpdateAction.EXCLUDED:
+                    continue
+
+            # 3. Category Filter
+            if cat_mode == "Win32 Applications":
+                if item.package_type not in (PackageType.WIN32_EXE, PackageType.WIN32_MSI):
+                    continue
+            elif cat_mode == "Microsoft Store / MSIX":
+                if item.package_type != PackageType.STORE_MSIX:
+                    continue
+            elif cat_mode == "Portable Applications":
+                if item.package_type != PackageType.PORTABLE:
+                    continue
+            elif cat_mode == "Drivers & Extensions":
+                if item.package_type not in (PackageType.BROWSER_EXTENSION, PackageType.DRIVER):
+                    continue
+
+            filtered.append(item)
+
+        self.filtered_programs = filtered
+        self.table.populate(filtered)
+        count = len(filtered)
+        if self.active_filter == "Updates Available":
+            self.lbl_view_subtitle.config(text=f"{count} verified updates ready for installation")
+        elif self.active_filter == "Up to Date":
+            self.lbl_view_subtitle.config(text=f"{count} applications verified up to date")
+        elif self.active_filter == "Ignored Updates":
+            self.lbl_view_subtitle.config(text=f"{count} applications excluded from updates")
+        else:
+            self.lbl_view_subtitle.config(text=f"Showing {count} of {len(self.all_programs)} discovered programs")
+
+    def start_update_approved(self) -> None:
+        """Confirms and executes batch update for all verified compatible packages."""
+        if self.is_busy:
+            return
+
+        candidates = [item for item in self.all_programs if item.can_auto_update()]
+        if not candidates:
+            self._show_floating_toast("No packages qualify for automatic update.", "i")
+            return
+
+        dry_run = self.dry_run_var.get()
+        mode_str = "Simulation Only (Dry-run)" if dry_run else "Standard Installation"
+
+        msg = (
+            f"Ready to update {len(candidates)} verified applications.\n\n"
+            f"Execution Mode: {mode_str}\n"
+            f"Hardware Acceleration: DirectX 12 / DWM Active ({self.primary_gpu.name})\n\n"
+            f"Updates will download from official repository sources and install with Administrator privileges.\n\n"
+            f"Do you want to proceed with updating all {len(candidates)} packages?"
+        )
+
+        if not messagebox.askyesno("Confirm Software Updates", msg, icon="question", parent=self):
+            return
+
+        self.is_busy = True
+        self.btn_scan.config(state=tk.DISABLED)
+        self.btn_update.config(state=tk.DISABLED)
+        self.btn_update_selected.config(state=tk.DISABLED)
+        self.progress_bar.set_progress(0)
+        self.status_lbl.config(text=f"Updating {len(candidates)} packages...")
+
+        threading.Thread(target=self._update_worker, args=(dry_run,), daemon=True).start()
+
+    def _update_worker(self, dry_run: bool) -> None:
+        def on_progress(item: ProgramItem, cur: int, tot: int) -> None:
+            pct = int((cur / tot) * 100) if tot > 0 else 0
+            self.msg_queue.put(("PROGRESS", pct))
+            self.msg_queue.put(("STATUS", f"Updating [{cur}/{tot}]: {item.name}..."))
+
+        try:
+            summary = self.engine.execute_batch_update(
+                self.all_programs,
+                dry_run=dry_run,
+                is_scheduled=False,
+                create_restore_point=self.restore_point_var.get(),
+                auto_close_apps=self.auto_close_var.get(),
+                cleanup_after=True,
+                progress_callback=on_progress,
+            )
+            self.msg_queue.put(("UPDATE_COMPLETE", summary))
+        except Exception as e:
+            logger.error(f"Update error: {e}")
+            self.msg_queue.put(("ERROR", str(e)))
+
+    def _on_update_completed(self, summary: UpdateRunSummary) -> None:
+        self.is_busy = False
+        self.btn_scan.config(state="normal", bg="#881337", fg="#ffffff")
+        self.progress_bar.set_progress(100)
+
+        # Automatic temporary installer cleanup
+        if not self.dry_run_var.get():
+            bytes_freed, cleanup_msg = DiskCleanupManager.cleanup_temp_and_cache()
+            if bytes_freed > 0:
+                self._show_floating_toast(cleanup_msg, "✓")
+
+        # Refresh table and drawer
+        self.apply_filter()
+        if self.selected_item:
+            self.drawer.set_item(self.selected_item)
+
+        total = len(self.all_programs)
+        updates = sum(1 for it in self.all_programs if it.can_auto_update())
+        uptodate = sum(1 for it in self.all_programs if it.action == UpdateAction.UP_TO_DATE)
+        ignored = sum(1 for it in self.all_programs if it.action == UpdateAction.EXCLUDED)
+        self.sidebar.update_counts(total, updates, uptodate, ignored)
+
+        res_msg = (
+            f"Update Process Completed\n\n"
+            f"• Updated: {summary.updated_count}\n"
+            f"• Failed: {summary.failed_count}\n"
+            f"• Skipped: {summary.skipped_count}\n"
+            f"• Simulated: {summary.simulated_count}\n\n"
+            f"All application statuses have been refreshed."
+        )
+        self._show_floating_toast(f"Updated {summary.updated_count} packages", "✓")
+        messagebox.showinfo("Update Summary", res_msg, parent=self)
+
+    def _handle_row_double_click(self, item: ProgramItem) -> None:
+        if item.action == UpdateAction.NEWER_THAN_SOURCE:
+            if prompt_downgrade_confirmation(self, item):
+                self._run_isolated_single_update(item)
+        elif item.action == UpdateAction.VENDOR_FALLBACK:
+            if prompt_vendor_installer_confirmation(self, item):
+                self._run_isolated_vendor_installer(item)
+        elif item.can_auto_update():
+            self._handle_context_update(item)
+        else:
+            self._on_row_selected(item)
+
+    def _handle_context_exclude(self, item: ProgramItem) -> None:
+        pat = item.id or item.name
+        is_already_ignored = item.action == UpdateAction.EXCLUDED
+
+        if is_already_ignored:
+            self.config.remove_exclusion(pat)
+            item.action = UpdateAction.NO_SOURCE
+            matcher = PackageMatcher(self.config)
+            matcher.match_all([item], {}, {})
+            self._show_floating_toast(f"Removed '{pat}' from exclusions", "✓")
+        else:
+            if messagebox.askyesno(
+                "Confirm Exclusion",
+                f"Exclude '{item.name}' from all future updates?\n"
+                f"Package: {pat}",
+                parent=self,
+            ):
+                self.config.add_exclusion(pat, f"Excluded {item.name}")
+                item.action = UpdateAction.EXCLUDED
+                item.outcome = UpdateOutcome.SKIPPED
+                self._show_floating_toast(f"Ignored '{pat}'", "✓")
+
+        self.apply_filter()
+        self.drawer.set_item(item)
+
+    def _handle_context_update(self, item: ProgramItem) -> None:
+        if self.active_filter == "Software Catalog":
+            self._install_catalog_package(item)
+            return
+
+        pkg_id = item.id or item.name
+
+        # Prevent duplicate update requests for the same program
+        if pkg_id in self.updating_package_ids:
+            self._show_floating_toast(f"Update already in progress for '{item.name}'", "!")
+            return
+
+        if not item.id or item.package_type in (PackageType.BROWSER_EXTENSION, PackageType.DRIVER):
+            self._show_floating_toast("Item cannot be updated individually via winget.", "i")
+            return
+
+        # Confirm before starting an update
+        if messagebox.askyesno(
+            "Confirm Update",
+            f"Update '{item.name}' to version {item.latest_version or 'latest'}?\n\n"
+            f"Package ID: {item.id}\n"
+            f"Source: {item.source or 'winget'}\n\n"
+            f"This installer requires Administrator privileges.",
+            parent=self,
+        ):
+            self._run_isolated_single_update(item)
+
+    def _install_catalog_package(self, item: ProgramItem) -> None:
+        if not item or not item.id:
+            return
+        if messagebox.askyesno(
+            "Confirm Installation",
+            f"Install '{item.name}' ({item.id}) from the official winget repository?\n\n"
+            f"This will download and install the package using Administrator privileges.",
+            parent=self,
+        ):
+            self.status_lbl.config(text=f"Installing {item.name}...")
+            self._show_floating_toast(f"Installing {item.name}...", "i")
+            self.drawer.btn_update.config(state="disabled", text="Installing...")
+
+            def worker():
+                dry_run = self.dry_run_var.get()
+                success, msg = self.winget.install_package(item.id, dry_run=dry_run)
+                if success:
+                    self._show_floating_toast(f"Successfully installed {item.name}!", "✓")
+                    self.start_scan()
+                else:
+                    self._show_floating_toast(f"Installation failed: {msg}", "✕")
+                self.msg_queue.put(("STATUS", f"Install result: {msg}"))
+
+            threading.Thread(target=worker, daemon=True).start()
+
+    def _handle_context_uninstall(self, item: ProgramItem) -> None:
+        if not item:
+            return
+        pkg_id = item.id or item.name
+        if messagebox.askyesno(
+            "Confirm Uninstallation",
+            f"Are you sure you want to uninstall '{item.name}'?\n\n"
+            f"Package Identifier: {pkg_id}\n\n"
+            f"This will remove the application from your computer using Administrator rights.",
+            parent=self,
+            icon="warning",
+        ):
+            self.status_lbl.config(text=f"Uninstalling {item.name}...")
+            self._show_floating_toast(f"Uninstalling {item.name}...", "i")
+            self.drawer.btn_uninstall.config(state="disabled", text="Uninstalling...")
+
+            def worker():
+                success, msg = self.winget.uninstall_package(pkg_id)
+                if success:
+                    self._show_floating_toast(f"Successfully uninstalled {item.name}", "✓")
+                    self.all_programs = [it for it in self.all_programs if it != item]
+                    self.msg_queue.put(("STATUS", f"Uninstalled {item.name}"))
+                else:
+                    self._show_floating_toast(f"Uninstall failed: {msg}", "✕")
+                    self.msg_queue.put(("STATUS", f"Uninstall error for {item.name}: {msg}"))
+                self.apply_filter()
+                self.drawer.set_item(None)
+
+            threading.Thread(target=worker, daemon=True).start()
+
+    def _run_isolated_single_update(self, item: ProgramItem) -> None:
+        pkg_id = item.id or item.name
+        self.updating_package_ids.add(pkg_id)
+        self.status_lbl.config(text=f"Updating {item.name}...")
+        self.drawer.btn_update.config(state="disabled", text="Updating...")
+
+        # Process lock detection and graceful auto-close
+        if self.auto_close_var.get() and not self.dry_run_var.get():
+            running = ProcessLockDetector.find_running_processes_for_item(item)
+            if running:
+                logger.info(f"Closing {len(running)} active processes locking {item.name}...")
+                ProcessLockDetector.terminate_processes([p[0] for p in running], force=False)
+
+        def worker():
+            dry_run = self.dry_run_var.get()
+            success, msg = self.winget.upgrade_package(item.id, dry_run=dry_run)
+            self.updating_package_ids.discard(pkg_id)
+
+            if success:
+                # Re-verify installed version post-install
+                if item.latest_version:
+                    item.installed_version = item.latest_version
+                item.action = UpdateAction.UP_TO_DATE
+                item.outcome = UpdateOutcome.UPDATED
+                item.notes = f"Updated: {msg}"
+                self._show_floating_toast(f"Successfully updated {item.name}!", "✓")
+            else:
+                item.outcome = UpdateOutcome.FAILED
+                item.notes = f"Failed: {msg}"
+                self._show_floating_toast(f"Update failed for {item.name}", "✕")
+
+            self.msg_queue.put(("STATUS", f"Update for {item.name}: {msg}"))
+            self.apply_filter()
+            self.drawer.set_item(item)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _run_isolated_vendor_installer(self, item: ProgramItem) -> None:
+        pkg_id = item.id or item.name
+        self.updating_package_ids.add(pkg_id)
+        self.status_lbl.config(text=f"Installing vendor package for {item.name}...")
+
+        def worker():
+            dry_run = self.dry_run_var.get()
+            success, msg = self.engine.execute_vendor_installer(item, dry_run=dry_run)
+            self.updating_package_ids.discard(pkg_id)
+
+            self.msg_queue.put(("STATUS", f"Vendor install for {item.name}: {msg}"))
+            self.apply_filter()
+            self.drawer.set_item(item)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _export_report_dialog(self) -> None:
+        if not self.all_programs:
+            self._show_floating_toast("No inventory data to export. Please run a scan first.", "i")
+            return
+
+        file_path = filedialog.asksaveasfilename(
+            parent=self,
+            title="Export Software Inventory Report",
+            defaultextension=".csv",
+            filetypes=[("CSV Spreadsheet (*.csv)", "*.csv"), ("JSON File (*.json)", "*.json")],
+        )
+        if not file_path:
+            return
+
+        try:
+            if file_path.lower().endswith(".json"):
+                data = [
+                    {
+                        "name": it.name,
+                        "id": it.id,
+                        "installed_version": it.installed_version,
+                        "latest_version": it.latest_version,
+                        "status": it.action.value,
+                        "source": it.source,
+                        "install_location": it.install_location,
+                        "notes": it.notes,
+                    }
+                    for it in self.all_programs
+                ]
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+            else:
+                with open(file_path, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Name", "Current Version", "Latest Version", "Status", "Package ID", "Source", "Location", "Notes"])
+                    for it in self.all_programs:
+                        writer.writerow([
+                            it.name,
+                            it.installed_version,
+                            it.latest_version or "",
+                            it.action.value,
+                            it.id or "",
+                            it.source or "",
+                            it.install_location or "",
+                            it.notes or "",
+                        ])
+            self._show_floating_toast(f"Report saved: {os.path.basename(file_path)}", "✓")
+        except Exception as e:
+            self._show_floating_toast(f"Export error: {e}", "✕")
+
+    def _open_exclusions(self) -> None:
+        dlg = ExclusionManagerDialog(self, self.config, on_change=self.apply_filter, theme=self.current_theme)
+        self.wait_window(dlg)
+        matcher = PackageMatcher(self.config)
+        matcher.match_all(self.all_programs, {}, {})
+        self.apply_filter()
+
+    def _open_schedule(self) -> None:
+        dlg = ScheduleConfigDialog(self, self.scheduler, theme=self.current_theme)
+        self.wait_window(dlg)

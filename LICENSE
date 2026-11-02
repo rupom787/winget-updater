@@ -1,0 +1,59 @@
+PROPRIETARY SOFTWARE LICENSE & TERMS OF USE
+================================================================================
+SOFTWARE & PACKAGE UPDATER FOR WINDOWS 11
+Copyright (c) 2026 rupom. All Rights Reserved.
+================================================================================
+
+IMPORTANT — PLEASE READ CAREFULLY BEFORE DOWNLOADING, ACCESSING, OR RUNNING 
+THIS SOFTWARE OR ANY ASSOCIATED FILES.
+
+1. PROPRIETARY RIGHTS & OWNERSHIP
+---------------------------------
+This software, including but not limited to its source code, build scripts, 
+architecture, graphical user interface, graphics, shaders, configurations, 
+and documentation (collectively, the "Software"), is the exclusive proprietary 
+property of rupom (the "Author"). All rights, title, and interest in and to 
+the Software remain solely with the Author.
+
+2. STRICT PROHIBITION ON USE OF SOURCE CODE
+-------------------------------------------
+NO LICENSE, RIGHT, OR PERMISSION IS GRANTED TO ANY PERSON OR ENTITY TO COPY, 
+CLONE, FORK, MODIFY, MERGE, REPRODUCE, DISTRIBUTE, SUBLICENSE, SELL, OR CREATE 
+DERIVATIVE WORKS BASED UPON THE SOURCE CODE OR ANY PART THEREOF. 
+
+You may NOT:
+(a) Reuse, redistribute, or incorporate any portion of the source code into 
+    other projects, products, or services.
+(b) Decompile, disassemble, reverse engineer, or attempt to derive the underlying 
+    source code from compiled binaries.
+(c) Host, re-host, mirror, or repackage the source code or binaries on any 
+    third-party software distribution platforms or package repositories 
+    without prior express written permission from the Author.
+
+3. PERMITTED USE OF COMPILED BINARY EXECUTABLE ONLY
+---------------------------------------------------
+End users are granted a limited, personal, revocable, non-exclusive, and 
+non-transferable license strictly to download and execute the pre-compiled 
+executable binary ("WingetUpdater.exe") on personal computers running genuine 
+Windows 11 operating systems solely for lawful personal software maintenance.
+
+4. NO COMMERCIAL REDISTRIBUTION
+-------------------------------
+Commercial exploitation, bundling with third-party software or installers, 
+paid redistribution, or providing the Software as a managed commercial service 
+is strictly prohibited without a separate commercial agreement executed in 
+writing with the Author.
+
+5. DISCLAIMER OF WARRANTIES
+---------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, 
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE.
+
+================================================================================
+For licensing inquiries or authorized distribution requests, contact the Author.
+================================================================================

@@ -1,0 +1,44 @@
+{
+  "sources": [
+    {
+      "name": "Git for Windows",
+      "match_name": "*Git*",
+      "installer_url": "https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe",
+      "version": "2.45.0",
+      "expected_sha256": "4b6807ebda9a95152a2be919ba5ba649e7943c2c62c2f25265fa194958f33190",
+      "expected_publisher": "The Git Community",
+      "target_arch": "x64",
+      "notes": "Verified official Git release fallback"
+    },
+    {
+      "name": "7-Zip",
+      "match_name": "*7-Zip*",
+      "installer_url": "https://www.7-zip.org/a/7z2405-x64.exe",
+      "version": "24.05",
+      "expected_sha256": "e4587db34cecfcb9922572b83ef28254b9d031ad0ec28df1d582855845184a44",
+      "expected_publisher": "Igor Pavlov",
+      "target_arch": "x64",
+      "notes": "Verified 7-Zip archiver release mirror"
+    },
+    {
+      "name": "VLC Media Player",
+      "match_name": "*VLC*",
+      "installer_url": "https://get.videolan.org/vlc/3.0.21/win64/vlc-3.0.21-win64.exe",
+      "version": "3.0.21",
+      "expected_sha256": "3cb0b2302caee1e39a3203c9fb9e1925bda14c4c23db2e58286938a16db58ba1",
+      "expected_publisher": "VideoLAN",
+      "target_arch": "x64",
+      "notes": "Verified VideoLAN multimedia release mirror"
+    },
+    {
+      "name": "Notepad++",
+      "match_name": "*Notepad++*",
+      "installer_url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6.7/npp.8.6.7.Installer.x64.exe",
+      "version": "8.6.7",
+      "expected_sha256": "8da857b6f69324aa86576085a21ff46162164478d10b7f6c4ff432c748cbf916",
+      "expected_publisher": "Don HO",
+      "target_arch": "x64",
+      "notes": "Verified official Notepad++ text editor mirror"
+    }
+  ]
+}

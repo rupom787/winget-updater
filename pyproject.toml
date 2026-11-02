@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winget-software-updater"
+version = "1.0.0"
+description = "Production-ready Windows 11 Software & Package Update Management Tool"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "packaging>=24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+winget-updater = "winget_updater.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+

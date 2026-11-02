@@ -1,0 +1,6 @@
+[
+  {
+    "pattern": "ExampleAppToExclude*",
+    "reason": "Example exclusion pattern (wildcards supported, case-insensitive)"
+  }
+]
