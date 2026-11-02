@@ -26,6 +26,8 @@ class UpdateAction(str, Enum):
     VENDOR_FALLBACK = "Vendor Fallback Available"
     NEWER_THAN_SOURCE = "Installed is Newer (Downgrade Risk)"
     EXCLUDED = "Ignored"
+    PINNED = "Pinned Version"
+    SKIPPED_VERSION = "Skipped Version"
     INCOMPATIBLE = "Incompatible System"
     LIST_ONLY = "Listed Only"
 
@@ -87,11 +89,18 @@ class ProgramItem:
     unavailability_reason: Optional[str] = None
     vendor_url: Optional[str] = None
     is_user_bound: bool = False
+    is_pinned: bool = False
+    pinned_version: Optional[str] = None
+    skipped_version: Optional[str] = None
 
     def get_diagnostic_reason(self) -> str:
         """Returns clear, human-readable reason why an application cannot be updated automatically."""
         if self.unavailability_reason:
             return self.unavailability_reason
+        if self.action == UpdateAction.PINNED:
+            return f"Application is pinned to version {self.pinned_version or self.installed_version}."
+        if self.action == UpdateAction.SKIPPED_VERSION:
+            return f"Update version {self.skipped_version} was skipped by user."
         if self.action == UpdateAction.UP_TO_DATE:
             return "Application is already running the latest verified release."
         if self.action == UpdateAction.EXCLUDED:

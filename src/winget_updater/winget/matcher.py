@@ -171,6 +171,17 @@ class PackageMatcher:
             item.unavailability_reason = f"Excluded by user rule: {exclusion_reason}"
             return
 
+        # 1b. Check version pin rule
+        pinned_ver = self.config.is_package_pinned(item.name, item.id)
+        if pinned_ver:
+            item.is_pinned = True
+            item.pinned_version = pinned_ver
+            item.action = UpdateAction.PINNED
+            item.outcome = UpdateOutcome.SKIPPED
+            item.notes = f"Pinned to version {pinned_ver}"
+            item.unavailability_reason = f"Application is pinned to version {pinned_ver}. Unpin in drawer to enable updates."
+            return
+
         # 2. Check if item type is strictly listed only (drivers and extensions)
         if item.package_type == PackageType.DRIVER:
             item.action = UpdateAction.LIST_ONLY
@@ -324,6 +335,15 @@ class PackageMatcher:
             item.unavailability_reason = f"Unverified source '{entry.source}'. Marked for manual review."
             return
 
+        # Check skipped version rule
+        if item.latest_version and self.config.is_version_skipped(item.name, item.latest_version, item.id):
+            item.action = UpdateAction.SKIPPED_VERSION
+            item.outcome = UpdateOutcome.SKIPPED
+            item.skipped_version = item.latest_version
+            item.notes = f"Release {item.latest_version} skipped by user"
+            item.unavailability_reason = f"Release {item.latest_version} was skipped by user. Unskip in drawer to restore update."
+            return
+
         item.action = UpdateAction.AVAILABLE
         item.outcome = UpdateOutcome.PENDING
         item.notes = f"Verified update available from {entry.source}"
@@ -347,6 +367,15 @@ class PackageMatcher:
                 item.unavailability_reason = "Installed version is newer than source listing (downgrade warning)."
                 return
             elif comp is not None and comp < 0:
+                # Check skipped version rule
+                if item.latest_version and self.config.is_version_skipped(item.name, item.latest_version, item.id):
+                    item.action = UpdateAction.SKIPPED_VERSION
+                    item.outcome = UpdateOutcome.SKIPPED
+                    item.skipped_version = item.latest_version
+                    item.notes = f"Release {item.latest_version} skipped by user"
+                    item.unavailability_reason = f"Release {item.latest_version} was skipped by user. Unskip in drawer to restore update."
+                    return
+
                 item.action = UpdateAction.AVAILABLE
                 item.outcome = UpdateOutcome.PENDING
                 item.notes = f"Update available from {entry.source}"

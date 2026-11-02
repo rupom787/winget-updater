@@ -15,6 +15,8 @@ DEFAULT_EXCLUSIONS_FILE = "exclusions.json"
 DEFAULT_SOURCES_FILE = "sources.json"
 DEFAULT_CONFIG_FILE = "config.json"
 DEFAULT_MAPPINGS_FILE = "custom_mappings.json"
+DEFAULT_PINNED_FILE = "pinned_packages.json"
+DEFAULT_SKIPPED_FILE = "skipped_versions.json"
 
 
 @dataclass
@@ -57,11 +59,15 @@ class ConfigManager:
         self.sources_path = sources_path or (self.base_dir / DEFAULT_SOURCES_FILE)
         self.config_path = self.base_dir / DEFAULT_CONFIG_FILE
         self.mappings_path = self.base_dir / DEFAULT_MAPPINGS_FILE
+        self.pinned_path = self.base_dir / DEFAULT_PINNED_FILE
+        self.skipped_path = self.base_dir / DEFAULT_SKIPPED_FILE
         
         self.theme: str = "light"
         self.exclusions: List[ExclusionRule] = []
         self.vendor_sources: List[VendorSourceEntry] = []
         self.custom_mappings: Dict[str, str] = {}
+        self.pinned_packages: Dict[str, str] = {}
+        self.skipped_versions: Dict[str, str] = {}
         self.portable_directories: List[str] = self._get_default_portable_dirs()
         
         self.load_all()
@@ -84,11 +90,105 @@ class ConfigManager:
         return [d for d in dirs if os.path.exists(d)]
 
     def load_all(self) -> None:
-        """Loads configuration settings, exclusions, vendor sources, and custom mappings from disk."""
+        """Loads configuration settings, exclusions, vendor sources, custom mappings, pinned packages, and skipped versions."""
         self.load_settings()
         self.load_exclusions()
         self.load_vendor_sources()
         self.load_custom_mappings()
+        self.load_pinned_and_skipped()
+
+    def load_pinned_and_skipped(self) -> None:
+        """Loads pinned packages and skipped versions from JSON files."""
+        self.pinned_packages = {}
+        if self.pinned_path.exists():
+            try:
+                with open(self.pinned_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self.pinned_packages = {k.lower(): str(v).strip() for k, v in data.items()}
+            except Exception as e:
+                logger.error(f"Error reading pinned packages: {e}")
+
+        self.skipped_versions = {}
+        if self.skipped_path.exists():
+            try:
+                with open(self.skipped_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self.skipped_versions = {k.lower(): str(v).strip() for k, v in data.items()}
+            except Exception as e:
+                logger.error(f"Error reading skipped versions: {e}")
+
+    def pin_package(self, app_key: str, version: str) -> None:
+        """Pins an application to its current version, preventing automatic or manual updates."""
+        if not app_key:
+            return
+        self.pinned_packages[app_key.strip().lower()] = str(version).strip()
+        try:
+            with open(self.pinned_path, "w", encoding="utf-8") as f:
+                json.dump(self.pinned_packages, f, indent=2)
+            logger.info(f"Pinned '{app_key}' to version {version}")
+        except Exception as e:
+            logger.error(f"Error saving pinned packages: {e}")
+
+    def unpin_package(self, app_key: str) -> bool:
+        """Unpins an application, allowing updates again."""
+        k = app_key.strip().lower()
+        if k in self.pinned_packages:
+            del self.pinned_packages[k]
+            try:
+                with open(self.pinned_path, "w", encoding="utf-8") as f:
+                    json.dump(self.pinned_packages, f, indent=2)
+                logger.info(f"Unpinned '{app_key}'")
+                return True
+            except Exception as e:
+                logger.error(f"Error saving pinned packages: {e}")
+        return False
+
+    def is_package_pinned(self, app_name: str, app_id: Optional[str] = None) -> Optional[str]:
+        """Returns pinned version string if pinned, otherwise None."""
+        if app_id and app_id.strip().lower() in self.pinned_packages:
+            return self.pinned_packages[app_id.strip().lower()]
+        if app_name and app_name.strip().lower() in self.pinned_packages:
+            return self.pinned_packages[app_name.strip().lower()]
+        return None
+
+    def skip_version(self, app_key: str, version_to_skip: str) -> None:
+        """Configures the updater to ignore a specific release version of an application."""
+        if not app_key or not version_to_skip:
+            return
+        self.skipped_versions[app_key.strip().lower()] = str(version_to_skip).strip()
+        try:
+            with open(self.skipped_path, "w", encoding="utf-8") as f:
+                json.dump(self.skipped_versions, f, indent=2)
+            logger.info(f"Skipped version {version_to_skip} for '{app_key}'")
+        except Exception as e:
+            logger.error(f"Error saving skipped versions: {e}")
+
+    def unskip_version(self, app_key: str) -> bool:
+        """Removes the skipped version restriction for an application."""
+        k = app_key.strip().lower()
+        if k in self.skipped_versions:
+            del self.skipped_versions[k]
+            try:
+                with open(self.skipped_path, "w", encoding="utf-8") as f:
+                    json.dump(self.skipped_versions, f, indent=2)
+                logger.info(f"Removed skipped version for '{app_key}'")
+                return True
+            except Exception as e:
+                logger.error(f"Error saving skipped versions: {e}")
+        return False
+
+    def is_version_skipped(self, app_name: str, version: str, app_id: Optional[str] = None) -> bool:
+        """Checks if a particular release version of an application was marked as skipped."""
+        if not version:
+            return False
+        v_clean = version.strip().lower()
+        if app_id and self.skipped_versions.get(app_id.strip().lower()) == v_clean:
+            return True
+        if app_name and self.skipped_versions.get(app_name.strip().lower()) == v_clean:
+            return True
+        return False
 
     def load_custom_mappings(self) -> Dict[str, str]:
         """Loads user-bound program-to-winget package ID mappings."""

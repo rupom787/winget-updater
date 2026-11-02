@@ -35,10 +35,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.17 MB | `36BDC7AE9DC3947F7B18878D875F1C9449DC3468E347A20E099AD65ED96CDF2D` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.2.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.18 MB | `BBA1DC52EB07261B6D7AB566FAB66E73FFB11651F8AE4DF227CE707FA63B8E19` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.2.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"**, select the packages you wish to update, and click **"Update all eligible"**.
@@ -86,6 +86,24 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Interactive Micro-Animations:** Responsive spring depression dynamics on buttons, hover border illumination, and status badges with breathing indicator lights.
 - **Diagnostic Explanation Alert Box:** Transparent card in the details drawer clearly explaining why any software is listed-only or requires manual binding.
 
+### 💾 7. Machine Provisioning & 1-Click Backup / Restore Stack
+- **Standard Winget Export:** Export your complete installed software inventory to an official Winget JSON package manifest (`Backup Stack` or `Ctrl+B`).
+- **1-Click Machine Restoration:** Provision a new or formatted Windows 11 PC instantly by importing your backup manifest (`Restore Stack` or `Ctrl+I`).
+
+### 📌 8. Granular Version Pinning & Version Skipping
+- **Version Pinning (`📌 Pin`):** Pin critical software (e.g. specialized IDEs, 3D suites) to their current version to freeze them from all automatic or batch updates (`pinned_packages.json`).
+- **Skip Specific Releases (`⏭️ Skip`):** Temporarily skip an undesirable release (e.g. skip `v3.2.0` if buggy) while keeping future update notifications intact (`skipped_versions.json`).
+
+### ⌨️ 9. Power-User Keyboard Shortcuts
+| Shortcut | Action |
+| :--- | :--- |
+| `Ctrl + F` or `/` | Focus search bar with animated glow |
+| `F5` or `Ctrl + R` | Scan PC & query repositories for updates |
+| `Ctrl + B` | Export software stack backup manifest |
+| `Ctrl + I` | Restore & provision software stack from backup |
+| `Ctrl + E` | Open Exclusions manager |
+| `↑` / `↓` Arrow keys | Navigate software table rows smoothly |
+
 ---
 
 ## 🎨 User Interface & Layout
@@ -132,7 +150,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-36BDC7AE9DC3947F7B18878D875F1C9449DC3468E347A20E099AD65ED96CDF2D
+BBA1DC52EB07261B6D7AB566FAB66E73FFB11651F8AE4DF227CE707FA63B8E19
 ```
 
 ---

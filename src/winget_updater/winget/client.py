@@ -458,3 +458,73 @@ class WingetClient:
             logger.debug(f"Error listing sources: {e}")
         return sources
 
+    def export_software_manifest(
+        self,
+        output_path: str,
+        include_versions: bool = False,
+    ) -> Tuple[bool, str]:
+        """Exports installed software packages to a Winget-compatible JSON manifest for machine backup/provisioning."""
+        cmd = [
+            self.winget_path,
+            "export",
+            "-o", output_path,
+            "--accept-source-agreements",
+        ]
+        if include_versions:
+            cmd.append("--include-versions")
+
+        logger.info(f"Exporting software backup manifest to: {output_path}")
+        try:
+            res = silent_run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=120,
+            )
+            if res.returncode == 0 and os.path.exists(output_path):
+                return True, f"Software stack successfully exported to {os.path.basename(output_path)}"
+            msg = res.stderr.strip() or res.stdout.strip() or f"Exit code {res.returncode}"
+            return False, f"Export failed: {msg}"
+        except Exception as e:
+            logger.error(f"Error exporting software manifest: {e}")
+            return False, str(e)
+
+    def import_software_manifest(
+        self,
+        input_path: str,
+        ignore_unavailable: bool = True,
+    ) -> Tuple[bool, str]:
+        """Imports and installs software packages from a backup manifest (1-click machine restoration)."""
+        if not os.path.exists(input_path):
+            return False, f"Manifest file does not exist: {input_path}"
+
+        cmd = [
+            self.winget_path,
+            "import",
+            "-i", input_path,
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+        ]
+        if ignore_unavailable:
+            cmd.append("--ignore-unavailable")
+
+        logger.info(f"Importing and provisioning software stack from: {input_path}")
+        try:
+            res = silent_run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=600,
+            )
+            if res.returncode == 0:
+                return True, "Software stack successfully restored from backup manifest."
+            msg = res.stderr.strip() or res.stdout.strip() or f"Exit code {res.returncode}"
+            return False, f"Import error: {msg}"
+        except Exception as e:
+            logger.error(f"Error importing software manifest: {e}")
+            return False, str(e)
+

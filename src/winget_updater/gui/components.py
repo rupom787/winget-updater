@@ -398,6 +398,8 @@ class DetailsDrawer(tk.Frame):
         on_bind_source: Optional[Callable[[ProgramItem], None]] = None,
         on_allow_unverified: Optional[Callable[[ProgramItem], None]] = None,
         on_open_website: Optional[Callable[[ProgramItem], None]] = None,
+        on_pin_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_skip_version: Optional[Callable[[ProgramItem], None]] = None,
     ):
         super().__init__(
             parent,
@@ -414,6 +416,8 @@ class DetailsDrawer(tk.Frame):
         self.on_bind_source = on_bind_source
         self.on_allow_unverified = on_allow_unverified
         self.on_open_website = on_open_website
+        self.on_pin_item = on_pin_item
+        self.on_skip_version = on_skip_version
         self.current_item: Optional[ProgramItem] = None
         self.theme: ThemeColors = LIGHT_THEME
 
@@ -591,8 +595,42 @@ class DetailsDrawer(tk.Frame):
             height=26,
             parent_bg="#faf6f6",
         )
-        self.btn_copy_id.pack(side=tk.LEFT)
+        self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 3))
         self.btn_copy_id.config(state="disabled")
+
+        self.btn_pin = RoundedButton(
+            self.secondary_actions,
+            text="📌 Pin",
+            command=self._on_pin_click,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=54,
+            height=26,
+            parent_bg="#faf6f6",
+        )
+        self.btn_pin.pack(side=tk.LEFT, padx=(0, 3))
+        self.btn_pin.config(state="disabled")
+
+        self.btn_skip = RoundedButton(
+            self.secondary_actions,
+            text="⏭️ Skip",
+            command=self._on_skip_click,
+            bg_color="#ffffff",
+            fg_color="#64748b",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=65,
+            height=26,
+            parent_bg="#faf6f6",
+        )
+        self.btn_skip.pack(side=tk.LEFT)
+        self.btn_skip.config(state="disabled")
 
         # Row 3: Extended Package Resolution & Fallback Actions
         self.resolution_actions = tk.Frame(self.actions_container, bg="#faf6f6")
@@ -720,6 +758,23 @@ class DetailsDrawer(tk.Frame):
         self.btn_copy_id.config(state="normal")
         self.btn_bind.config(state="normal")
 
+        # Pin / Unpin Button state
+        self.btn_pin.config(
+            state="normal",
+            text="Unpin" if item.is_pinned else "📌 Pin",
+            fg_color="#059669" if item.is_pinned else "#334155",
+        )
+
+        # Skip / Unskip Button state
+        if item.action == UpdateAction.AVAILABLE and item.latest_version:
+            self.btn_skip.pack(side=tk.LEFT)
+            self.btn_skip.config(state="normal", text="⏭️ Skip")
+        elif item.action == UpdateAction.SKIPPED_VERSION:
+            self.btn_skip.pack(side=tk.LEFT)
+            self.btn_skip.config(state="normal", text="Unskip")
+        else:
+            self.btn_skip.pack_forget()
+
         # Contextual action buttons pack / forget
         if item.action == UpdateAction.UNVERIFIED:
             self.btn_allow_unverified.pack(side=tk.LEFT, padx=(0, 3))
@@ -744,6 +799,10 @@ class DetailsDrawer(tk.Frame):
             return "Update available", "#ffe4e6", "#9f1239"
         if item.action == UpdateAction.UP_TO_DATE:
             return "Up to date", "#ecfdf5", "#065f46"
+        if item.action == UpdateAction.PINNED:
+            return "Pinned", "#eff6ff", "#1e40af"
+        if item.action == UpdateAction.SKIPPED_VERSION:
+            return "Version skipped", "#f3e8ff", "#6b21a8"
         if item.action == UpdateAction.UNVERIFIED:
             return "Could not verify", "#fef3c7", "#92400e"
         if item.action == UpdateAction.SCAN_FAILED:
@@ -803,6 +862,14 @@ class DetailsDrawer(tk.Frame):
     def _on_website_click(self) -> None:
         if self.current_item and self.on_open_website:
             self.on_open_website(self.current_item)
+
+    def _on_pin_click(self) -> None:
+        if self.current_item and self.on_pin_item:
+            self.on_pin_item(self.current_item)
+
+    def _on_skip_click(self) -> None:
+        if self.current_item and self.on_skip_version:
+            self.on_skip_version(self.current_item)
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme

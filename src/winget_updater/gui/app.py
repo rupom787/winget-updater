@@ -230,6 +230,36 @@ class MainWindow(tk.Tk):
         )
         self.btn_sources.pack(side=tk.RIGHT, padx=(6, 0))
 
+        self.btn_backup = RoundedButton(
+            self.top_controls,
+            text="Backup Stack",
+            command=self._export_software_backup,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#ecfdf5",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_backup.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_restore = RoundedButton(
+            self.top_controls,
+            text="Restore Stack",
+            command=self._import_software_backup,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#eff6ff",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(10, 4),
+        )
+        self.btn_restore.pack(side=tk.RIGHT, padx=(6, 0))
+
         self.btn_export = RoundedButton(
             self.top_controls,
             text="Export report",
@@ -449,6 +479,8 @@ class MainWindow(tk.Tk):
             on_bind_source=self._open_bind_source_dialog,
             on_allow_unverified=self._handle_allow_unverified,
             on_open_website=self._handle_open_website,
+            on_pin_item=self._handle_pin_item,
+            on_skip_version=self._handle_skip_version,
         )
         self.drawer.pack(fill=tk.X)
 
@@ -469,6 +501,15 @@ class MainWindow(tk.Tk):
         self.filter_bar = SearchFilterBar(self.main_body, on_filter_change=lambda: None)
         self.filter_bar.pack_forget()
 
+        # Keyboard shortcuts
+        self.bind("<Control-f>", lambda e: self._shortcut_focus_search())
+        self.bind("<slash>", lambda e: self._shortcut_focus_search())
+        self.bind("<F5>", lambda e: self._start_scan_async())
+        self.bind("<Control-r>", lambda e: self._start_scan_async())
+        self.bind("<Control-b>", lambda e: self._export_software_backup())
+        self.bind("<Control-i>", lambda e: self._import_software_backup())
+        self.bind("<Control-e>", lambda e: self._open_exclusions_dialog())
+
         self.set_theme(self.current_theme.name)
 
     def set_theme(self, mode: str) -> None:
@@ -488,6 +529,10 @@ class MainWindow(tk.Tk):
         self.btn_exclusions.config(bg=t.bg_button, fg=t.fg_primary)
         if hasattr(self, "btn_sources"):
             self.btn_sources.config(bg=t.bg_button, fg=t.fg_primary)
+        if hasattr(self, "btn_backup"):
+            self.btn_backup.config(bg=t.bg_button, fg=t.fg_primary)
+        if hasattr(self, "btn_restore"):
+            self.btn_restore.config(bg=t.bg_button, fg=t.fg_primary)
         self.btn_export.config(bg=t.bg_button, fg=t.fg_primary)
 
         self.main_body.config(bg=t.bg_root)
@@ -1182,6 +1227,128 @@ class MainWindow(tk.Tk):
         matcher.match_all(self.all_programs, {}, {})
         self.apply_filter()
 
+    _open_exclusions_dialog = _open_exclusions
+
     def _open_schedule(self) -> None:
         dlg = ScheduleConfigDialog(self, self.scheduler, theme=self.current_theme)
         self.wait_window(dlg)
+
+    def _handle_pin_item(self, item: ProgramItem) -> None:
+        """Toggles pinning an application to its current installed version."""
+        if item.is_pinned:
+            self.config.unpin_package(item.name)
+            if item.id:
+                self.config.unpin_package(item.id)
+            item.is_pinned = False
+            item.pinned_version = None
+            item.action = UpdateAction.AVAILABLE if item.latest_version and item.latest_version != item.installed_version else UpdateAction.UP_TO_DATE
+            item.unavailability_reason = None
+            self._show_floating_toast(f"Unpinned '{item.name}'", "✓")
+        else:
+            ver = item.installed_version or "1.0"
+            self.config.pin_package(item.name, ver)
+            if item.id:
+                self.config.pin_package(item.id, ver)
+            item.is_pinned = True
+            item.pinned_version = ver
+            item.action = UpdateAction.PINNED
+            item.unavailability_reason = f"Application is pinned to version {ver}."
+            self._show_floating_toast(f"Pinned '{item.name}' to version {ver}", "📌")
+
+        self.table.update_item(item)
+        self.drawer.set_item(item)
+        self._refresh_counts()
+
+    def _handle_skip_version(self, item: ProgramItem) -> None:
+        """Toggles skipping a specific release version for an application."""
+        if item.action == UpdateAction.SKIPPED_VERSION:
+            self.config.unskip_version(item.name)
+            if item.id:
+                self.config.unskip_version(item.id)
+            item.action = UpdateAction.AVAILABLE
+            item.skipped_version = None
+            item.unavailability_reason = None
+            self._show_floating_toast(f"Restored update notifications for '{item.name}'", "✓")
+        else:
+            ver_to_skip = item.latest_version
+            if not ver_to_skip:
+                return
+            self.config.skip_version(item.name, ver_to_skip)
+            if item.id:
+                self.config.skip_version(item.id, ver_to_skip)
+            item.action = UpdateAction.SKIPPED_VERSION
+            item.skipped_version = ver_to_skip
+            item.unavailability_reason = f"Release {ver_to_skip} was skipped by user."
+            self._show_floating_toast(f"Skipped release {ver_to_skip} for '{item.name}'", "⏭️")
+
+        self.table.update_item(item)
+        self.drawer.set_item(item)
+        self._refresh_counts()
+
+    def _export_software_backup(self) -> None:
+        """Exports the PC software stack to a portable Winget-compatible backup manifest."""
+        file_path = filedialog.asksaveasfilename(
+            parent=self,
+            title="Export Machine Software Backup Manifest",
+            initialfile="winget-software-backup.json",
+            defaultextension=".json",
+            filetypes=[("Winget Package Manifest (*.json)", "*.json")],
+        )
+        if not file_path:
+            return
+
+        self.status_lbl.config(text="Exporting software backup manifest...")
+        self._show_floating_toast("Generating software stack backup...", "i")
+
+        def worker():
+            success, msg = self.winget.export_software_manifest(file_path, include_versions=True)
+            if success:
+                self._show_floating_toast(f"Backup manifest saved: {os.path.basename(file_path)}", "✓")
+                self.msg_queue.put(("STATUS", f"Export completed: {os.path.basename(file_path)}"))
+            else:
+                self._show_floating_toast(f"Export note: {msg}", "i")
+                self.msg_queue.put(("STATUS", f"Export notice: {msg}"))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _import_software_backup(self) -> None:
+        """Restores and provisions a software stack on this PC from a backup manifest."""
+        file_path = filedialog.askopenfilename(
+            parent=self,
+            title="Select Software Backup Manifest to Restore",
+            filetypes=[("Winget Package Manifest (*.json)", "*.json"), ("All Files (*.*)", "*.*")],
+        )
+        if not file_path:
+            return
+
+        if not messagebox.askyesno(
+            "Confirm Software Stack Restoration",
+            f"Do you want to restore and install software packages listed in:\n{os.path.basename(file_path)}?\n\n"
+            "This will download and install the verified packages using Windows Package Manager.",
+            parent=self,
+            icon="question",
+        ):
+            return
+
+        self.status_lbl.config(text=f"Restoring software stack from {os.path.basename(file_path)}...")
+        self._show_floating_toast("Restoring software stack in background...", "i")
+
+        def worker():
+            success, msg = self.winget.import_software_manifest(file_path, ignore_unavailable=True)
+            if success:
+                self._show_floating_toast("Software stack restored successfully!", "✓")
+                self.msg_queue.put(("STATUS", "Restoration complete."))
+                self._start_scan_async()
+            else:
+                self._show_floating_toast(f"Import note: {msg}", "i")
+                self.msg_queue.put(("STATUS", f"Import note: {msg}"))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _shortcut_focus_search(self) -> str:
+        """Focuses the sidebar search input via shortcut key (Ctrl+F or /)."""
+        if hasattr(self.sidebar, "entry_search"):
+            self.sidebar.entry_search.focus_set()
+            self.sidebar.entry_search.select_range(0, tk.END)
+            self._show_floating_toast("Quick search active (Type to filter)", "🔍")
+        return "break"

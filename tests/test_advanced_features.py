@@ -117,3 +117,64 @@ def test_gpu_acceleration_manager():
     assert "GPU" in msg
 
 
+def test_version_pinning_and_skipping(tmp_path):
+    from winget_updater.config import ConfigManager
+    from winget_updater.models import ProgramItem, UpdateAction
+    from winget_updater.winget.client import WingetPackageEntry
+    from winget_updater.winget.matcher import PackageMatcher
+
+    cfg = ConfigManager(base_dir=tmp_path)
+    cfg.pin_package("Git", "2.44.0")
+    cfg.skip_version("VLC media player", "3.0.24")
+
+    matcher = PackageMatcher(cfg)
+
+    upgrades = {
+        "git.git": WingetPackageEntry(name="Git", id="Git.Git", version="2.44.0", available_version="2.45.0", source="winget"),
+        "videolan.vlc": WingetPackageEntry(name="VLC media player", id="VideoLAN.VLC", version="3.0.21", available_version="3.0.24", source="winget"),
+    }
+    installed = {}
+
+    items = [
+        ProgramItem(name="Git", installed_version="2.44.0", id="Git.Git"),
+        ProgramItem(name="VLC media player", installed_version="3.0.21", id="VideoLAN.VLC"),
+    ]
+
+    matched = matcher.match_all(items, upgrades, installed)
+
+    # Git should be PINNED
+    assert matched[0].action == UpdateAction.PINNED
+    assert matched[0].is_pinned is True
+    assert matched[0].pinned_version == "2.44.0"
+
+    # VLC should be SKIPPED_VERSION because 3.0.24 was skipped
+    assert matched[1].action == UpdateAction.SKIPPED_VERSION
+    assert matched[1].skipped_version == "3.0.24"
+
+
+def test_software_manifest_export_import(tmp_path):
+    client = WingetClient()
+    export_file = tmp_path / "test_backup.json"
+
+    with patch("winget_updater.winget.client.silent_run") as mock_run:
+        # Simulate successful export creating the file
+        def side_effect(cmd, **kwargs):
+            if "export" in cmd:
+                export_file.write_text('{"CreationDate": "2026-11-02"}')
+                return MagicMock(returncode=0, stdout="Export complete", stderr="")
+            if "import" in cmd:
+                return MagicMock(returncode=0, stdout="Import complete", stderr="")
+            return MagicMock(returncode=0)
+
+        mock_run.side_effect = side_effect
+
+        success, msg = client.export_software_manifest(str(export_file))
+        assert success is True
+        assert export_file.exists()
+
+        success, msg = client.import_software_manifest(str(export_file))
+        assert success is True
+        assert "successfully" in msg
+
+
+
