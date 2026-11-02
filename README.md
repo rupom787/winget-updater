@@ -24,10 +24,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe**](dist/WingetUpdater.exe) | Windows 11 (64-bit) | 13.11 MB | `4F5CF09F96F196C39222B3C7088C2B50DBA2512D4E7F17BC430E7A159ECC59B2` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.11 MB | `4F5CF09F96F196C39222B3C7088C2B50DBA2512D4E7F17BC430E7A159ECC59B2` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [`WingetUpdater.exe`](dist/WingetUpdater.exe) or download it from the Releases section.
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"**, select the packages you wish to update, and click **"Update all eligible"**.
