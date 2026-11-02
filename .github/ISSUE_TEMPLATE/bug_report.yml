@@ -1,0 +1,51 @@
+name: Bug Report
+description: Report an issue, bug, or unexpected behavior in Software & Package Updater
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please provide as much detail as possible.
+  - type: input
+    id: version
+    attributes:
+      label: Updater Version
+      description: What version of Software & Package Updater are you running? (e.g. v1.0.0)
+      placeholder: v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows OS Build
+      description: Run `winver` in Start Menu or run `[System.Environment]::OSVersion.Version`
+      placeholder: Windows 11 Build 22631 / 26300
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU Model & Driver
+      description: Which graphics card does your system have? (e.g. NVIDIA GeForce RTX 2050 / Intel Iris Xe)
+      placeholder: NVIDIA RTX 4070 (Driver 551.86)
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem clearly. Include any error messages or toast notifications.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open WingetUpdater.exe
+        2. Click 'Check for updates'
+        3. Observe error...
+    validations:
+      required: true

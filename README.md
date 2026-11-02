@@ -1,11 +1,18 @@
 # Software & Package Updater for Windows 11
 
 <p align="center">
+  <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
+  <img src="https://img.shields.io/badge/Unit%20Tests-59%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="59 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
   <img src="https://img.shields.io/badge/License-Proprietary%20(All%20Rights%20Reserved)-red?style=for-the-badge" alt="Proprietary License" />
-  <img src="https://img.shields.io/badge/Executable-Single--File%20Binary%20(13.1%20MB)-purple?style=for-the-badge" alt="Executable Binary" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.1_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  </a>
 </p>
 
 ---
