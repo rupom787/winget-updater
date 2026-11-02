@@ -1,6 +1,10 @@
 # Software & Package Updater for Windows 11
 
 <p align="center">
+  <img src="assets/social-preview.png" alt="Software & Package Updater for Windows 11" width="100%" />
+</p>
+
+<p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
   <img src="https://img.shields.io/badge/Unit%20Tests-59%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="59 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
