@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-59%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="59 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-67%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="67 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.0.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.1_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.19_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
 </p>
 
@@ -35,10 +35,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.2.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.18 MB | `BBA1DC52EB07261B6D7AB566FAB66E73FFB11651F8AE4DF227CE707FA63B8E19` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.19 MB | `0F34082407A6D31B60292FDC393444AD5D475A696ABE15C79670B33FDC0E804B` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.2.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"**, select the packages you wish to update, and click **"Update all eligible"**.
@@ -76,9 +76,11 @@ Unlike tools that check only one registry location, Software & Package Updater a
 
 ### 🔗 5. Source Resolution & Package Binding ("Could Not Verify" Solutions)
 - **Intelligent Publisher Matching:** Bidirectionally normalizes corporate suffixes (`LLC`, `Corp`, `Inc`, `GmbH`) eliminating false-positive publisher mismatches.
-- **Curated Package Aliases:** Built-in alias dictionary instantly matches 70+ essential Windows applications to their verified Winget identifiers.
-- **In-App "Bind Winget ID":** Click **"🔗 Bind Winget ID"** in the drawer to live-search the 6,000+ Winget catalog and link any unverified or unmapped software permanently (`custom_mappings.json`).
-- **Review & Allow Action:** Manually review candidate packages and grant update permission with a single click.
+- **Curated Package Aliases (120+ apps):** Built-in alias dictionary instantly matches 120+ essential Windows applications to their verified Winget identifiers (Chrome, Git, Python, VS Code, JetBrains IDEs, Blender, VLC, Discord, Steam, 7-Zip, etc.).
+- **Automatic Version-Suffix Stripping:** Automatically matches names like `Blender 4.2.0` or `Python 3.12 (64-bit)` against base packages, eliminating false-negative "No update source" results.
+- **PE Binary Version Extraction Fallback:** When Windows Registry keys omit `DisplayVersion`, the scanner inspects the application's executable via native Win32 `GetFileVersionInfoW` to recover the concrete version.
+- **In-App "Bind Winget ID":** Click **"🔗 Bind Winget ID"** in the drawer or right-click to live-search the 6,000+ Winget catalog and link any unverified or unmapped software permanently (`custom_mappings.json`).
+- **Batch & 1-Click "Approve & Allow Update":** Review candidate packages and grant update permission with a single click or in bulk.
 - **1-Click Official Download Web Link:** Instantly launch verified official vendor download pages in your browser for software without public repository packages.
 
 ### 💎 6. Windows 11 Acrylic & Frosted Glass Backdrops
@@ -86,15 +88,32 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Interactive Micro-Animations:** Responsive spring depression dynamics on buttons, hover border illumination, and status badges with breathing indicator lights.
 - **Diagnostic Explanation Alert Box:** Transparent card in the details drawer clearly explaining why any software is listed-only or requires manual binding.
 
-### 💾 7. Machine Provisioning & 1-Click Backup / Restore Stack
+### 📊 7. Live Hardware Telemetry HUD with Pulsating Glow Beacon
+- **Real-Time System Metrics:** Frosted glass HUD pill displays real-time CPU %, RAM utilization (used / total GB and percentage), and active DirectX 12 hardware acceleration.
+- **Tri-State Status Beacon:** Smooth breathing glow indicator shifts dynamically:
+  - 🟢 **Emerald Pulse:** System healthy, background monitors idle.
+  - 🍷 **Velvet Pulse:** Active software inventory audit and repository scanning.
+  - 🟡 **Amber Pulse:** Downloading packages and executing system updates.
+
+### 📦 8. Extended Multi-Selection & Floating Frosted Glass Action Dock
+- **Multi-Select Anywhere:** Hold `Shift` or `Ctrl` to select multiple software rows, or click **"Select updates"** / **"Select all"** in the table header.
+- **Floating Batch Dock:** Slid-in frosted glass dock appears when 2+ applications are selected, providing instant batch actions:
+  - `🚀 Update Selected (N)`
+  - `⚡ Approve Unverified (M)`
+  - `📌 Pin Selected`
+  - `🛡️ Exclude Selected`
+  - `✕ Deselect All`
+- **Contextual Right-Click Menu:** Full right-click context menu tailored for both single-package operations and multi-selection batches.
+
+### 💾 9. Machine Provisioning & 1-Click Backup / Restore Stack
 - **Standard Winget Export:** Export your complete installed software inventory to an official Winget JSON package manifest (`Backup Stack` or `Ctrl+B`).
 - **1-Click Machine Restoration:** Provision a new or formatted Windows 11 PC instantly by importing your backup manifest (`Restore Stack` or `Ctrl+I`).
 
-### 📌 8. Granular Version Pinning & Version Skipping
+### 📌 10. Granular Version Pinning & Version Skipping
 - **Version Pinning (`📌 Pin`):** Pin critical software (e.g. specialized IDEs, 3D suites) to their current version to freeze them from all automatic or batch updates (`pinned_packages.json`).
 - **Skip Specific Releases (`⏭️ Skip`):** Temporarily skip an undesirable release (e.g. skip `v3.2.0` if buggy) while keeping future update notifications intact (`skipped_versions.json`).
 
-### ⌨️ 9. Power-User Keyboard Shortcuts
+### ⌨️ 11. Power-User Keyboard Shortcuts
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl + F` or `/` | Focus search bar with animated glow |
@@ -150,7 +169,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-BBA1DC52EB07261B6D7AB566FAB66E73FFB11651F8AE4DF227CE707FA63B8E19
+0F34082407A6D31B60292FDC393444AD5D475A696ABE15C79670B33FDC0E804B
 ```
 
 ---

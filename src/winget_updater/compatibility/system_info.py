@@ -34,6 +34,20 @@ class FILETIME(ctypes.Structure):
     ]
 
 
+class MEMORYSTATUSEX(ctypes.Structure):
+    _fields_ = [
+        ("dwLength", wintypes.DWORD),
+        ("dwMemoryLoad", wintypes.DWORD),
+        ("ullTotalPhys", ctypes.c_uint64),
+        ("ullAvailPhys", ctypes.c_uint64),
+        ("ullTotalPageFile", ctypes.c_uint64),
+        ("ullAvailPageFile", ctypes.c_uint64),
+        ("ullTotalVirtual", ctypes.c_uint64),
+        ("ullAvailVirtual", ctypes.c_uint64),
+        ("ullAvailExtendedVirtual", ctypes.c_uint64),
+    ]
+
+
 class SystemInfoProvider:
     """Provides real-time host system telemetry."""
 
@@ -116,6 +130,20 @@ class SystemInfoProvider:
         except Exception as e:
             logger.debug(f"CPU load sampling exception: {e}")
             return 0.0
+
+    @staticmethod
+    def get_memory_info() -> Tuple[float, float, int]:
+        """Returns physical RAM usage tuple: (used_gb, total_gb, memory_load_percent)."""
+        try:
+            stat = MEMORYSTATUSEX()
+            stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+                total_gb = stat.ullTotalPhys / (1024 ** 3)
+                used_gb = (stat.ullTotalPhys - stat.ullAvailPhys) / (1024 ** 3)
+                return round(used_gb, 1), round(total_gb, 1), int(stat.dwMemoryLoad)
+        except Exception as e:
+            logger.debug(f"Memory status query failed: {e}")
+        return 0.0, 0.0, 0
 
     @staticmethod
     def is_on_ac_power() -> Tuple[bool, str]:

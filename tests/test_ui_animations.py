@@ -313,6 +313,126 @@ def test_bind_winget_source_dialog_and_drawer(monkeypatch):
     root.destroy()
 
 
+def test_glassy_telemetry_hud():
+    root = tk.Tk()
+    root.withdraw()
+
+    from winget_updater.gui.animations import GlassyTelemetryHUD
+    from winget_updater.gui.theme import DARK_THEME, LIGHT_THEME
+
+    hud = GlassyTelemetryHUD(root, gpu_name="NVIDIA RTX 3060")
+    hud.set_mode("scanning")
+    assert hud._mode == "scanning"
+    hud._pulse_tick()
+
+    hud.set_mode("updating")
+    assert hud._mode == "updating"
+    hud._pulse_tick()
+
+    hud.apply_theme(DARK_THEME)
+    assert hud.theme.name == "dark"
+    hud.apply_theme(LIGHT_THEME)
+    assert hud.theme.name == "light"
+
+    hud.destroy()
+    root.destroy()
+
+
+def test_floating_glass_batch_dock():
+    root = tk.Tk()
+    root.withdraw()
+
+    from winget_updater.gui.components import FloatingGlassBatchDock
+    from winget_updater.models import ProgramItem, UpdateAction
+
+    updated_called = []
+    allowed_called = []
+    pinned_called = []
+    cleared_called = []
+
+    dock = FloatingGlassBatchDock(
+        root,
+        on_batch_update=lambda it: updated_called.append(it),
+        on_batch_allow=lambda it: allowed_called.append(it),
+        on_batch_pin=lambda it: pinned_called.append(it),
+        on_clear_selection=lambda: cleared_called.append(True),
+    )
+
+    item1 = ProgramItem(name="App A", action=UpdateAction.AVAILABLE, is_verified_winget=True)
+    item2 = ProgramItem(name="App B", action=UpdateAction.UNVERIFIED)
+    item3 = ProgramItem(name="App C", action=UpdateAction.UP_TO_DATE)
+
+    dock.set_selected_items([item1, item2, item3])
+    assert "3 Applications Selected" in dock.lbl_title.cget("text")
+    assert "1 verified updates" in dock.lbl_sub.cget("text")
+    assert "1 unverified" in dock.lbl_sub.cget("text")
+
+    dock._on_update_clicked()
+    assert len(updated_called) == 1
+    assert updated_called[0] == [item1]
+
+    dock._on_allow_clicked()
+    assert len(allowed_called) == 1
+    assert allowed_called[0] == [item2]
+
+    dock._on_pin_clicked()
+    assert len(pinned_called) == 1
+    assert len(pinned_called[0]) == 3
+
+    dock._on_clear_clicked()
+    assert cleared_called == [True]
+
+    root.destroy()
+
+
+def test_program_table_extended_batch_and_context_menu():
+    root = tk.Tk()
+    root.withdraw()
+
+    from winget_updater.gui.components import ProgramTableView
+    from winget_updater.models import ProgramItem, UpdateAction
+
+    table = ProgramTableView(root)
+    item1 = ProgramItem(name="Tool 1", action=UpdateAction.AVAILABLE, is_verified_winget=True)
+    item2 = ProgramItem(name="Tool 2", action=UpdateAction.UNVERIFIED)
+    item3 = ProgramItem(name="Tool 3", action=UpdateAction.UP_TO_DATE)
+
+    table.populate([item1, item2, item3])
+    root.update()
+
+    # Test batch selectors
+    table.select_all()
+    assert len(table.get_selected_items()) == 3
+
+    table.select_updates_only()
+    sel_up = table.get_selected_items()
+    assert len(sel_up) == 1
+    assert sel_up[0].name == "Tool 1"
+
+    table.select_unverified_only()
+    sel_unver = table.get_selected_items()
+    assert len(sel_unver) == 1
+    assert sel_unver[0].name == "Tool 2"
+
+    table.clear_selection()
+    assert len(table.get_selected_items()) == 0
+
+    # Test dynamic context menu for single item
+    table.tree.selection_set("item_1")
+    table._build_context_menu()
+    labels = [table.context_menu.entrycget(i, "label") for i in range(table.context_menu.index("end") + 1) if table.context_menu.type(i) == "command"]
+    assert any("Review & Allow Update" in lbl for lbl in labels)
+
+    # Test dynamic context menu for multi-selection
+    table.tree.selection_set(("item_0", "item_1"))
+    table._build_context_menu()
+    multi_labels = [table.context_menu.entrycget(i, "label") for i in range(table.context_menu.index("end") + 1) if table.context_menu.type(i) == "command"]
+    assert any("Update Selected" in lbl for lbl in multi_labels)
+    assert any("Deselect All" in lbl for lbl in multi_labels)
+
+    root.destroy()
+
+
 
 
 

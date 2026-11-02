@@ -170,3 +170,41 @@ def test_smart_publisher_matching_and_custom_bindings(tmp_path):
     assert matched[1].latest_version == "126.0"
 
 
+def test_strip_version_from_name_and_pe_version_extraction(tmp_path):
+    import sys
+    from winget_updater.discovery.registry_scanner import extract_pe_file_version
+    from winget_updater.winget.matcher import strip_version_from_name
+
+    # 1. Test strip_version_from_name
+    assert strip_version_from_name("Python 3.12 (64-bit)") == "python"
+    assert strip_version_from_name("Blender 4.2.0") == "blender"
+    assert strip_version_from_name("Postman v10.24") == "postman"
+    assert strip_version_from_name("Git version 2.45.0") == "git"
+    assert strip_version_from_name("Sublime Text 4") == "sublime text"
+
+    # 2. Test extract_pe_file_version on python executable
+    py_ver = extract_pe_file_version(sys.executable)
+    assert py_ver is not None
+    assert "." in py_ver
+
+    # 3. Test base_name fallback matching in PackageMatcher
+    config = ConfigManager(base_dir=tmp_path)
+    matcher = PackageMatcher(config)
+
+    upgrades = {
+        "blenderfoundation.blender": WingetPackageEntry(
+            name="Blender", id="BlenderFoundation.Blender", version="4.1.0", available_version="4.2.0", source="winget"
+        )
+    }
+    installed = {}
+
+    # Discovered name in registry is "Blender 4.1.0"
+    item = ProgramItem(name="Blender 4.1.0", installed_version="4.1.0", package_type=PackageType.WIN32_EXE)
+    matched = matcher.match_all([item], upgrades, installed)
+
+    assert matched[0].id == "BlenderFoundation.Blender"
+    assert matched[0].action == UpdateAction.AVAILABLE
+    assert matched[0].latest_version == "4.2.0"
+
+
+

@@ -28,6 +28,13 @@ def normalize_app_name(name: str) -> str:
     return n
 
 
+def strip_version_from_name(name: str) -> str:
+    """Strips trailing version numbers, release tags, and build suffixes from an application name."""
+    n = normalize_app_name(name)
+    n = re.sub(r"\s+(?:v|ver|version\s*)?\d+(?:\.\d+)*(?:\s*[a-z0-9\-_]+)?$", "", n, flags=re.IGNORECASE)
+    return n.strip()
+
+
 def normalize_publisher(pub: Optional[str]) -> str:
     """Normalizes publisher string by stripping legal corporate suffixes and punctuation."""
     if not pub:
@@ -84,6 +91,7 @@ KNOWN_PACKAGE_ALIASES: Dict[str, str] = {
     "docker desktop": "Docker.DockerDesktop",
     "obs studio": "OBSProject.OBSStudio",
     "brave": "Brave.Brave",
+    "brave browser": "Brave.Brave",
     "microsoft powertoys": "Microsoft.PowerToys",
     "powertoys": "Microsoft.PowerToys",
     "winrar": "RARLab.WinRAR",
@@ -119,6 +127,57 @@ KNOWN_PACKAGE_ALIASES: Dict[str, str] = {
     "tailscale": "Tailscale.Tailscale",
     "proton vpn": "Proton.ProtonVPN",
     "nordvpn": "NordSecurity.NordVPN",
+    "python": "Python.Python.3.12",
+    "python 3": "Python.Python.3.12",
+    "python 3.12": "Python.Python.3.12",
+    "python 3.11": "Python.Python.3.11",
+    "python 3.10": "Python.Python.3.10",
+    "visual studio": "Microsoft.VisualStudio.2022.Community",
+    "visual studio community": "Microsoft.VisualStudio.2022.Community",
+    "powershell": "Microsoft.PowerShell",
+    "powershell 7": "Microsoft.PowerShell",
+    "windows terminal": "Microsoft.WindowsTerminal",
+    "opera": "Opera.Opera",
+    "opera gx": "Opera.OperaGX",
+    "vivaldi": "Vivaldi.Vivaldi",
+    "tor browser": "TorProject.TorBrowser",
+    "intellij idea": "JetBrains.IntelliJIDEA.Community",
+    "pycharm": "JetBrains.PyCharm.Community",
+    "pycharm community edition": "JetBrains.PyCharm.Community",
+    "webstorm": "JetBrains.WebStorm",
+    "clion": "JetBrains.CLion",
+    "rustup": "Rustlang.Rustup",
+    "golang": "GoLang.Go",
+    "go programming language": "GoLang.Go",
+    "winscp": "WinSCP.WinSCP",
+    "dbeaver": "dbeaver.dbeaver",
+    "insomnia": "Kong.Insomnia",
+    "paint.net": "dotPDN.PaintDotNet",
+    "inkscape": "Inkscape.Inkscape",
+    "krita": "KDE.Krita",
+    "davinci resolve": "BlackmagicDesign.DaVinciResolve",
+    "foobar2000": "PeterPawlowski.foobar2000",
+    "itunes": "Apple.iTunes",
+    "rufus": "Rufus.Rufus",
+    "balenaetcher": "Balena.Etcher",
+    "etcher": "Balena.Etcher",
+    "crystaldiskinfo": "CrystalDewWorld.CrystalDiskInfo",
+    "crystaldiskmark": "CrystalDewWorld.CrystalDiskMark",
+    "cpu-z": "CPUID.CPU-Z",
+    "gpu-z": "TechPowerUp.GPU-Z",
+    "hwmonitor": "CPUID.HWMonitor",
+    "treesize free": "JAMSoftware.TreeSizeFree",
+    "rustdesk": "RustDesk.RustDesk",
+    "calibre": "KovidGoyal.Calibre",
+    "foxit pdf reader": "Foxit.FoxitReader",
+    "adobe acrobat reader": "Adobe.Acrobat.Reader.64-bit",
+    "1password": "AgileBits.1Password",
+    "autohotkey": "AutoHotkey.AutoHotkey",
+    "cloudflare warp": "Cloudflare.Warp",
+    "unity hub": "Unity.UnityHub",
+    "battle.net": "Blizzard.BattleNet",
+    "ea app": "ElectronicArts.EADesktop",
+    "gog galaxy": "GOG.Galaxy",
 }
 
 
@@ -198,6 +257,7 @@ class PackageMatcher:
             return
 
         norm_name = normalize_app_name(item.name)
+        base_name = strip_version_from_name(item.name)
         norm_id = (item.id or "").strip().lower()
 
         # 3. Check custom user binding from custom_mappings.json
@@ -217,8 +277,8 @@ class PackageMatcher:
                 item.notes += " (Bound to verified Winget ID)"
                 return
 
-        # 4. Check known curated aliases
-        alias_id = KNOWN_PACKAGE_ALIASES.get(norm_name)
+        # 4. Check known curated aliases (by exact normalized name or base stripped name)
+        alias_id = KNOWN_PACKAGE_ALIASES.get(norm_name) or KNOWN_PACKAGE_ALIASES.get(base_name)
         if alias_id:
             alias_norm = alias_id.strip().lower()
             if alias_norm in upgrades_by_id:
@@ -230,21 +290,27 @@ class PackageMatcher:
 
         # 5. Direct ID match in pending upgrades
         matched_upgrade = upgrades_by_id.get(norm_id) if norm_id else None
-        if not matched_upgrade and norm_name in name_to_upgrade:
-            candidates = name_to_upgrade[norm_name]
-            if len(candidates) == 1:
-                matched_upgrade = candidates[0]
-            else:
-                logger.warning(f"Multiple winget upgrade candidates for '{item.name}'. Ambiguous match marked for review.")
-                item.action = UpdateAction.UNVERIFIED
-                item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
-                item.is_ambiguous = True
-                item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
-                item.unavailability_reason = (
-                    f"Ambiguous candidates ({', '.join(c.id for c in candidates[:3])}). "
-                    "Use 'Bind Winget ID' in drawer to select the correct package."
-                )
-                return
+        if not matched_upgrade:
+            candidates = None
+            if norm_name in name_to_upgrade:
+                candidates = name_to_upgrade[norm_name]
+            elif base_name in name_to_upgrade:
+                candidates = name_to_upgrade[base_name]
+
+            if candidates:
+                if len(candidates) == 1:
+                    matched_upgrade = candidates[0]
+                else:
+                    logger.warning(f"Multiple winget upgrade candidates for '{item.name}'. Ambiguous match marked for review.")
+                    item.action = UpdateAction.UNVERIFIED
+                    item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
+                    item.is_ambiguous = True
+                    item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
+                    item.unavailability_reason = (
+                        f"Ambiguous candidates ({', '.join(c.id for c in candidates[:3])}). "
+                        "Use 'Bind Winget ID' in drawer to select the correct package."
+                    )
+                    return
 
         if matched_upgrade:
             if item.publisher and getattr(matched_upgrade, "publisher", None):
@@ -263,20 +329,26 @@ class PackageMatcher:
 
         # 6. Match in general winget installed list
         matched_installed = installed_by_id.get(norm_id) if norm_id else None
-        if not matched_installed and norm_name in name_to_installed:
-            candidates = name_to_installed[norm_name]
-            if len(candidates) == 1:
-                matched_installed = candidates[0]
-            else:
-                logger.warning(f"Multiple winget installed candidates for '{item.name}'. Ambiguous match marked for review.")
-                item.action = UpdateAction.UNVERIFIED
-                item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
-                item.is_ambiguous = True
-                item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
-                item.unavailability_reason = (
-                    f"Multiple candidate packages match name. Use 'Bind Winget ID' to link."
-                )
-                return
+        if not matched_installed:
+            candidates = None
+            if norm_name in name_to_installed:
+                candidates = name_to_installed[norm_name]
+            elif base_name in name_to_installed:
+                candidates = name_to_installed[base_name]
+
+            if candidates:
+                if len(candidates) == 1:
+                    matched_installed = candidates[0]
+                else:
+                    logger.warning(f"Multiple winget installed candidates for '{item.name}'. Ambiguous match marked for review.")
+                    item.action = UpdateAction.UNVERIFIED
+                    item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
+                    item.is_ambiguous = True
+                    item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
+                    item.unavailability_reason = (
+                        f"Multiple candidate packages match name. Use 'Bind Winget ID' to link."
+                    )
+                    return
 
         if matched_installed:
             self._apply_winget_installed_match(item, matched_installed)

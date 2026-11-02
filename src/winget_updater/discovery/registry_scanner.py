@@ -1,5 +1,8 @@
 """Win32 software discovery via Windows Registry hives."""
 
+import ctypes
+import os
+import re
 import winreg
 from typing import Dict, List, Optional
 from winget_updater.models import PackageType, ProgramItem
@@ -9,6 +12,49 @@ logger = get_logger()
 
 # Standard Windows Uninstall registry subkey
 UNINSTALL_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"
+
+
+def extract_pe_file_version(filepath: str) -> Optional[str]:
+    """Extracts FileVersion from a Win32 PE binary (.exe/.dll) via ctypes."""
+    if not filepath or not os.path.isfile(filepath):
+        return None
+    try:
+        size = ctypes.windll.version.GetFileVersionInfoSizeW(filepath, None)
+        if not size:
+            return None
+        res = ctypes.create_string_buffer(size)
+        if not ctypes.windll.version.GetFileVersionInfoW(filepath, None, size, res):
+            return None
+        r = ctypes.c_void_p()
+        u_len = ctypes.c_uint()
+        if ctypes.windll.version.VerQueryValueW(res, "\\", ctypes.byref(r), ctypes.byref(u_len)):
+            fixed_info = (ctypes.c_uint32 * 13).from_address(r.value)
+            ms = fixed_info[2]
+            ls = fixed_info[3]
+            v_major = ms >> 16
+            v_minor = ms & 0xFFFF
+            v_build = ls >> 16
+            v_rev = ls & 0xFFFF
+            if v_rev != 0:
+                return f"{v_major}.{v_minor}.{v_build}.{v_rev}"
+            elif v_build != 0:
+                return f"{v_major}.{v_minor}.{v_build}"
+            return f"{v_major}.{v_minor}"
+    except Exception:
+        pass
+    return None
+
+
+def clean_exe_path(raw_path: Optional[str]) -> Optional[str]:
+    """Cleans a raw registry path string (stripping quotes and icon index suffixes)."""
+    if not raw_path:
+        return None
+    p = raw_path.strip().strip('"').strip("'")
+    # Strip trailing icon index (e.g. ,0 or ,-1)
+    p = re.sub(r",-?\d+$", "", p).strip()
+    if os.path.isfile(p):
+        return p
+    return None
 
 
 class RegistryScanner:
@@ -90,11 +136,36 @@ class RegistryScanner:
         if not display_name:
             return None
 
-        display_version = get_val("DisplayVersion") or "Unknown"
+        display_version = get_val("DisplayVersion")
         publisher = get_val("Publisher")
         install_location = get_val("InstallLocation")
+        display_icon = get_val("DisplayIcon")
         uninstall_string = get_val("UninstallString") or ""
         windows_installer = get_val("WindowsInstaller")
+
+        # Fallback: if DisplayVersion is missing or empty, extract directly from PE executable
+        if not display_version or display_version.lower() in ("unknown", ""):
+            # Try DisplayIcon first
+            target_exe = clean_exe_path(display_icon)
+            if target_exe:
+                extracted_v = extract_pe_file_version(target_exe)
+                if extracted_v:
+                    display_version = extracted_v
+
+            # Try InstallLocation if not found yet
+            if (not display_version or display_version.lower() == "unknown") and install_location and os.path.isdir(install_location):
+                try:
+                    for f in os.listdir(install_location):
+                        if f.lower().endswith(".exe"):
+                            cand = os.path.join(install_location, f)
+                            extracted_v = extract_pe_file_version(cand)
+                            if extracted_v:
+                                display_version = extracted_v
+                                break
+                except Exception:
+                    pass
+
+        display_version = display_version or "Unknown"
 
         # Determine if MSI or standard EXE
         is_msi = False
@@ -115,4 +186,5 @@ class RegistryScanner:
             package_type=pkg_type,
             notes=f"Found via {hive_desc}",
         )
+
 

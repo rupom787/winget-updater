@@ -897,7 +897,8 @@ class DetailsDrawer(tk.Frame):
 
 
 class ProgramTableView(tk.Frame):
-    """4-Column Installed Software Table view with clear status pills and virtualized rendering.
+    """4-Column Installed Software Table view with clear status pills, virtualized rendering,
+    and extended multi-selection batch capabilities.
     Columns: Application Name, Installed Version, Available Version, Status.
     """
 
@@ -917,6 +918,16 @@ class ProgramTableView(tk.Frame):
         on_single_update: Optional[Callable[[ProgramItem], None]] = None,
         on_uninstall_item: Optional[Callable[[ProgramItem], None]] = None,
         on_toast_message: Optional[Callable[[str, str], None]] = None,
+        on_batch_select: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_bind_source: Optional[Callable[[ProgramItem], None]] = None,
+        on_allow_unverified: Optional[Callable[[ProgramItem], None]] = None,
+        on_open_website: Optional[Callable[[ProgramItem], None]] = None,
+        on_pin_item: Optional[Callable[[ProgramItem], None]] = None,
+        on_skip_version: Optional[Callable[[ProgramItem], None]] = None,
+        on_batch_update: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_pin: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_exclude: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_allow: Optional[Callable[[List[ProgramItem]], None]] = None,
     ):
         super().__init__(parent, bg="#ffffff")
         self.theme: ThemeColors = LIGHT_THEME
@@ -926,6 +937,16 @@ class ProgramTableView(tk.Frame):
         self.on_single_update = on_single_update
         self.on_uninstall_item = on_uninstall_item
         self.on_toast_message = on_toast_message
+        self.on_batch_select = on_batch_select
+        self.on_bind_source = on_bind_source
+        self.on_allow_unverified = on_allow_unverified
+        self.on_open_website = on_open_website
+        self.on_pin_item = on_pin_item
+        self.on_skip_version = on_skip_version
+        self.on_batch_update = on_batch_update
+        self.on_batch_pin = on_batch_pin
+        self.on_batch_exclude = on_batch_exclude
+        self.on_batch_allow = on_batch_allow
         self.items_by_iid: Dict[str, ProgramItem] = {}
         self._current_generation: int = 0
 
@@ -960,7 +981,7 @@ class ProgramTableView(tk.Frame):
         )
 
         cols = [c[0] for c in self.COLUMNS]
-        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse", style="CleanWine.Treeview")
+        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="extended", style="CleanWine.Treeview")
 
         for col_id, col_text, col_width in self.COLUMNS:
             self.tree.heading(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
@@ -1000,16 +1021,8 @@ class ProgramTableView(tk.Frame):
         self.tree.bind("<<TreeviewSelect>>", self._handle_select)
         self.tree.bind("<MouseWheel>", self._on_mousewheel)
 
-        # Clean Context Menu
+        # Context Menu
         self.context_menu = tk.Menu(self, tearoff=0, bg="#ffffff", fg="#0f172a", activebackground="#fff1f2", activeforeground="#881337")
-        self.context_menu.add_command(label="View application details", command=self._menu_view_details)
-        self.context_menu.add_command(label="Update this application", command=self._menu_update_single)
-        self.context_menu.add_separator()
-        self.context_menu.add_command(label="Exclude from updates", command=self._menu_exclude)
-        self.context_menu.add_command(label="Open installation folder", command=self._menu_open_folder)
-        self.context_menu.add_command(label="Copy package identifier", command=self._menu_copy_info)
-        self.context_menu.add_separator()
-        self.context_menu.add_command(label="Uninstall application", command=self._menu_uninstall)
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
@@ -1137,16 +1150,68 @@ class ProgramTableView(tk.Frame):
 
         _insert_chunk(0)
 
+    def get_selected_items(self) -> List[ProgramItem]:
+        """Returns all currently selected ProgramItem models."""
+        sel = self.tree.selection()
+        return [self.items_by_iid[i] for i in sel if i in self.items_by_iid]
+
     def _get_selected_item(self) -> Optional[ProgramItem]:
         sel = self.tree.selection()
         if not sel:
             return None
         return self.items_by_iid.get(sel[0])
 
-    def _handle_select(self, event) -> None:
-        item = self._get_selected_item()
-        if self.on_select_item:
-            self.on_select_item(item)
+    def _handle_select(self, event=None) -> None:
+        sel = self.tree.selection()
+        if not sel:
+            if self.on_select_item:
+                self.on_select_item(None)
+            if self.on_batch_select:
+                self.on_batch_select([])
+            return
+
+        selected_items = [self.items_by_iid[iid] for iid in sel if iid in self.items_by_iid]
+        if len(selected_items) == 1:
+            if self.on_select_item:
+                self.on_select_item(selected_items[0])
+            if self.on_batch_select:
+                self.on_batch_select([])
+        else:
+            if self.on_select_item:
+                self.on_select_item(None)
+            if self.on_batch_select:
+                self.on_batch_select(selected_items)
+
+    def select_all(self) -> None:
+        """Selects all items currently displayed in the table."""
+        all_iids = self.tree.get_children("")
+        self.tree.selection_set(all_iids)
+        self._handle_select()
+
+    def select_updates_only(self) -> None:
+        """Selects only items that have verified updates ready."""
+        u_iids = [
+            iid for iid, it in self.items_by_iid.items()
+            if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)
+        ]
+        if u_iids:
+            self.tree.selection_set(u_iids)
+            self._handle_select()
+
+    def select_unverified_only(self) -> None:
+        """Selects only items marked as could not verify or ambiguous."""
+        unver_iids = [
+            iid for iid, it in self.items_by_iid.items()
+            if it.action == UpdateAction.UNVERIFIED
+        ]
+        if unver_iids:
+            self.tree.selection_set(unver_iids)
+            self._handle_select()
+
+    def clear_selection(self) -> None:
+        """Clears all table row selections."""
+        self.tree.selection_set(())
+        self._handle_select()
 
     def _handle_double_click(self, event) -> None:
         item = self._get_selected_item()
@@ -1155,10 +1220,95 @@ class ProgramTableView(tk.Frame):
 
     def _show_context_menu(self, event) -> None:
         iid = self.tree.identify_row(event.y)
-        if iid:
+        if not iid:
+            return
+
+        current_sel = self.tree.selection()
+        if iid not in current_sel:
             self.tree.selection_set(iid)
             self._handle_select(None)
-            self.context_menu.post(event.x_root, event.y_root)
+
+        self._build_context_menu()
+        self.context_menu.post(event.x_root, event.y_root)
+
+    def _build_context_menu(self) -> None:
+        """Dynamically populates context menu based on whether single or multiple items are selected."""
+        self.context_menu.delete(0, tk.END)
+        items = self.get_selected_items()
+        if not items:
+            return
+
+        if len(items) == 1:
+            item = items[0]
+            # Primary action
+            if item.action == UpdateAction.UNVERIFIED:
+                self.context_menu.add_command(
+                    label="⚡ Review & Allow Update",
+                    command=self._menu_allow_unverified,
+                    font=("Segoe UI", 9, "bold"),
+                )
+            elif item.action == UpdateAction.AVAILABLE:
+                self.context_menu.add_command(
+                    label="🚀 Update This Application",
+                    command=self._menu_update_single,
+                    font=("Segoe UI", 9, "bold"),
+                )
+            else:
+                self.context_menu.add_command(
+                    label="🔍 View Application Details",
+                    command=self._menu_view_details,
+                    font=("Segoe UI", 9, "bold"),
+                )
+
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="🔗 Bind Winget ID...", command=self._menu_bind_source)
+
+            # Pin / Unpin
+            if item.is_pinned:
+                self.context_menu.add_command(label="📌 Unpin Application", command=self._menu_pin)
+            else:
+                self.context_menu.add_command(label=f"📌 Pin to {item.installed_version}", command=self._menu_pin)
+
+            # Skip / Unskip
+            if item.action == UpdateAction.AVAILABLE and item.latest_version:
+                self.context_menu.add_command(label=f"⏭️ Skip Release {item.latest_version}", command=self._menu_skip)
+            elif item.action == UpdateAction.SKIPPED_VERSION:
+                self.context_menu.add_command(label="⏭️ Unskip Release", command=self._menu_skip)
+
+            self.context_menu.add_command(label="🌐 Visit Official Website", command=self._menu_open_website)
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="📂 Open Installation Folder", command=self._menu_open_folder)
+            self.context_menu.add_command(label="📋 Copy Package Identifier", command=self._menu_copy_info)
+            self.context_menu.add_command(label="🛡️ Exclude from Updates", command=self._menu_exclude)
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="🗑️ Uninstall Application", command=self._menu_uninstall)
+        else:
+            # Multi-selection batch operations
+            up_items = [it for it in items if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)]
+            unver_items = [it for it in items if it.action == UpdateAction.UNVERIFIED]
+
+            if up_items:
+                self.context_menu.add_command(
+                    label=f"🚀 Update Selected ({len(up_items)} updates)",
+                    command=self._menu_batch_update,
+                    font=("Segoe UI", 9, "bold"),
+                )
+            if unver_items:
+                self.context_menu.add_command(
+                    label=f"⚡ Approve Selected Unverified ({len(unver_items)} packages)",
+                    command=self._menu_batch_allow,
+                    font=("Segoe UI", 9, "bold"),
+                )
+            self.context_menu.add_command(
+                label=f"📌 Pin Selected ({len(items)} packages)",
+                command=self._menu_batch_pin,
+            )
+            self.context_menu.add_command(
+                label=f"🛡️ Exclude Selected ({len(items)} packages)",
+                command=self._menu_batch_exclude,
+            )
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="✕ Deselect All", command=self.clear_selection)
 
     def _menu_view_details(self) -> None:
         item = self._get_selected_item()
@@ -1169,6 +1319,31 @@ class ProgramTableView(tk.Frame):
         item = self._get_selected_item()
         if item and self.on_single_update:
             self.on_single_update(item)
+
+    def _menu_allow_unverified(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_allow_unverified:
+            self.on_allow_unverified(item)
+
+    def _menu_bind_source(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_bind_source:
+            self.on_bind_source(item)
+
+    def _menu_pin(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_pin_item:
+            self.on_pin_item(item)
+
+    def _menu_skip(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_skip_version:
+            self.on_skip_version(item)
+
+    def _menu_open_website(self) -> None:
+        item = self._get_selected_item()
+        if item and self.on_open_website:
+            self.on_open_website(item)
 
     def _menu_exclude(self) -> None:
         item = self._get_selected_item()
@@ -1206,12 +1381,214 @@ class ProgramTableView(tk.Frame):
         if item and self.on_uninstall_item:
             self.on_uninstall_item(item)
 
+    def _menu_batch_update(self) -> None:
+        items = [it for it in self.get_selected_items() if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)]
+        if items and self.on_batch_update:
+            self.on_batch_update(items)
+
+    def _menu_batch_allow(self) -> None:
+        items = [it for it in self.get_selected_items() if it.action == UpdateAction.UNVERIFIED]
+        if items and self.on_batch_allow:
+            self.on_batch_allow(items)
+
+    def _menu_batch_pin(self) -> None:
+        items = self.get_selected_items()
+        if items and self.on_batch_pin:
+            self.on_batch_pin(items)
+
+    def _menu_batch_exclude(self) -> None:
+        items = self.get_selected_items()
+        if items and self.on_batch_exclude:
+            self.on_batch_exclude(items)
+
     def _sort_column(self, col: str, reverse: bool) -> None:
         l = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
         l.sort(reverse=reverse)
         for index, (_, k) in enumerate(l):
             self.tree.move(k, "", index)
         self.tree.heading(col, command=lambda: self._sort_column(col, not reverse))
+
+
+class FloatingGlassBatchDock(tk.Frame):
+    """Frosted Glass Action Dock that slides in at the bottom when multiple applications are selected."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_batch_update: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_allow: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_pin: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_batch_exclude: Optional[Callable[[List[ProgramItem]], None]] = None,
+        on_clear_selection: Optional[Callable[[], None]] = None,
+    ):
+        super().__init__(
+            parent,
+            bg="#faf6f6",
+            padx=18,
+            pady=10,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.on_batch_update = on_batch_update
+        self.on_batch_allow = on_batch_allow
+        self.on_batch_pin = on_batch_pin
+        self.on_batch_exclude = on_batch_exclude
+        self.on_clear_selection = on_clear_selection
+        self.selected_items: List[ProgramItem] = []
+        self.theme: ThemeColors = LIGHT_THEME
+
+        # Left Info Stack
+        self.info_stack = tk.Frame(self, bg="#faf6f6")
+        self.info_stack.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.lbl_title = tk.Label(
+            self.info_stack,
+            text="0 Applications Selected",
+            bg="#faf6f6",
+            fg="#881337",
+            font=("Segoe UI", 10, "bold"),
+            anchor="w",
+        )
+        self.lbl_title.pack(anchor=tk.W)
+
+        self.lbl_sub = tk.Label(
+            self.info_stack,
+            text="",
+            bg="#faf6f6",
+            fg="#64748b",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_sub.pack(anchor=tk.W, pady=(1, 0))
+
+        # Right Action Buttons
+        self.btn_box = tk.Frame(self, bg="#faf6f6")
+        self.btn_box.pack(side=tk.RIGHT)
+
+        self.btn_update = RoundedButton(
+            self.btn_box,
+            text="Update Selected",
+            command=self._on_update_clicked,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            font=("Segoe UI", 9, "bold"),
+            height=32,
+            padding=(14, 6),
+            parent_bg="#faf6f6",
+        )
+        self.btn_update.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_allow = RoundedButton(
+            self.btn_box,
+            text="⚡ Approve Unverified",
+            command=self._on_allow_clicked,
+            bg_color="#fef3c7",
+            fg_color="#92400e",
+            hover_bg="#fde68a",
+            border_color="#fcd34d",
+            radius=8,
+            font=("Segoe UI", 8, "bold"),
+            height=32,
+            padding=(10, 6),
+            parent_bg="#faf6f6",
+        )
+
+        self.btn_pin = RoundedButton(
+            self.btn_box,
+            text="📌 Pin",
+            command=self._on_pin_clicked,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=8,
+            font=("Segoe UI", 8),
+            height=32,
+            padding=(10, 6),
+            parent_bg="#faf6f6",
+        )
+        self.btn_pin.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_clear = RoundedButton(
+            self.btn_box,
+            text="✕ Deselect",
+            command=self._on_clear_clicked,
+            bg_color="#ffffff",
+            fg_color="#64748b",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=8,
+            font=("Segoe UI", 8),
+            height=32,
+            padding=(8, 6),
+            parent_bg="#faf6f6",
+        )
+        self.btn_clear.pack(side=tk.LEFT)
+
+    def set_selected_items(self, items: List[ProgramItem]) -> None:
+        """Configures dock counts and enables batch actions based on selected models."""
+        self.selected_items = items
+        total = len(items)
+        if total == 0:
+            return
+
+        up_items = [it for it in items if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)]
+        unver_items = [it for it in items if it.action == UpdateAction.UNVERIFIED]
+        upto_date = [it for it in items if it.action == UpdateAction.UP_TO_DATE]
+
+        self.lbl_title.config(text=f"📦 {total} Applications Selected")
+        sub_parts = []
+        if up_items:
+            sub_parts.append(f"{len(up_items)} verified updates")
+        if unver_items:
+            sub_parts.append(f"{len(unver_items)} unverified")
+        if upto_date:
+            sub_parts.append(f"{len(upto_date)} up to date")
+        self.lbl_sub.config(text="  •  ".join(sub_parts) if sub_parts else "Multiple selections active")
+
+        if up_items:
+            self.btn_update.config(state="normal", text=f"🚀 Update Selected ({len(up_items)})", bg="#881337", fg="#ffffff")
+        else:
+            self.btn_update.config(state="disabled", text="Update Selected", bg="#f1f5f9", fg="#94a3b8")
+
+        if unver_items:
+            self.btn_allow.pack(side=tk.LEFT, padx=(0, 6))
+            self.btn_allow.config(state="normal", text=f"⚡ Approve ({len(unver_items)})")
+        else:
+            self.btn_allow.pack_forget()
+
+    def _on_update_clicked(self) -> None:
+        if self.on_batch_update and self.selected_items:
+            up_items = [it for it in self.selected_items if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)]
+            if up_items:
+                self.on_batch_update(up_items)
+
+    def _on_allow_clicked(self) -> None:
+        if self.on_batch_allow and self.selected_items:
+            unver_items = [it for it in self.selected_items if it.action == UpdateAction.UNVERIFIED]
+            if unver_items:
+                self.on_batch_allow(unver_items)
+
+    def _on_pin_clicked(self) -> None:
+        if self.on_batch_pin and self.selected_items:
+            self.on_batch_pin(self.selected_items)
+
+    def _on_clear_clicked(self) -> None:
+        if self.on_clear_selection:
+            self.on_clear_selection()
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        bg_col = theme.bg_sidebar
+        border_col = theme.border
+        self.config(bg=bg_col, highlightbackground=border_col)
+        self.info_stack.config(bg=bg_col)
+        self.btn_box.config(bg=bg_col)
+        self.lbl_title.config(bg=bg_col, fg=theme.accent_burgundy)
+        self.lbl_sub.config(bg=bg_col, fg=theme.fg_muted)
+
 
 
 # --- Legacy / Backwards-Compatibility Component Aliases ---

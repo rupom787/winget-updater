@@ -2,9 +2,11 @@
 
 import math
 import random
+import threading
+import time
 import tkinter as tk
 from typing import Callable, Dict, List, Optional, Tuple
-from winget_updater.gui.theme import DARK_THEME, ThemeColors
+from winget_updater.gui.theme import DARK_THEME, LIGHT_THEME, ThemeColors
 
 
 class SoftwareEngineeringHeroScene(tk.Canvas):
@@ -850,3 +852,133 @@ class SmoothLerpProgressBar(tk.Canvas):
         pct_text = f"{int(round(self.current_val))}%"
         txt_col = "#ffffff" if fill_w > (w / 2) else self.theme.fg_primary
         self.create_text(w // 2, h // 2, text=pct_text, fill=txt_col, font=("Cascadia Code", 8, "bold"))
+
+
+class GlassyTelemetryHUD(tk.Frame):
+    """Frosted Glass live hardware telemetry HUD pill with pulsating status beacon."""
+
+    def __init__(self, parent: tk.Widget, sys_info=None, gpu_name: str = "DirectX 12", **kwargs):
+        super().__init__(
+            parent,
+            bg="#ffffff",
+            padx=10,
+            pady=3,
+            highlightthickness=1,
+            highlightbackground="#f3d5d9",
+            **kwargs,
+        )
+        self.sys_info = sys_info
+        self.gpu_name = gpu_name
+        self.theme: ThemeColors = LIGHT_THEME
+        self._pulse_phase = 0.0
+        self._cpu_val = 0.0
+        self._ram_str = "RAM: —"
+        self._mode = "idle"  # "idle", "scanning", "updating"
+        self._is_active = True
+
+        # Specular 1px bevel canvas for subtle glassy sheen
+        self.beacon = tk.Canvas(self, width=16, height=16, bg="#ffffff", highlightthickness=0)
+        self.beacon.pack(side=tk.LEFT, padx=(0, 6))
+
+        # CPU Label
+        self.lbl_cpu = tk.Label(self, text="CPU: 0%", font=("Segoe UI", 8, "bold"), bg="#ffffff", fg="#059669")
+        self.lbl_cpu.pack(side=tk.LEFT, padx=(0, 6))
+
+        # Dot separator
+        self.lbl_sep1 = tk.Label(self, text="•", font=("Segoe UI", 8), bg="#ffffff", fg="#94a3b8")
+        self.lbl_sep1.pack(side=tk.LEFT, padx=(0, 6))
+
+        # RAM Label
+        self.lbl_ram = tk.Label(self, text="RAM: —", font=("Segoe UI", 8), bg="#ffffff", fg="#334155")
+        self.lbl_ram.pack(side=tk.LEFT, padx=(0, 6))
+
+        # Dot separator
+        self.lbl_sep2 = tk.Label(self, text="•", font=("Segoe UI", 8), bg="#ffffff", fg="#94a3b8")
+        self.lbl_sep2.pack(side=tk.LEFT, padx=(0, 6))
+
+        # GPU / DWM Label
+        gpu_short = gpu_name
+        if len(gpu_short) > 22:
+            gpu_short = gpu_short.replace("NVIDIA ", "").replace("Graphics", "").strip()
+        self.lbl_gpu = tk.Label(self, text=f"GPU: {gpu_short}", font=("Segoe UI", 8, "bold"), bg="#ffffff", fg="#881337")
+        self.lbl_gpu.pack(side=tk.LEFT)
+
+        self._start_telemetry_thread()
+        self._pulse_tick()
+
+    def set_mode(self, mode: str) -> None:
+        """Sets beacon operating state: 'idle', 'scanning', 'updating'."""
+        self._mode = mode
+
+    def _pulse_tick(self) -> None:
+        if not self._is_active or not self.winfo_exists():
+            return
+
+        speed = 0.22 if self._mode in ("scanning", "updating") else 0.10
+        self._pulse_phase = (self._pulse_phase + speed) % (2 * math.pi)
+        scale = (math.sin(self._pulse_phase) + 1.0) / 2.0
+
+        if self._mode == "scanning":
+            core_col = "#881337"
+            halo_col = "#ffe4e6" if self.theme.name == "light" else "#4c0519"
+        elif self._mode == "updating":
+            core_col = "#d97706"
+            halo_col = "#fef3c7" if self.theme.name == "light" else "#451a03"
+        else:
+            core_col = "#10b981"
+            halo_col = "#d1fae5" if self.theme.name == "light" else "#064e3b"
+
+        halo_radius = 4.0 + scale * 3.5
+        self.beacon.delete("all")
+        self.beacon.create_oval(8 - halo_radius, 8 - halo_radius, 8 + halo_radius, 8 + halo_radius, fill=halo_col, outline="")
+        self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
+
+        self.after(50, self._pulse_tick)
+
+    def _start_telemetry_thread(self) -> None:
+        if not self.sys_info:
+            return
+
+        def worker():
+            while self._is_active:
+                try:
+                    cpu = self.sys_info.get_cpu_load_percent(sample_interval=0.1)
+                    used_gb, total_gb, ram_pct = self.sys_info.get_memory_info()
+                    ram_text = f"RAM: {used_gb:.1f}/{total_gb:.1f} GB ({ram_pct}%)"
+
+                    def update_ui(c=cpu, r=ram_text):
+                        if not self.winfo_exists():
+                            return
+                        self._cpu_val = c
+                        if c > 80:
+                            cpu_col = "#dc2626"
+                        elif c > 50:
+                            cpu_col = "#d97706"
+                        else:
+                            cpu_col = "#38bdf8" if self.theme.name == "dark" else "#059669"
+                        self.lbl_cpu.config(text=f"CPU: {int(round(c))}%", fg=cpu_col)
+                        self.lbl_ram.config(text=r)
+
+                    self.after(0, update_ui)
+                except Exception:
+                    pass
+                time.sleep(2.0)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        card_bg = theme.bg_card
+        border_col = theme.border
+        self.config(bg=card_bg, highlightbackground=border_col)
+        self.beacon.config(bg=card_bg)
+        self.lbl_cpu.config(bg=card_bg)
+        self.lbl_sep1.config(bg=card_bg, fg=theme.fg_muted)
+        self.lbl_ram.config(bg=card_bg, fg=theme.fg_primary)
+        self.lbl_sep2.config(bg=card_bg, fg=theme.fg_muted)
+        self.lbl_gpu.config(bg=card_bg, fg=theme.accent_burgundy if theme.name == "light" else "#f43f5e")
+
+    def destroy(self) -> None:
+        self._is_active = False
+        super().destroy()
+

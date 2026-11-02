@@ -25,6 +25,7 @@ from winget_updater.engine.updater import UpdateEngine, UpdateRunSummary
 from winget_updater.gui.animations import (
     CyberLaserHeaderCanvas,
     FluentFloatingToast,
+    GlassyTelemetryHUD,
     ScanningPulseAnimator,
     SmoothLerpProgressBar,
     SoftwareEngineeringHeroScene,
@@ -33,6 +34,7 @@ from winget_updater.gui.animations import (
 from winget_updater.gui.components import (
     DetailsDrawer,
     ElevationBanner,
+    FloatingGlassBatchDock,
     InspectorPane,
     LiveWarningBar,
     ProgramTableView,
@@ -158,13 +160,17 @@ class MainWindow(tk.Tk):
 
         self.lbl_app_sub = tk.Label(
             self.top_bar,
-            text=f"  •  Windows 11  •  Hardware Accelerated ({gpu_display})",
+            text="  •  Windows 11  •  Hardware Accelerated",
             bg="#ffffff",
             fg="#64748b",
             font=("Segoe UI", 9),
             anchor="w",
         )
         self.lbl_app_sub.pack(side=tk.LEFT)
+
+        # Frosted Glass Telemetry HUD
+        self.hud = GlassyTelemetryHUD(self.top_bar, sys_info=self.sys_info, gpu_name=self.primary_gpu.name)
+        self.hud.pack(side=tk.LEFT, padx=(16, 0))
 
         # Top Right Controls
         self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
@@ -381,6 +387,22 @@ class MainWindow(tk.Tk):
         self.btn_update_selected.config(state="disabled")
         self.btn_update_selected.pack(side=tk.RIGHT, padx=(10, 0))
 
+        # "Select Updates" Quick Batch Button
+        self.btn_select_updates = RoundedButton(
+            self.header_btn_box,
+            text="Select updates",
+            command=self._select_all_updates_clicked,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#cbd5e1",
+            radius=8,
+            height=36,
+            font=("Segoe UI", 9),
+            padding=(10, 8),
+        )
+        self.btn_select_updates.pack(side=tk.RIGHT, padx=(10, 0))
+
         # Checkbox Options: Dry Run, System Restore Point, Auto-Close Apps
         self.dry_run_var = tk.BooleanVar(value=False)
         self.chk_dry_run = tk.Checkbutton(
@@ -462,14 +484,35 @@ class MainWindow(tk.Tk):
             self.table_container,
             on_double_click=self._handle_row_double_click,
             on_select_item=self._on_row_selected,
+            on_batch_select=self._on_batch_selected,
             on_exclude_item=self._handle_context_exclude,
             on_single_update=self._handle_context_update,
             on_uninstall_item=self._handle_context_uninstall,
             on_toast_message=self._show_floating_toast,
+            on_bind_source=self._open_bind_source_dialog,
+            on_allow_unverified=self._handle_allow_unverified,
+            on_open_website=self._handle_open_website,
+            on_pin_item=self._handle_pin_item,
+            on_skip_version=self._handle_skip_version,
+            on_batch_update=self._handle_batch_update,
+            on_batch_pin=self._handle_batch_pin,
+            on_batch_exclude=self._handle_batch_exclude,
+            on_batch_allow=self._handle_batch_allow,
         )
         self.table.pack(fill=tk.BOTH, expand=True)
 
-        # 6. Bottom Details Drawer
+        # 6. Floating Glass Batch Action Dock (Appears when multiple items selected)
+        self.batch_dock = FloatingGlassBatchDock(
+            self.right_container,
+            on_batch_update=self._handle_batch_update,
+            on_batch_allow=self._handle_batch_allow,
+            on_batch_pin=self._handle_batch_pin,
+            on_batch_exclude=self._handle_batch_exclude,
+            on_clear_selection=self.table.clear_selection,
+        )
+        self.batch_dock.pack_forget()
+
+        # 7. Bottom Details Drawer
         self.drawer = DetailsDrawer(
             self.right_container,
             on_single_update=self._handle_context_update,
@@ -558,6 +601,12 @@ class MainWindow(tk.Tk):
         self.table.apply_theme(t)
         self.drawer.apply_theme(t)
         self.progress_bar.apply_theme(t)
+        if hasattr(self, "hud"):
+            self.hud.apply_theme(t)
+        if hasattr(self, "batch_dock"):
+            self.batch_dock.apply_theme(t)
+        if hasattr(self, "btn_select_updates"):
+            self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
 
         self.config.set_theme(t.name)
 
@@ -682,8 +731,102 @@ class MainWindow(tk.Tk):
             )
 
     def _on_update_selected_clicked(self) -> None:
-        if self.selected_item:
+        sel_items = self.table.get_selected_items()
+        if len(sel_items) > 1:
+            self._handle_batch_update(sel_items)
+        elif self.selected_item:
             self._handle_context_update(self.selected_item)
+
+    def _select_all_updates_clicked(self) -> None:
+        """Selects all available updates in the table."""
+        self.table.select_updates_only()
+
+    def _on_batch_selected(self, items: List[ProgramItem]) -> None:
+        """Invoked when multiple rows or 0 rows are selected in the table."""
+        if len(items) > 1:
+            self.drawer.pack_forget()
+            self.batch_dock.set_selected_items(items)
+            self.batch_dock.pack(fill=tk.X, side=tk.BOTTOM)
+            up_count = len([i for i in items if i.can_auto_update() or (i.action == UpdateAction.AVAILABLE and i.is_verified_winget)])
+            self.btn_update_selected.config(
+                state="normal" if up_count > 0 else "disabled",
+                text=f"Update ({up_count})",
+                bg="#881337" if up_count > 0 else "#ffffff",
+                fg="#ffffff" if up_count > 0 else "#9ca3af",
+            )
+        else:
+            self.batch_dock.pack_forget()
+            self.drawer.pack(fill=tk.X, side=tk.BOTTOM)
+            if len(items) == 1:
+                self._on_row_selected(items[0])
+            else:
+                self._on_row_selected(None)
+
+    def _handle_batch_update(self, items: List[ProgramItem]) -> None:
+        """Executes bulk updates for multiple selected items."""
+        eligible = [it for it in items if it.can_auto_update() or (it.action == UpdateAction.AVAILABLE and it.is_verified_winget)]
+        if not eligible:
+            self._show_floating_toast("No eligible updates in current selection", "i")
+            return
+
+        dry_run = self.dry_run_var.get()
+        mode_str = "Simulation Only (Dry-run)" if dry_run else "Standard Installation"
+        msg = (
+            f"Ready to update {len(eligible)} selected applications:\n\n"
+            + "\n".join(f"• {it.name} ({it.installed_version} → {it.latest_version})" for it in eligible[:6])
+            + (f"\n...and {len(eligible) - 6} more." if len(eligible) > 6 else "")
+            + f"\n\nExecution Mode: {mode_str}\nProceed with updating {len(eligible)} selected packages?"
+        )
+        if not messagebox.askyesno("Confirm Batch Update", msg, icon="question", parent=self):
+            return
+
+        self._execute_update_queue(eligible, dry_run=dry_run)
+
+    def _handle_batch_allow(self, items: List[ProgramItem]) -> None:
+        """Approves and verifies all selected unverified packages."""
+        count = 0
+        for it in items:
+            if it.action == UpdateAction.UNVERIFIED:
+                it.is_verified_winget = True
+                it.action = UpdateAction.AVAILABLE
+                it.unavailability_reason = None
+                it.notes = "Approved by user in batch"
+                self.table.update_item(it)
+                count += 1
+        if count > 0:
+            self._refresh_counts()
+            self.apply_filter()
+            self._show_floating_toast(f"Approved {count} packages for updates", "✓")
+
+    def _handle_batch_pin(self, items: List[ProgramItem]) -> None:
+        """Pins all selected items so they are preserved at their current version."""
+        count = 0
+        for it in items:
+            self.config.pin_package(it.name, it.installed_version, it.id)
+            it.is_pinned = True
+            it.pinned_version = it.installed_version
+            it.action = UpdateAction.PINNED
+            it.notes = f"Pinned to version {it.installed_version}"
+            it.unavailability_reason = f"Application is pinned to version {it.installed_version}."
+            self.table.update_item(it)
+            count += 1
+        self._refresh_counts()
+        self.apply_filter()
+        self._show_floating_toast(f"Pinned {count} packages to current version", "📌")
+
+    def _handle_batch_exclude(self, items: List[ProgramItem]) -> None:
+        """Excludes all selected items from automated scans and updates."""
+        count = 0
+        for it in items:
+            self.config.add_exclusion(it.name, reason="Batch excluded by user", package_id=it.id)
+            it.action = UpdateAction.EXCLUDED
+            it.notes = "Excluded by user"
+            it.unavailability_reason = "Application is excluded by user filter rule."
+            self.table.update_item(it)
+            count += 1
+        self._refresh_counts()
+        self.apply_filter()
+        self._show_floating_toast(f"Excluded {count} packages", "🛡️")
 
     def _search_catalog(self, query: str) -> None:
         q = query.strip() or "popular"
@@ -721,10 +864,14 @@ class MainWindow(tk.Tk):
         self.btn_scan.config(state="disabled")
         self.btn_update.config(state="disabled")
         self.btn_update_selected.config(state="disabled")
+        if hasattr(self, "btn_select_updates"):
+            self.btn_select_updates.config(state="disabled")
         self.progress_bar.set_progress(0)
         self.table.show_skeleton()
         self.scan_animator.start("Scanning discovered software inventory...")
         self.lbl_view_subtitle.config(text="Auditing installed packages across system...")
+        if hasattr(self, "hud"):
+            self.hud.set_mode("scanning")
 
         threading.Thread(target=self._scan_worker, daemon=True).start()
 
@@ -763,7 +910,11 @@ class MainWindow(tk.Tk):
         self.all_programs = items
         self.is_busy = False
         self.btn_scan.config(state="normal", bg="#881337", fg="#ffffff")
+        if hasattr(self, "btn_select_updates"):
+            self.btn_select_updates.config(state="normal")
         self.scan_animator.stop()
+        if hasattr(self, "hud"):
+            self.hud.set_mode("idle")
 
         total = len(items)
         updates = sum(1 for it in items if it.can_auto_update())
@@ -865,16 +1016,30 @@ class MainWindow(tk.Tk):
         if not messagebox.askyesno("Confirm Software Updates", msg, icon="question", parent=self):
             return
 
+        self._execute_update_queue(candidates, dry_run=dry_run)
+
+    def _execute_update_queue(self, target_items: List[ProgramItem], dry_run: bool) -> None:
+        """Dispatches an asynchronous batch update queue on background thread."""
+        if self.is_busy:
+            return
+
         self.is_busy = True
         self.btn_scan.config(state=tk.DISABLED)
         self.btn_update.config(state=tk.DISABLED)
         self.btn_update_selected.config(state=tk.DISABLED)
+        if hasattr(self, "btn_select_updates"):
+            self.btn_select_updates.config(state=tk.DISABLED)
         self.progress_bar.set_progress(0)
-        self.status_lbl.config(text=f"Updating {len(candidates)} packages...")
+        self.status_lbl.config(text=f"Updating {len(target_items)} packages...")
+        if hasattr(self, "hud"):
+            self.hud.set_mode("updating")
 
-        threading.Thread(target=self._update_worker, args=(dry_run,), daemon=True).start()
+        threading.Thread(target=self._update_worker_custom, args=(target_items, dry_run), daemon=True).start()
 
     def _update_worker(self, dry_run: bool) -> None:
+        self._update_worker_custom(self.all_programs, dry_run)
+
+    def _update_worker_custom(self, target_items: List[ProgramItem], dry_run: bool) -> None:
         def on_progress(item: ProgramItem, cur: int, tot: int) -> None:
             pct = int((cur / tot) * 100) if tot > 0 else 0
             self.msg_queue.put(("PROGRESS", pct))
@@ -882,7 +1047,7 @@ class MainWindow(tk.Tk):
 
         try:
             summary = self.engine.execute_batch_update(
-                self.all_programs,
+                target_items,
                 dry_run=dry_run,
                 is_scheduled=False,
                 create_restore_point=self.restore_point_var.get(),
@@ -898,6 +1063,10 @@ class MainWindow(tk.Tk):
     def _on_update_completed(self, summary: UpdateRunSummary) -> None:
         self.is_busy = False
         self.btn_scan.config(state="normal", bg="#881337", fg="#ffffff")
+        if hasattr(self, "btn_select_updates"):
+            self.btn_select_updates.config(state="normal")
+        if hasattr(self, "hud"):
+            self.hud.set_mode("idle")
         self.progress_bar.set_progress(100)
 
         # Automatic temporary installer cleanup
