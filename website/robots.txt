@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://winget-updater-rupom.vercel.app/sitemap.xml

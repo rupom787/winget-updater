@@ -18,10 +18,10 @@ function copyStaticAssets() {
       if (fs.existsSync(srcAssets)) {
         fs.cpSync(srcAssets, dstAssets, { recursive: true });
       }
-      // Copy root-level verification / meta files (e.g. Google Search Console)
+      // Copy root-level verification / meta files (e.g. Google Search Console, robots.txt, sitemap.xml)
       const rootFiles = fs.readdirSync(__dirname);
       for (const f of rootFiles) {
-        if (f.startsWith('google') && f.endsWith('.html')) {
+        if ((f.startsWith('google') && f.endsWith('.html')) || f === 'robots.txt' || f === 'sitemap.xml') {
           fs.copyFileSync(resolve(__dirname, f), resolve(outDir, f));
         }
       }
