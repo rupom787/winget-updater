@@ -2,7 +2,9 @@
 Discovers installed global npm packages, queries outdated releases, and handles install, update, and uninstall.
 """
 
+import glob
 import json
+import os
 import shutil
 from typing import Any, Dict, List, Optional, Tuple
 from winget_updater.adapters.base import BaseSourceAdapter
@@ -16,17 +18,82 @@ logger = get_logger()
 class NpmAdapter(BaseSourceAdapter):
     """Adapter for global Node.js npm packages."""
 
+    @staticmethod
+    def get_node_prefixes() -> List[str]:
+        """Discovers all active Node.js / npm installation prefixes on the system.
+        Covers WinGet NodeJS packages, Program Files, AppData roaming npm, and NVM."""
+        prefixes = set()
+
+        # 1. User Roaming npm directory
+        roaming = os.path.expandvars(r"%APPDATA%\npm")
+        if os.path.isdir(roaming):
+            prefixes.add(roaming)
+
+        # 2. WinGet NodeJS Packages (e.g. OpenJS.NodeJS.LTS)
+        winget_pattern = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS*\*")
+        for p in glob.glob(winget_pattern):
+            if os.path.isdir(os.path.join(p, "node_modules")):
+                prefixes.add(p)
+
+        # 3. Standard Program Files
+        for pf in [os.path.expandvars(r"%ProgramFiles%\nodejs"), os.path.expandvars(r"%ProgramFiles(x86)%\nodejs")]:
+            if os.path.isdir(os.path.join(pf, "node_modules")):
+                prefixes.add(pf)
+
+        # 4. NVM for Windows / Volta / FNM
+        for nvm_dir in [os.path.expandvars(r"%APPDATA%\nvm"), os.path.expandvars(r"%LOCALAPPDATA%\nvm")]:
+            if os.path.isdir(nvm_dir):
+                for p in glob.glob(os.path.join(nvm_dir, "v*")):
+                    if os.path.isdir(os.path.join(p, "node_modules")):
+                        prefixes.add(p)
+
+        return list(prefixes)
+
+    @staticmethod
+    def get_npm_executables() -> List[str]:
+        """Discovers all npm.cmd or npm binaries available on the host."""
+        exes = []
+        seen = set()
+
+        def add_exe(p: Optional[str]):
+            if p and os.path.isfile(p):
+                norm = os.path.normcase(os.path.abspath(p))
+                if norm not in seen:
+                    seen.add(norm)
+                    exes.append(norm)
+
+        # 1. PATH npm
+        add_exe(shutil.which("npm.cmd"))
+        add_exe(shutil.which("npm"))
+
+        # 2. WinGet NodeJS packages
+        for p in glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS*\*\npm.cmd")):
+            add_exe(p)
+
+        # 3. Program Files
+        add_exe(os.path.expandvars(r"%ProgramFiles%\nodejs\npm.cmd"))
+        add_exe(os.path.expandvars(r"%ProgramFiles(x86)%\nodejs\npm.cmd"))
+
+        return exes
+
     def __init__(self, npm_path: Optional[str] = None):
         super().__init__(name="npm", display_name="Node.js (Npm)", enabled=True)
-        self.npm_path = npm_path or shutil.which("npm.cmd") or shutil.which("npm") or "npm.cmd"
+        npm_candidates = self.get_npm_executables()
+        self.npm_path = npm_path or (npm_candidates[0] if npm_candidates else (shutil.which("npm.cmd") or shutil.which("npm") or "npm.cmd"))
+        self.all_npm_paths = [npm_path] if npm_path else npm_candidates
 
     def is_available(self) -> bool:
         """Checks if npm CLI is available."""
-        try:
-            res = silent_run([self.npm_path, "--version"], timeout=10)
-            return res.returncode == 0
-        except Exception:
-            return False
+        paths_to_test = self.all_npm_paths or [self.npm_path]
+        for exe in paths_to_test:
+            try:
+                res = silent_run([exe, "--version"], timeout=10)
+                if res.returncode == 0:
+                    self.npm_path = exe
+                    return True
+            except Exception:
+                continue
+        return False
 
     def get_version(self) -> Optional[str]:
         """Returns the npm version string."""
@@ -39,71 +106,106 @@ class NpmAdapter(BaseSourceAdapter):
         return None
 
     def get_installed_packages(self) -> List[ProgramItem]:
-        """Discovers installed global npm packages via npm list -g --depth=0 --json."""
+        """Discovers installed global npm packages across all Node prefixes."""
         if not self.is_available():
             return []
 
-        try:
-            res = silent_run([self.npm_path, "list", "-g", "--depth=0", "--json"], timeout=20)
-            if not res.stdout:
-                return []
+        prefixes = self.get_node_prefixes()
+        items_by_name: Dict[str, ProgramItem] = {}
 
-            # npm outputs JSON even if returncode != 0 (e.g., peer dep warnings)
+        # 1. Direct filesystem inspection of node_modules in prefixes (fastest & most reliable)
+        for prefix in prefixes:
+            nm = os.path.join(prefix, "node_modules")
+            if os.path.isdir(nm):
+                for pkg_dir in os.listdir(nm):
+                    pj = os.path.join(nm, pkg_dir, "package.json")
+                    if os.path.isfile(pj):
+                        try:
+                            with open(pj, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                                pkg_name = data.get("name", pkg_dir)
+                                pkg_ver = data.get("version", "1.0.0")
+                                clean_name = pkg_name.strip()
+                                k = clean_name.lower()
+                                if k not in items_by_name:
+                                    items_by_name[k] = ProgramItem(
+                                        name=clean_name,
+                                        id=f"npm:{clean_name}",
+                                        installed_version=pkg_ver,
+                                        package_type=PackageType.NPM,
+                                        source="npm",
+                                        publisher="Node Package Registry / OpenJS",
+                                        action=UpdateAction.UP_TO_DATE,
+                                        is_verified_winget=True,
+                                    )
+                        except Exception:
+                            pass
+
+        # 2. CLI fallback via npm list -g --depth=0 --json
+        for prefix in prefixes:
             try:
-                data = json.loads(res.stdout)
+                cmd = [self.npm_path, "list", "-g", "--depth=0", "--json", "--prefix", prefix]
+                res = silent_run(cmd, timeout=15)
+                if res.stdout:
+                    try:
+                        data = json.loads(res.stdout)
+                        deps = data.get("dependencies", {})
+                        for pkg_name, info in deps.items():
+                            clean_name = pkg_name.strip()
+                            k = clean_name.lower()
+                            if k not in items_by_name:
+                                ver = info.get("version", "1.0.0") if isinstance(info, dict) else "1.0.0"
+                                items_by_name[k] = ProgramItem(
+                                    name=clean_name,
+                                    id=f"npm:{clean_name}",
+                                    installed_version=ver,
+                                    package_type=PackageType.NPM,
+                                    source="npm",
+                                    publisher="Node Package Registry / OpenJS",
+                                    action=UpdateAction.UP_TO_DATE,
+                                    is_verified_winget=True,
+                                )
+                    except Exception:
+                        pass
             except Exception:
-                return []
+                pass
 
-            deps = data.get("dependencies", {})
-            items: List[ProgramItem] = []
-            for pkg_name, info in deps.items():
-                if not pkg_name:
-                    continue
-                ver = info.get("version", "1.0.0") if isinstance(info, dict) else "1.0.0"
-                item = ProgramItem(
-                    name=f"npm:{pkg_name}",
-                    id=f"npm:{pkg_name}",
-                    installed_version=ver,
-                    package_type=PackageType.NPM,
-                    source="npm",
-                    publisher="Node Package Registry / OpenJS",
-                    action=UpdateAction.UP_TO_DATE,
-                    is_verified_winget=True,
-                )
-                items.append(item)
-            return items
-        except Exception as e:
-            logger.error(f"Error querying npm global packages: {e}")
-            return []
+        return list(items_by_name.values())
 
     def query_updates(self, installed_items: Optional[List[ProgramItem]] = None) -> Dict[str, Dict[str, str]]:
-        """Queries outdated global npm packages via npm outdated -g --json."""
+        """Queries outdated global npm packages via npm outdated -g --json across all Node prefixes."""
         if not self.is_available():
             return {}
 
-        try:
-            res = silent_run([self.npm_path, "outdated", "-g", "--json"], timeout=30)
-            if not res.stdout:
-                return {}
+        prefixes = self.get_node_prefixes()
+        updates: Dict[str, Dict[str, str]] = {}
 
+        for prefix in prefixes:
             try:
-                data = json.loads(res.stdout)
-            except Exception:
-                return {}
+                # Run with explicit prefix to prevent ENOENT on missing AppData roaming directories
+                cmd = [self.npm_path, "outdated", "-g", "--json", "--prefix", prefix]
+                res = silent_run(cmd, timeout=30)
+                if not res.stdout:
+                    continue
 
-            updates: Dict[str, Dict[str, str]] = {}
-            for pkg_name, info in data.items():
-                if isinstance(info, dict):
-                    cur_v = info.get("current", "")
-                    lat_v = info.get("latest", "")
-                    updates[pkg_name.lower()] = {
-                        "installed_version": cur_v,
-                        "latest_version": lat_v,
-                    }
-            return updates
-        except Exception as e:
-            logger.error(f"Error checking npm outdated packages: {e}")
-            return {}
+                try:
+                    data = json.loads(res.stdout)
+                    if isinstance(data, dict):
+                        for pkg_name, info in data.items():
+                            if isinstance(info, dict):
+                                cur_v = info.get("current", "")
+                                lat_v = info.get("latest", "")
+                                clean_k = pkg_name.strip().lower()
+                                updates[clean_k] = {
+                                    "installed_version": cur_v,
+                                    "latest_version": lat_v,
+                                }
+                except Exception:
+                    pass
+            except Exception as e:
+                logger.debug(f"Error checking npm outdated packages with prefix {prefix}: {e}")
+
+        return updates
 
     def verify_package(self, item: ProgramItem) -> Tuple[bool, str]:
         """Verifies that the package belongs to npm."""

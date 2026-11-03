@@ -982,9 +982,14 @@ class MainWindow(tk.Tk):
                 for item in matched_items:
                     src = (item.source or "").lower()
                     if src in secondary_updates:
-                        pkg_clean = item.name.replace(f"{src}:", "").strip().lower()
-                        if pkg_clean in secondary_updates[src]:
-                            info = secondary_updates[src][pkg_clean]
+                        pkg_candidates = [
+                            item.name.lower(),
+                            item.name.replace(f"{src}:", "").strip().lower(),
+                            (item.id or "").replace(f"{src}:", "").strip().lower(),
+                        ]
+                        match_key = next((k for k in pkg_candidates if k in secondary_updates[src]), None)
+                        if match_key:
+                            info = secondary_updates[src][match_key]
                             item.latest_version = info.get("latest_version") or item.latest_version
                             item.action = UpdateAction.AVAILABLE
                             item.is_verified_winget = True

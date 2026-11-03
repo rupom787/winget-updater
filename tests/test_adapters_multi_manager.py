@@ -39,7 +39,8 @@ def test_pip_adapter_installed_and_updates():
         mock_run.return_value = MagicMock(returncode=0, stdout=mock_installed, stderr="")
         items = pip_adapter.get_installed_packages()
         assert len(items) == 2
-        assert items[0].name == "pip:requests"
+        assert items[0].name == "requests"
+        assert items[0].id == "pip:requests"
         assert items[0].installed_version == "2.31.0"
         assert items[0].package_type == PackageType.PIP
         assert items[0].source == "pip"
@@ -100,7 +101,8 @@ def test_npm_adapter_installed_and_updates():
         }
     })
 
-    with patch("winget_updater.adapters.npm_adapter.silent_run") as mock_run:
+    with patch("winget_updater.adapters.npm_adapter.silent_run") as mock_run, \
+         patch.object(NpmAdapter, "get_node_prefixes", return_value=["C:\\mock_prefix"]):
         mock_run.return_value = MagicMock(returncode=0, stdout="10.2.4", stderr="")
         assert npm_adapter.is_available() is True
         assert npm_adapter.get_version() == "10.2.4"
@@ -109,7 +111,8 @@ def test_npm_adapter_installed_and_updates():
         mock_run.return_value = MagicMock(returncode=0, stdout=mock_installed, stderr="")
         items = npm_adapter.get_installed_packages()
         assert len(items) == 2
-        assert items[0].name == "npm:typescript"
+        assert items[0].name == "typescript"
+        assert items[0].id == "npm:typescript"
         assert items[0].installed_version == "5.3.3"
         assert items[0].package_type == PackageType.NPM
 

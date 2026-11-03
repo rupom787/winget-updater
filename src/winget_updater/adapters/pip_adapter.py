@@ -2,7 +2,9 @@
 Discovers installed Python packages, queries outdated releases, and handles install, update, and uninstall.
 """
 
+import glob
 import json
+import os
 import shutil
 import sys
 from typing import Any, Dict, List, Optional, Tuple
@@ -17,17 +19,61 @@ logger = get_logger()
 class PipAdapter(BaseSourceAdapter):
     """Adapter for Python pip packages."""
 
+    @staticmethod
+    def get_python_executables() -> List[str]:
+        """Discovers all installed Python interpreter binaries on the Windows system.
+        Covers PATH python, py launcher, AppData User Programs, and Program Files."""
+        executables: List[str] = []
+        seen = set()
+
+        def add_exe(p: Optional[str]):
+            if p and os.path.isfile(p):
+                norm = os.path.normcase(os.path.abspath(p))
+                if norm not in seen:
+                    base = os.path.basename(norm).lower()
+                    if base in ("python.exe", "python3.exe", "py.exe"):
+                        seen.add(norm)
+                        executables.append(norm)
+
+        # 1. PATH python / py
+        add_exe(shutil.which("python"))
+        add_exe(shutil.which("python3"))
+        add_exe(shutil.which("py"))
+
+        # 2. LocalAppData Programs
+        for p in glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Programs\Python\Python*\python.exe")):
+            add_exe(p)
+
+        # 3. Program Files
+        for p in glob.glob(os.path.expandvars(r"%ProgramFiles%\Python*\python.exe")):
+            add_exe(p)
+        for p in glob.glob(os.path.expandvars(r"%ProgramFiles(x86)%\Python*\python.exe")):
+            add_exe(p)
+
+        # Fallback to sys.executable if it is actually python
+        if sys.executable and "python" in os.path.basename(sys.executable).lower():
+            add_exe(sys.executable)
+
+        return executables
+
     def __init__(self, python_path: Optional[str] = None):
         super().__init__(name="pip", display_name="Python (Pip)", enabled=True)
-        self.python_path = python_path or sys.executable
+        py_candidates = self.get_python_executables()
+        self.python_path = python_path or (py_candidates[0] if py_candidates else (shutil.which("python") or "python"))
+        self.all_python_paths = [python_path] if python_path else py_candidates
 
     def is_available(self) -> bool:
         """Checks if python with pip is available."""
-        try:
-            res = silent_run([self.python_path, "-m", "pip", "--version"], timeout=10)
-            return res.returncode == 0
-        except Exception:
-            return False
+        paths_to_test = self.all_python_paths or [self.python_path]
+        for py in paths_to_test:
+            try:
+                res = silent_run([py, "-m", "pip", "--version"], timeout=10)
+                if res.returncode == 0:
+                    self.python_path = py
+                    return True
+            except Exception:
+                continue
+        return False
 
     def get_version(self) -> Optional[str]:
         """Returns the installed pip version string."""
@@ -42,64 +88,74 @@ class PipAdapter(BaseSourceAdapter):
         return None
 
     def get_installed_packages(self) -> List[ProgramItem]:
-        """Discovers all installed Python packages via pip list --format=json."""
+        """Discovers all installed Python packages via pip list --format=json across Python runtimes."""
         if not self.is_available():
             return []
 
-        try:
-            res = silent_run([self.python_path, "-m", "pip", "list", "--format=json"], timeout=20)
-            if res.returncode != 0 or not res.stdout:
-                return []
+        paths_to_query = self.all_python_paths or [self.python_path]
+        items_by_name: Dict[str, ProgramItem] = {}
 
-            data = json.loads(res.stdout)
-            items: List[ProgramItem] = []
-            for entry in data:
-                pkg_name = entry.get("name", "")
-                if not pkg_name:
+        for py in paths_to_query:
+            try:
+                res = silent_run([py, "-m", "pip", "list", "--format=json"], timeout=20)
+                if res.returncode != 0 or not res.stdout:
                     continue
-                pkg_ver = entry.get("version", "")
-                item = ProgramItem(
-                    name=f"pip:{pkg_name}",
-                    id=f"pip:{pkg_name}",
-                    installed_version=pkg_ver,
-                    package_type=PackageType.PIP,
-                    source="pip",
-                    publisher="Python Software Foundation / PyPI",
-                    action=UpdateAction.UP_TO_DATE,
-                    is_verified_winget=True,
-                )
-                items.append(item)
-            return items
-        except Exception as e:
-            logger.error(f"Error querying pip installed packages: {e}")
-            return []
+
+                data = json.loads(res.stdout)
+                for entry in data:
+                    pkg_name = entry.get("name", "")
+                    if not pkg_name:
+                        continue
+                    pkg_ver = entry.get("version", "")
+                    clean_name = pkg_name.strip()
+                    k = clean_name.lower()
+                    if k not in items_by_name:
+                        item = ProgramItem(
+                            name=clean_name,
+                            id=f"pip:{clean_name}",
+                            installed_version=pkg_ver,
+                            package_type=PackageType.PIP,
+                            source="pip",
+                            publisher="Python Software Foundation / PyPI",
+                            action=UpdateAction.UP_TO_DATE,
+                            is_verified_winget=True,
+                        )
+                        items_by_name[k] = item
+            except Exception as e:
+                logger.debug(f"Error querying pip installed packages on {py}: {e}")
+
+        return list(items_by_name.values())
 
     def query_updates(self, installed_items: Optional[List[ProgramItem]] = None) -> Dict[str, Dict[str, str]]:
-        """Queries outdated Python packages via pip list --outdated --format=json."""
+        """Queries outdated Python packages via pip list --outdated --format=json across Python runtimes."""
         if not self.is_available():
             return {}
 
-        try:
-            res = silent_run([self.python_path, "-m", "pip", "list", "--outdated", "--format=json"], timeout=30)
-            if res.returncode != 0 or not res.stdout:
-                return {}
+        paths_to_query = self.all_python_paths or [self.python_path]
+        updates: Dict[str, Dict[str, str]] = {}
 
-            data = json.loads(res.stdout)
-            updates: Dict[str, Dict[str, str]] = {}
-            for entry in data:
-                pkg_name = entry.get("name", "")
-                if not pkg_name:
+        for py in paths_to_query:
+            try:
+                res = silent_run([py, "-m", "pip", "list", "--outdated", "--format=json"], timeout=30)
+                if res.returncode != 0 or not res.stdout:
                     continue
-                cur_v = entry.get("version", "")
-                lat_v = entry.get("latest_version", "")
-                updates[pkg_name.lower()] = {
-                    "installed_version": cur_v,
-                    "latest_version": lat_v,
-                }
-            return updates
-        except Exception as e:
-            logger.error(f"Error checking pip outdated packages: {e}")
-            return {}
+
+                data = json.loads(res.stdout)
+                for entry in data:
+                    pkg_name = entry.get("name", "")
+                    if not pkg_name:
+                        continue
+                    cur_v = entry.get("version", "")
+                    lat_v = entry.get("latest_version", "")
+                    clean_k = pkg_name.strip().lower()
+                    updates[clean_k] = {
+                        "installed_version": cur_v,
+                        "latest_version": lat_v,
+                    }
+            except Exception as e:
+                logger.debug(f"Error checking pip outdated packages on {py}: {e}")
+
+        return updates
 
     def verify_package(self, item: ProgramItem) -> Tuple[bool, str]:
         """Verifies that the package belongs to the pip repository."""

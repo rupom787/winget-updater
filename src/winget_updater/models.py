@@ -137,7 +137,15 @@ class ProgramItem:
             return False
         if not self.compatibility.is_compatible:
             return False
-        if self.package_type not in (PackageType.WIN32_EXE, PackageType.WIN32_MSI, PackageType.STORE_MSIX):
+        if self.package_type not in (
+            PackageType.WIN32_EXE,
+            PackageType.WIN32_MSI,
+            PackageType.STORE_MSIX,
+            PackageType.PIP,
+            PackageType.NPM,
+            PackageType.SCOOP,
+            PackageType.CHOCOLATEY,
+        ):
             return False
         return True
 
