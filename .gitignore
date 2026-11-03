@@ -30,6 +30,7 @@ ENV/
 .vscode/
 .idea/
 .agents/
+skills-lock.json
 *.swp
 *.swo
 Thumbs.db
