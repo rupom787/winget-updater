@@ -42,3 +42,5 @@ Desktop.ini
 node_modules/
 website/node_modules/
 website/dist/
+.vercel/
+website/.vercel/

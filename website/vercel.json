@@ -3,5 +3,9 @@
   "framework": "vite",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
-  "cleanUrls": true
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/voices", "destination": "/voices.html" },
+    { "source": "/motion", "destination": "/motion.html" }
+  ]
 }

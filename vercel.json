@@ -3,5 +3,9 @@
   "framework": "vite",
   "buildCommand": "npm run build --prefix website",
   "outputDirectory": "website/dist",
-  "cleanUrls": true
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/voices", "destination": "/voices.html" },
+    { "source": "/motion", "destination": "/motion.html" }
+  ]
 }
