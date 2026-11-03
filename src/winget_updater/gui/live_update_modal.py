@@ -653,12 +653,9 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         self._draw_progress_bar()
         self._draw_shimmer_bar()
 
-        # Reschedule tick at ~60 FPS
+        # Reschedule tick at ~60 FPS only while active or completing checkmark animation
         if not self.is_finished or self.checkmark_progress < 1.0:
             self.after(16, self._animation_tick)
-        else:
-            # Idle redraw after complete
-            self.after(100, self._animation_tick)
 
     def _draw_header_canvas(self) -> None:
         """Renders the revolving neon gradient arc spinner and ambient telemetry."""

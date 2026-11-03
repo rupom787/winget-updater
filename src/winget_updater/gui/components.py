@@ -1322,7 +1322,8 @@ class ProgramTableView(tk.Frame):
         self.skeleton.lower()
 
     def _on_mousewheel(self, event):
-        self.tree.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        lines = int(-3 * (event.delta / 120))
+        self.tree.yview_scroll(lines, "units")
         return "break"
 
     def populate(self, items: List[ProgramItem], chunk_size: int = 50) -> None:

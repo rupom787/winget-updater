@@ -195,19 +195,10 @@ class GpuAccelerationManager:
             pass
 
         try:
-            # Enable double-buffered hardware compositing on the window handle
+            # Enable hardware window acceleration & Windows 11 Acrylic frosted glass backdrop
             window.update_idletasks()
             hwnd = window.winfo_id()
             if hwnd:
-                parent_hwnd = ctypes.windll.user32.GetParent(hwnd)
-                target_hwnd = parent_hwnd if parent_hwnd else hwnd
-
-                # GWL_EXSTYLE = -20, WS_EX_COMPOSITED = 0x02000000
-                GWL_EXSTYLE = -20
-                WS_EX_COMPOSITED = 0x02000000
-                cur_style = ctypes.windll.user32.GetWindowLongW(target_hwnd, GWL_EXSTYLE)
-                ctypes.windll.user32.SetWindowLongW(target_hwnd, GWL_EXSTYLE, cur_style | WS_EX_COMPOSITED)
-                
                 # Apply Windows 11 Acrylic / Frosted Glass Backdrop
                 cls.enable_windows11_glass_backdrop(window, backdrop_type=3)
                 return True

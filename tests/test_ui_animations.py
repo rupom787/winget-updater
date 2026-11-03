@@ -7,6 +7,7 @@ from winget_updater.gui.animations import (
     CyberLaserHeaderCanvas,
     DeckCounterAnimator,
     FluentFloatingToast,
+    GlassyTelemetryHUD,
     PulsingWarningBeacon,
     ScanningPulseAnimator,
     SmoothLerpProgressBar,
@@ -557,6 +558,41 @@ def test_editorial_startup_splash_screen():
     assert done == [True]
 
     root.destroy()
+
+
+def test_animation_components_sleep_when_idle_or_unmapped():
+    root = tk.Tk()
+    root.withdraw()
+
+    # 1. SmoothLerpProgressBar does not burn CPU when idle
+    pb = SmoothLerpProgressBar(root, width=200, height=18)
+    assert pb.is_running is False
+    pb.set_progress(60.0)
+    assert pb.is_running is True
+    # Converge value
+    pb.current_val = 60.0
+    pb._tick()
+    assert pb.is_running is False
+
+    # 2. HeroScene does not tick when idle
+    scene = SoftwareEngineeringHeroScene(root, height=50)
+    assert scene.is_animating is False
+
+    # 3. CyberLaserHeaderCanvas does not tick when idle
+    laser = CyberLaserHeaderCanvas(root, height=4)
+    assert laser.is_animating is False
+
+    # 4. GlassyTelemetryHUD idle beacon
+    hud = GlassyTelemetryHUD(root, gpu_name="RTX 4090")
+    assert hud._mode == "idle"
+    hud.set_mode("scanning")
+    assert hud._mode == "scanning"
+    hud.set_mode("idle")
+    assert hud._mode == "idle"
+
+    hud.destroy()
+    root.destroy()
+
 
 
 

@@ -55,7 +55,8 @@ class SoftwareEngineeringHeroScene(tk.Canvas):
             })
 
         self.bind("<Configure>", lambda e: self._render())
-        self.start()
+        self.is_animating = False
+        self._render()
 
     def apply_theme(self, theme: ThemeColors) -> None:
         """Adapts the entire hero vector scene to the specified theme."""
@@ -72,8 +73,12 @@ class SoftwareEngineeringHeroScene(tk.Canvas):
 
     def set_mode(self, mode: str) -> None:
         self.mode = mode
-        if mode == "complete":
+        if mode in ("scanning", "updating"):
+            self.start()
+        elif mode == "complete":
             self.after(3500, lambda: self.set_mode("idle"))
+        elif mode == "idle":
+            self.stop()
 
     def start(self) -> None:
         if not self.is_animating:
@@ -85,6 +90,10 @@ class SoftwareEngineeringHeroScene(tk.Canvas):
 
     def _tick(self) -> None:
         if not self.is_animating:
+            return
+        if not self.winfo_ismapped():
+            # If the widget is hidden / unmapped, do not burn CPU compositing
+            self.after(300, self._tick)
             return
 
         # Speed multipliers based on operational state
@@ -390,7 +399,7 @@ class CyberLaserHeaderCanvas(tk.Canvas):
         self.mode = "idle"  # idle, scanning, updating
         self.is_animating = False
         self.bind("<Configure>", lambda e: self._render())
-        self.start()
+        self._render()
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
@@ -399,6 +408,10 @@ class CyberLaserHeaderCanvas(tk.Canvas):
 
     def set_mode(self, mode: str) -> None:
         self.mode = mode
+        if mode in ("scanning", "updating"):
+            self.start()
+        elif mode == "idle":
+            self.stop()
 
     def start(self) -> None:
         if not self.is_animating:
@@ -410,6 +423,9 @@ class CyberLaserHeaderCanvas(tk.Canvas):
 
     def _tick(self) -> None:
         if not self.is_animating:
+            return
+        if not self.winfo_ismapped():
+            self.after(300, self._tick)
             return
         speed = 12.0 if self.mode == "scanning" else (18.0 if self.mode == "updating" else 4.0)
         w = self.winfo_width() or 1000
@@ -742,6 +758,9 @@ class AnimatedSkeletonOverlay(tk.Frame):
     def _tick(self) -> None:
         if not self.is_shimmering:
             return
+        if not self.winfo_ismapped():
+            self.after(300, self._tick)
+            return
         w = self.winfo_width() or 800
         self.shimmer_x += 16
         if self.shimmer_x > w + 200:
@@ -808,8 +827,8 @@ class SmoothLerpProgressBar(tk.Canvas):
         self.current_val = 0.0
         self.target_val = 0.0
         self.light_pos = 0.0
-        self.is_running = True
-        self._tick()
+        self.is_running = False
+        self._render()
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
@@ -818,6 +837,9 @@ class SmoothLerpProgressBar(tk.Canvas):
 
     def set_progress(self, target: float) -> None:
         self.target_val = max(0.0, min(100.0, float(target)))
+        if not self.is_running and abs(self.target_val - self.current_val) > 0.05:
+            self.is_running = True
+            self._tick()
 
     def _tick(self) -> None:
         diff = self.target_val - self.current_val
@@ -827,7 +849,11 @@ class SmoothLerpProgressBar(tk.Canvas):
 
         self.light_pos = (self.light_pos + 4) % (self.bar_width + 40)
         self._render()
-        self.after(25, self._tick)
+
+        if self.is_running and abs(self.target_val - self.current_val) > 0.1:
+            self.after(25, self._tick)
+        else:
+            self.is_running = False
 
     def _render(self) -> None:
         self.delete("all")
@@ -904,36 +930,50 @@ class GlassyTelemetryHUD(tk.Frame):
         self.lbl_gpu.pack(side=tk.LEFT)
 
         self._start_telemetry_thread()
-        self._pulse_tick()
+        self._render_idle_beacon()
 
     def set_mode(self, mode: str) -> None:
         """Sets beacon operating state: 'idle', 'scanning', 'updating'."""
+        old_mode = self._mode
         self._mode = mode
+        if mode in ("scanning", "updating") and old_mode not in ("scanning", "updating"):
+            self._pulse_tick()
+        elif mode == "idle":
+            self._render_idle_beacon()
+
+    def _render_idle_beacon(self) -> None:
+        if not self.winfo_exists():
+            return
+        self.beacon.delete("all")
+        halo_col = "#d1fae5" if self.theme.name == "light" else "#064e3b"
+        core_col = "#10b981"
+        self.beacon.create_oval(3, 3, 13, 13, fill=halo_col, outline="")
+        self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
 
     def _pulse_tick(self) -> None:
         if not self._is_active or not self.winfo_exists():
             return
+        if self._mode == "idle":
+            self._render_idle_beacon()
+            return
 
-        speed = 0.22 if self._mode in ("scanning", "updating") else 0.10
+        speed = 0.22
         self._pulse_phase = (self._pulse_phase + speed) % (2 * math.pi)
         scale = (math.sin(self._pulse_phase) + 1.0) / 2.0
 
         if self._mode == "scanning":
             core_col = "#881337"
             halo_col = "#ffe4e6" if self.theme.name == "light" else "#4c0519"
-        elif self._mode == "updating":
+        else:
             core_col = "#d97706"
             halo_col = "#fef3c7" if self.theme.name == "light" else "#451a03"
-        else:
-            core_col = "#10b981"
-            halo_col = "#d1fae5" if self.theme.name == "light" else "#064e3b"
 
         halo_radius = 4.0 + scale * 3.5
         self.beacon.delete("all")
         self.beacon.create_oval(8 - halo_radius, 8 - halo_radius, 8 + halo_radius, 8 + halo_radius, fill=halo_col, outline="")
         self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
 
-        self.after(50, self._pulse_tick)
+        self.after(80, self._pulse_tick)
 
     def _start_telemetry_thread(self) -> None:
         if not self.sys_info:
@@ -962,7 +1002,7 @@ class GlassyTelemetryHUD(tk.Frame):
                     self.after(0, update_ui)
                 except Exception:
                     pass
-                time.sleep(2.0)
+                time.sleep(3.0)
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -972,6 +1012,8 @@ class GlassyTelemetryHUD(tk.Frame):
         border_col = theme.border
         self.config(bg=card_bg, highlightbackground=border_col)
         self.beacon.config(bg=card_bg)
+        if self._mode == "idle":
+            self._render_idle_beacon()
         self.lbl_cpu.config(bg=card_bg)
         self.lbl_sep1.config(bg=card_bg, fg=theme.fg_muted)
         self.lbl_ram.config(bg=card_bg, fg=theme.fg_primary)
