@@ -192,3 +192,4 @@ class PipAdapter(BaseSourceAdapter):
                     )
                 )
         return matches
+

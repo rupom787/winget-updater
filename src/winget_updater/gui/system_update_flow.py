@@ -246,7 +246,8 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
             self.msg_queue.put(("LOG", ("[1/4] Checking Windows Update...", "yellow")))
 
             # Check if PSWindowsUpdate is available
-            chk_out, _, _ = silent_run(["powershell.exe", "-NoProfile", "-Command", "Get-Module -ListAvailable -Name PSWindowsUpdate"])
+            chk_res = silent_run(["powershell.exe", "-NoProfile", "-Command", "Get-Module -ListAvailable -Name PSWindowsUpdate"])
+            chk_out = chk_res.stdout or ""
             if not chk_out.strip():
                 self.msg_queue.put(("LOG", ("  • Installing PSWindowsUpdate module for CurrentUser...", "muted")))
                 silent_run(["powershell.exe", "-NoProfile", "-Command", "Install-Module PSWindowsUpdate -Force -Scope CurrentUser -Confirm:$false"], timeout=60)
@@ -260,23 +261,34 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
             self.msg_queue.put(("LOG", ("  ✓ Stage 1 completed successfully.", "green")))
 
             # -------------------------------------------------------------
-            # STAGE 2: MICROSOFT STORE + APPS (winget)
+            # STAGE 2: MICROSOFT STORE + APPS (winget + MDM background scan)
             # -------------------------------------------------------------
             self.msg_queue.put(("STAGE", 2))
-            self.msg_queue.put(("LOG", ("\n[2/4] Updating apps (winget)...", "yellow")))
+            self.msg_queue.put(("LOG", ("\n[2/4] Updating apps (winget & Microsoft Store)...", "yellow")))
 
+            # 2a. Force update of Windows Store Apps without launching Store UI (WMI/MDM Enterprise Bridge)
+            self.msg_queue.put(("LOG", ("  • Triggering Microsoft Store background update scan (MDM Bridge)...", "muted")))
+            store_ok, store_msg = WindowsUpdateManager.trigger_store_apps_background_update()
+            if store_ok:
+                self.msg_queue.put(("LOG", (f"  ✓ {store_msg}", "green")))
+            else:
+                self.msg_queue.put(("LOG", (f"  • Store background notice: {store_msg}", "muted")))
+
+            # 2b. Winget Upgrade All
+            self.msg_queue.put(("LOG", ("  • Updating applications via Windows Package Manager (winget)...", "muted")))
             upgrade_cmd = [
                 "winget", "upgrade", "--all",
                 "--accept-package-agreements",
                 "--accept-source-agreements",
                 "--silent",
             ]
-            up_out, _, _ = silent_run(upgrade_cmd, timeout=300)
+            up_res = silent_run(upgrade_cmd, timeout=300)
+            up_out = up_res.stdout or ""
             if up_out:
                 lines = [l.strip() for l in up_out.splitlines() if l.strip()]
                 for line in lines[-8:]:
                     self.msg_queue.put(("LOG", (f"  {line}", "muted")))
-            self.msg_queue.put(("LOG", ("  ✓ Stage 2 (Applications) completed.", "green")))
+            self.msg_queue.put(("LOG", ("  ✓ Stage 2 (Applications & Store) completed.", "green")))
 
             # -------------------------------------------------------------
             # STAGE 3: DRIVERS (NVIDIA, Chipset, Audio, Display)
@@ -291,7 +303,8 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
                 "--accept-source-agreements",
                 "--silent",
             ]
-            drv_out, _, _ = silent_run(driver_cmd, timeout=180)
+            drv_res = silent_run(driver_cmd, timeout=180)
+            drv_out = drv_res.stdout or ""
             if drv_out:
                 lines = [l.strip() for l in drv_out.splitlines() if l.strip()]
                 for line in lines[-6:]:

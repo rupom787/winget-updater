@@ -36,3 +36,9 @@ class StoreAdapter(BaseSourceAdapter):
         pkg_id = item.id or item.name
         return self.client.upgrade_package(pkg_id, dry_run=dry_run)
 
+    def trigger_background_scan(self) -> Tuple[bool, str]:
+        """Triggers native Windows MDM/CIM background scan and update for Microsoft Store apps."""
+        from winget_updater.engine.windows_update import WindowsUpdateManager
+        return WindowsUpdateManager.trigger_store_apps_background_update()
+
+

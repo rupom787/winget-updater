@@ -58,3 +58,18 @@ def test_windows_update_item_model():
     assert item.size_mb == 684.2
     assert item.is_mandatory is True
 
+
+def test_store_apps_background_update_mdm():
+    with patch("winget_updater.engine.windows_update.silent_run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="SUCCESS: MDM Store app update scan initiated.", stderr="")
+        ok, msg = WindowsUpdateManager.trigger_store_apps_background_update()
+        assert ok is True
+        assert "MDM bridge" in msg
+
+        # Test failure handling
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Access Denied")
+        ok, msg = WindowsUpdateManager.trigger_store_apps_background_update()
+        assert ok is False
+        assert "Access Denied" in msg
+
+

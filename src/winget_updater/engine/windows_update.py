@@ -195,11 +195,12 @@ class WindowsUpdateManager:
             "$list | ConvertTo-Json -Compress"
         )
         try:
-            stdout, stderr, code = silent_run(
+            res = silent_run(
                 ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", ps_code],
                 timeout=timeout_sec,
             )
-            if code != 0 or not stdout.strip():
+            stdout = res.stdout or ""
+            if res.returncode != 0 or not stdout.strip():
                 return []
 
             data = json.loads(stdout)
@@ -243,6 +244,53 @@ class WindowsUpdateManager:
             return True, "Opened Windows Update settings."
         except Exception as e:
             return False, f"Error launching Windows Update: {e}"
+
+    @staticmethod
+    def trigger_store_apps_background_update(timeout_sec: int = 35) -> Tuple[bool, str]:
+        """Forces an immediate background scan and update for all installed Microsoft Store / UWP apps
+        without launching the graphical Microsoft Store interface.
+        
+        Uses the native Windows MDM/CIM EnterpriseModernAppManagement API:
+        Namespace: Root\\cimv2\\mdm\\dmmap
+        Class: MDM_EnterpriseModernAppManagement_AppManagement01
+        Method: UpdateScanMethod
+        
+        Reference: https://learn.microsoft.com/en-us/archive/msdn-technet-forums/5ac7daa9-54e6-43c0-9746-293dcb8ef2ec
+        """
+        ps_cmd = (
+            "$ErrorActionPreference = 'Stop'; "
+            "try { "
+            "  $res = Get-CimInstance -Namespace 'Root\\cimv2\\mdm\\dmmap' -ClassName 'MDM_EnterpriseModernAppManagement_AppManagement01' | "
+            "         Invoke-CimMethod -MethodName 'UpdateScanMethod'; "
+            "  if ($res.ReturnValue -eq 0) { Write-Output 'SUCCESS: MDM Store app update scan initiated.' } "
+            "  else { Write-Output ('STATUS: ReturnCode ' + $res.ReturnValue) } "
+            "} catch { "
+            "  try { "
+            "    $wmi = Get-WmiObject -Namespace 'root\\cimv2\\mdm\\dmmap' -Class 'MDM_EnterpriseModernAppManagement_AppManagement01'; "
+            "    $ret = $wmi.UpdateScanMethod(); "
+            "    Write-Output 'SUCCESS: Fallback WMI Store update scan initiated.' "
+            "  } catch { "
+            "    Write-Error $_.Exception.Message "
+            "  } "
+            "}"
+        )
+        try:
+            res = silent_run(
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                timeout=timeout_sec,
+            )
+            out = (res.stdout or "").strip()
+            if res.returncode == 0 and "SUCCESS" in out:
+                logger.info("Successfully triggered background Microsoft Store app update scan via MDM bridge.")
+                return True, "Triggered Microsoft Store background update scan via MDM bridge."
+            elif res.returncode == 0 and out:
+                return True, f"MDM Store scan note: {out}"
+            else:
+                err = (res.stderr or "").strip() or out
+                return False, f"MDM Store scan error: {err}"
+        except Exception as e:
+            logger.error(f"Failed to invoke MDM Store UpdateScanMethod: {e}")
+            return False, str(e)
 
     @staticmethod
     def open_oem_companion(store_uri: Optional[str] = None) -> bool:

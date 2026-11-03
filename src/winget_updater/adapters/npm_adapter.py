@@ -189,3 +189,4 @@ class NpmAdapter(BaseSourceAdapter):
                     )
                 )
         return matches
+

@@ -35,7 +35,7 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.25 MB | `AEE7533945CED47A82D52A21AED481FCF9BF3588F91D3DAC4EBB2C3F7FB16210` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.25 MB | `385886C9A68BC9074CEF6B4C855FF890C296C61A0BF442003202EE267F0EB594` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
 1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
@@ -195,7 +195,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-AEE7533945CED47A82D52A21AED481FCF9BF3588F91D3DAC4EBB2C3F7FB16210
+385886C9A68BC9074CEF6B4C855FF890C296C61A0BF442003202EE267F0EB594
 ```
 
 ---
