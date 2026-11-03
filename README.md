@@ -14,13 +14,16 @@
 </p>
 
 <p align="center">
-  <a href="https://rupom787.github.io/winget-updater/">
-    <img src="https://img.shields.io/badge/🌐_Official_Website-Live_Online-059669?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Official Website" />
+  <a href="https://winget-updater-rupom.vercel.app">
+    <img src="https://img.shields.io/badge/▲_Vercel_Production-Live_Online-black?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel Production Deployment" />
   </a>
-  <a href="https://rupom787.github.io/winget-updater/voices.html">
+  <a href="https://rupom787.github.io/winget-updater/">
+    <img src="https://img.shields.io/badge/🌐_GitHub_Pages-Mirror-059669?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Pages Mirror" />
+  </a>
+  <a href="https://winget-updater-rupom.vercel.app/voices">
     <img src="https://img.shields.io/badge/🎙️_Voice_Studio-12_Demos-7c3aed?style=for-the-badge" alt="Voice Studio" />
   </a>
-  <a href="https://rupom787.github.io/winget-updater/motion.html">
+  <a href="https://winget-updater-rupom.vercel.app/motion">
     <img src="https://img.shields.io/badge/🎬_3D_Motion-30s_SaaSWAVE-d946ef?style=for-the-badge" alt="3D Motion Video" />
   </a>
 </p>
