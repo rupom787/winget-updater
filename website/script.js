@@ -1,7 +1,8 @@
 /**
  * Winget Updater — Windows 11 Edition
  * Daiki Fujita Inspired Awwwards Interactive Engine
- * DirectComposition, Lenis Inertia Momentum, Pinned Track & Web Audio API
+ * DirectComposition, Lenis Inertia Momentum, Pinned Track, Web Audio API,
+ * MeshPhysicalMaterial 3D Refractive Monolith & Interactive Simulator
  */
 
 (function () {
@@ -110,6 +111,29 @@
       } catch (e) {}
     }
 
+    playSuccessChime() {
+      if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+      try {
+        const chord = [523.25, 659.25, 783.99, 1046.5]; // C major triad
+        chord.forEach((f, i) => {
+          setTimeout(() => {
+            if (!this.ctx || this.ctx.state !== "running") return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const now = this.ctx.currentTime;
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(f, now);
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.45);
+          }, i * 50);
+        });
+      } catch (e) {}
+    }
+
     playEnterChord() {
       if (!this.ctx) this.init();
       if (!this.ctx) return;
@@ -173,7 +197,124 @@
   }
 
   // ==========================================
-  // 3. LENIS SMOOTH MOMENTUM SCROLL ENGINE
+  // 3. WORLD ATOMIC CLOCKS (Tokyo & Redmond)
+  // ==========================================
+  const elTyo = document.getElementById("clock-tyo");
+  const elRed = document.getElementById("clock-red");
+
+  function updateClocks() {
+    const now = new Date();
+    try {
+      if (elTyo) {
+        elTyo.textContent = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Tokyo",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }).format(now);
+      }
+      if (elRed) {
+        elRed.textContent = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/Los_Angeles",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }).format(now);
+      }
+    } catch (e) {}
+  }
+  setInterval(updateClocks, 1000);
+  updateClocks();
+
+  // ==========================================
+  // 4. TEXT SCRAMBLE / DECRYPT ANIMATION
+  // ==========================================
+  const scrambleChars = "01X_/*[]—+*^?#アイウエオカキクケコサシスセソ";
+
+  function scrambleText(element, finalText = null, duration = 260) {
+    const original = finalText || element.getAttribute("data-original-text") || element.textContent.trim();
+    if (!element.getAttribute("data-original-text")) {
+      element.setAttribute("data-original-text", original);
+    }
+
+    const startTime = performance.now();
+    audio.playBlip(1600, 0.02, 0.025);
+
+    function updateFrame(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const revealed = Math.floor(progress * original.length);
+
+      let result = "";
+      for (let i = 0; i < original.length; i++) {
+        if (original[i] === " " || original[i] === "\n") {
+          result += original[i];
+        } else if (i < revealed) {
+          result += original[i];
+        } else {
+          result += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+        }
+      }
+      element.textContent = result;
+
+      if (progress < 1) {
+        requestAnimationFrame(updateFrame);
+      } else {
+        element.textContent = original;
+      }
+    }
+    requestAnimationFrame(updateFrame);
+  }
+
+  document.querySelectorAll("[data-scramble]").forEach((el) => {
+    el.setAttribute("data-original-text", el.textContent.trim());
+    el.addEventListener("mouseenter", () => {
+      scrambleText(el);
+    });
+  });
+
+  // ==========================================
+  // 5. MAGNETIC BUTTON PHYSICS
+  // ==========================================
+  if (window.matchMedia("(pointer: fine)").matches) {
+    document.querySelectorAll("[data-magnetic]").forEach((btn) => {
+      btn.addEventListener("mousemove", (e) => {
+        const rect = btn.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const deltaX = (e.clientX - centerX) * 0.28;
+        const deltaY = (e.clientY - centerY) * 0.28;
+        btn.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+      });
+
+      btn.addEventListener("mouseleave", () => {
+        btn.style.transform = "translate3d(0, 0, 0)";
+      });
+    });
+  }
+
+  // ==========================================
+  // 6. 3D CARD PERSPECTIVE TILT
+  // ==========================================
+  if (window.matchMedia("(pointer: fine)").matches) {
+    document.querySelectorAll(".slide-inner, .terminal-shell, .benchmark-table-wrapper").forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+        card.style.transform = `perspective(1200px) rotateX(${-ny * 3.5}deg) rotateY(${nx * 3.5}deg)`;
+      });
+
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg)";
+      });
+    });
+  }
+
+  // ==========================================
+  // 7. LENIS SMOOTH MOMENTUM SCROLL ENGINE
   // ==========================================
   let lenis = null;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -194,7 +335,7 @@
   }
 
   // ==========================================
-  // 4. [ ENTER ] GATE CONTROLLER
+  // 8. [ ENTER ] GATE CONTROLLER
   // ==========================================
   const enterGate = document.getElementById("enter-gate");
   const gateBtn = document.getElementById("gate-btn");
@@ -227,7 +368,7 @@
   });
 
   // ==========================================
-  // 5. PINNED HORIZONTAL WORKS SHOWCASE
+  // 9. PINNED HORIZONTAL WORKS SHOWCASE
   // ==========================================
   const worksSection = document.getElementById("works");
   const worksTrack = document.getElementById("works-track");
@@ -288,7 +429,77 @@
   }
 
   // ==========================================
-  // 6. SPLIT-LINE REVEALS (IntersectionObserver)
+  // 10. INTERACTIVE LIVE UPDATE SIMULATOR
+  // ==========================================
+  const hudSimBtn = document.getElementById("hud-sim-btn");
+  const hudVerifyBtn = document.getElementById("hud-verify-btn");
+  const hudRollbackBtn = document.getElementById("hud-rollback-btn");
+  const hudLogs = document.getElementById("hud-logs");
+  const neonSpinner = document.getElementById("neon-spinner");
+  let simBusy = false;
+
+  function runSimulation(steps, onFinish) {
+    if (simBusy || !hudLogs) return;
+    simBusy = true;
+    hudLogs.innerHTML = "";
+    if (neonSpinner) neonSpinner.classList.remove("success");
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      if (currentStep < steps.length) {
+        const item = steps[currentStep];
+        const logLine = document.createElement("div");
+        logLine.className = `hud-log ${item.colorClass}`;
+        logLine.textContent = `> ${item.text}`;
+        hudLogs.appendChild(logLine);
+        audio.playBlip(1100 + currentStep * 150, 0.03, 0.04);
+        currentStep++;
+      } else {
+        clearInterval(interval);
+        simBusy = false;
+        if (neonSpinner) neonSpinner.classList.add("success");
+        audio.playSuccessChime();
+        if (onFinish) onFinish();
+      }
+    }, 450);
+  }
+
+  if (hudSimBtn) {
+    hudSimBtn.addEventListener("click", () => {
+      runSimulation([
+        { text: "Querying package manifest: Git.Git v2.48.1...", colorClass: "text-cyan" },
+        { text: "Downloading payload [13.3 MB]: 100% complete...", colorClass: "text-cyan" },
+        { text: "SHA-256 Authenticode signature: PASS (Trusted)", colorClass: "text-green" },
+        { text: "Executing silent unattended DirectComposition installer...", colorClass: "text-amber" },
+        { text: "Probing disk binary version: 2.48.1.0 &bull; VERIFIED ACTIVE", colorClass: "text-pink" },
+      ]);
+    });
+  }
+
+  if (hudVerifyBtn) {
+    hudVerifyBtn.addEventListener("click", () => {
+      runSimulation([
+        { text: "Scanning Program Files binaries for Authenticode certificates...", colorClass: "text-cyan" },
+        { text: "WinVerifyTrust(WINTRUST_ACTION_GENERIC_VERIFY_V2): SUCCESS", colorClass: "text-green" },
+        { text: "Computed SHA256 matches catalog signature exactly.", colorClass: "text-green" },
+        { text: "Zero phantom replacement detected: 100% PASS", colorClass: "text-pink" },
+      ]);
+    });
+  }
+
+  if (hudRollbackBtn) {
+    hudRollbackBtn.addEventListener("click", () => {
+      runSimulation([
+        { text: "Initializing Volume Shadow Copy (VSS) delta audit...", colorClass: "text-cyan" },
+        { text: "Detected previous stable checkpoint: Build 26300.12...", colorClass: "text-amber" },
+        { text: "Restoring registry keys and binary hardlinks...", colorClass: "text-cyan" },
+        { text: "Rollback completed cleanly in 142ms &bull; SYSTEM STABLE", colorClass: "text-green" },
+      ]);
+    });
+  }
+
+  // ==========================================
+  // 11. SPLIT-LINE REVEALS (IntersectionObserver)
   // ==========================================
   const splitSections = document.querySelectorAll(".about-section, .disciplines-section, .dream-portal-section, .benchmarks-section, .download-section");
   const lineObserver = new IntersectionObserver(
@@ -306,7 +517,7 @@
   splitSections.forEach((sec) => lineObserver.observe(sec));
 
   // ==========================================
-  // 7. DISCIPLINES HOVER PREVIEW HUD
+  // 12. DISCIPLINES HOVER PREVIEW HUD
   // ==========================================
   const discItems = document.querySelectorAll(".discipline-item");
   const discHover = document.getElementById("disc-hover-preview");
@@ -362,7 +573,7 @@
   }
 
   // ==========================================
-  // 8. MAGNETIC CUSTOM CURSOR
+  // 13. MAGNETIC CUSTOM CURSOR
   // ==========================================
   const cursor = document.getElementById("custom-cursor");
   let mouseX = window.innerWidth / 2;
@@ -395,7 +606,7 @@
   }
 
   // ==========================================
-  // 9. THREE.JS 3D WEBGL MONOLITH VISUALIZER
+  // 14. THREE.JS REFRACTIVE GLASS MONOLITH WITH DRAG ORBIT
   // ==========================================
   const canvas = document.getElementById("hero-webgl-canvas");
   const canvasFrame = document.getElementById("canvas-frame");
@@ -415,34 +626,41 @@
     renderer.setSize(canvasFrame.clientWidth, canvasFrame.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Outer Monolith (Octahedron crystal)
-    const monolithGeo = new THREE.OctahedronGeometry(1.65, 0);
-    const monolithMat = new THREE.MeshStandardMaterial({
+    // Outer Monolith: Refractive Crystal Glass (MeshPhysicalMaterial)
+    const monolithGeo = new THREE.OctahedronGeometry(1.68, 0);
+    const monolithMat = new THREE.MeshPhysicalMaterial({
       color: 0x991b1b,
-      roughness: 0.18,
-      metalness: 0.85,
+      roughness: 0.1,
+      metalness: 0.15,
+      transmission: 0.85,
+      ior: 1.58,
+      thickness: 1.4,
+      transparent: true,
+      opacity: 0.95,
       flatShading: true,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.08,
     });
     monolithMesh = new THREE.Mesh(monolithGeo, monolithMat);
     scene.add(monolithMesh);
 
-    // Wireframe Cage
+    // Glowing Wireframe Cage
     const wireGeo = new THREE.WireframeGeometry(monolithGeo);
     const wireMat = new THREE.LineBasicMaterial({
       color: 0x0284c7,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.65,
     });
     wireMesh = new THREE.LineSegments(wireGeo, wireMat);
     scene.add(wireMesh);
 
-    // Inner Glowing Core
+    // Inner Floating Emerald Prism
     const coreGeo = new THREE.IcosahedronGeometry(0.72, 1);
     const coreMat = new THREE.MeshBasicMaterial({
       color: 0x047857,
       wireframe: true,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.75,
     });
     coreMesh = new THREE.Mesh(coreGeo, coreMat);
     scene.add(coreMesh);
@@ -466,21 +684,50 @@
     particleSystem = new THREE.Points(pGeo, pMat);
     scene.add(particleSystem);
 
-    // Lights
+    // Dynamic Directional & Specular Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
     scene.add(ambientLight);
 
-    dirLight1 = new THREE.DirectionalLight(0xff2a6d, 2.5);
+    dirLight1 = new THREE.DirectionalLight(0xff2a6d, 2.8);
     dirLight1.position.set(4, 5, 4);
     scene.add(dirLight1);
 
-    dirLight2 = new THREE.DirectionalLight(0x00f0ff, 2.2);
+    dirLight2 = new THREE.DirectionalLight(0x00f0ff, 2.4);
     dirLight2.position.set(-4, -3, 3);
     scene.add(dirLight2);
 
-    // Mouse Lean tracking
+    // Mouse Lean & Inertia Drag Orbit Tracking
     let targetLeanX = 0, targetLeanY = 0;
     let isHoveringCanvas = false;
+    let isDragging = false;
+    let previousPointerX = 0, previousPointerY = 0;
+    let dragVelocityX = 0, dragVelocityY = 0;
+
+    canvasFrame.addEventListener("pointerdown", (e) => {
+      isDragging = true;
+      previousPointerX = e.clientX;
+      previousPointerY = e.clientY;
+      dragVelocityX = 0;
+      dragVelocityY = 0;
+      audio.playBlip(1800, 0.02, 0.03);
+    });
+
+    window.addEventListener("pointermove", (e) => {
+      if (isDragging) {
+        const deltaX = e.clientX - previousPointerX;
+        const deltaY = e.clientY - previousPointerY;
+        dragVelocityX = deltaX * 0.008;
+        dragVelocityY = deltaY * 0.008;
+        monolithMesh.rotation.y += dragVelocityX;
+        monolithMesh.rotation.x += dragVelocityY;
+        previousPointerX = e.clientX;
+        previousPointerY = e.clientY;
+      }
+    });
+
+    window.addEventListener("pointerup", () => {
+      isDragging = false;
+    });
 
     canvasFrame.addEventListener("mousemove", (e) => {
       const rect = canvasFrame.getBoundingClientRect();
@@ -502,8 +749,8 @@
       if (!monolithMesh) return;
       if (isDream) {
         monolithMat.color.setHex(0x0e0f2b);
-        monolithMat.roughness = 0.1;
-        monolithMat.metalness = 0.95;
+        monolithMat.roughness = 0.08;
+        monolithMat.transmission = 0.9;
         wireMat.color.setHex(0x00f0ff);
         coreMat.color.setHex(0xff2a6d);
         pMat.color.setHex(0x00f0ff);
@@ -511,8 +758,8 @@
         dirLight2.color.setHex(0xff2a6d);
       } else {
         monolithMat.color.setHex(0x991b1b);
-        monolithMat.roughness = 0.2;
-        monolithMat.metalness = 0.8;
+        monolithMat.roughness = 0.12;
+        monolithMat.transmission = 0.85;
         wireMat.color.setHex(0x0284c7);
         coreMat.color.setHex(0x047857);
         pMat.color.setHex(0x64748b);
@@ -542,8 +789,14 @@
 
       const elapsed = clock.getElapsedTime();
 
-      monolithMesh.rotation.y += 0.007;
-      monolithMesh.rotation.x += 0.0035;
+      // Inertia drag damping
+      if (!isDragging) {
+        dragVelocityX *= 0.93;
+        dragVelocityY *= 0.93;
+        monolithMesh.rotation.y += dragVelocityX + 0.006;
+        monolithMesh.rotation.x += dragVelocityY + 0.003;
+      }
+
       wireMesh.rotation.copy(monolithMesh.rotation);
 
       coreMesh.rotation.y -= 0.014;
@@ -551,10 +804,10 @@
 
       particleSystem.rotation.y = elapsed * 0.025;
 
-      if (isHoveringCanvas) {
+      if (isHoveringCanvas && !isDragging) {
         scene.rotation.y += (targetLeanY - scene.rotation.y) * 0.08;
         scene.rotation.x += (targetLeanX - scene.rotation.x) * 0.08;
-      } else {
+      } else if (!isDragging) {
         scene.rotation.y += (0 - scene.rotation.y) * 0.05;
         scene.rotation.x += (0 - scene.rotation.x) * 0.05;
       }
@@ -571,18 +824,28 @@
   }
 
   // ==========================================
-  // 10. WAKE / DREAM MODE TOGGLE
+  // 15. WAKE / DREAM MODE TOGGLE WITH RADIAL IRIS WIPE
   // ==========================================
   const fixedThemeBtn = document.getElementById("fixed-theme-btn");
   const dreamTriggerBtn = document.getElementById("dream-trigger-btn");
   const themeModeText = document.getElementById("theme-mode-text");
+  const irisWipe = document.getElementById("iris-wipe");
 
   function isDreamActive() {
     return document.documentElement.classList.contains("dream-mode");
   }
 
-  function setMode(mode) {
+  function setMode(mode, clickOrigin = null) {
     const isDream = mode === "dream";
+
+    if (irisWipe && clickOrigin) {
+      irisWipe.style.clipPath = `circle(0% at ${clickOrigin.x}px ${clickOrigin.y}px)`;
+      irisWipe.classList.add("active");
+      setTimeout(() => {
+        irisWipe.classList.remove("active");
+      }, 550);
+    }
+
     if (isDream) {
       document.documentElement.classList.add("dream-mode");
       document.body.classList.remove("wake-mode");
@@ -602,9 +865,10 @@
     }
   }
 
-  function toggleTheme() {
+  function toggleTheme(e) {
+    const origin = e ? { x: e.clientX, y: e.clientY } : null;
     const nextMode = isDreamActive() ? "wake" : "dream";
-    setMode(nextMode);
+    setMode(nextMode, origin);
     showToast(nextMode === "dream" ? "DREAM MODE // OBSIDIAN BLUEPRINT" : "WAKE MODE // EDITORIAL PAPER");
   }
 
@@ -619,7 +883,7 @@
   }
 
   // ==========================================
-  // 11. TERMINAL COPY CONTROLLER
+  // 16. TERMINAL COPY CONTROLLER
   // ==========================================
   const copyBtn = document.getElementById("copy-btn");
   const codeSnippet = document.getElementById("code-snippet");

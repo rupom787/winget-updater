@@ -26,6 +26,20 @@
 </head>
 <body class="wake-mode">
 
+  <!-- Organic Analog Noise / Paper Tooth Grain Overlay -->
+  <div class="analog-noise-overlay" aria-hidden="true">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="noise-svg">
+      <filter id="washiNoise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch"/>
+        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.05 0"/>
+      </filter>
+      <rect width="100%" height="100%" filter="url(#washiNoise)"/>
+    </svg>
+  </div>
+
+  <!-- Radial Iris Wipe for Theme Transitions -->
+  <div id="iris-wipe" class="iris-wipe" aria-hidden="true"></div>
+
   <!-- Custom Magnetic Cursor -->
   <div id="custom-cursor" class="custom-cursor" aria-hidden="true">
     <div class="cursor-dot"></div>
@@ -38,8 +52,8 @@
     <div class="gate-wrapper">
       <div class="gate-top-tag">WINDOWS 11 // DIRECTCOMPOSITION ENGINE // V1.9.0</div>
       <div class="gate-center">
-        <h1 class="gate-brand">WINGET UPDATER</h1>
-        <button id="gate-btn" class="gate-btn" aria-label="Enter site experience">
+        <h1 class="gate-brand" data-scramble>WINGET UPDATER</h1>
+        <button id="gate-btn" class="gate-btn" aria-label="Enter site experience" data-magnetic>
           <span class="bracket">[</span>
           <span class="gate-text">ENTER</span>
           <span class="bracket">]</span>
@@ -66,22 +80,29 @@
     <div class="header-container">
       <a href="#hero" class="brand-link" data-sound="click">
         <span class="brand-monogram">&#x25C7;</span>
-        <span class="brand-title">UPDATER.WIN11</span>
+        <span class="brand-title" data-scramble>UPDATER.WIN11</span>
         <span class="brand-version">v1.9.0</span>
       </a>
 
+      <!-- Dual Precision World Clocks -->
+      <div class="header-clocks" aria-label="Global engineering clocks">
+        <span class="clock-item"><span class="clock-city">TYO</span> <span id="clock-tyo" class="clock-time">00:00:00</span></span>
+        <span class="clock-divider">/</span>
+        <span class="clock-item"><span class="clock-city">RED</span> <span id="clock-red" class="clock-time">00:00:00</span></span>
+      </div>
+
       <nav class="desktop-nav" aria-label="Site Navigation">
-        <a href="#about" class="nav-item" data-sound="hover"><span>(01) About</span></a>
-        <a href="#disciplines" class="nav-item" data-sound="hover"><span>(02) Disciplines</span></a>
-        <a href="#works" class="nav-item" data-sound="hover"><span>(03) Works</span></a>
-        <a href="#dream" class="nav-item" data-sound="hover"><span>(04) Dream</span></a>
-        <a href="#benchmarks" class="nav-item" data-sound="hover"><span>(05) Benchmarks</span></a>
-        <a href="#download" class="nav-item nav-download-pill" data-sound="click"><span>Get Binary &darr;</span></a>
+        <a href="#about" class="nav-item" data-sound="hover" data-scramble><span>(01) About</span></a>
+        <a href="#disciplines" class="nav-item" data-sound="hover" data-scramble><span>(02) Disciplines</span></a>
+        <a href="#works" class="nav-item" data-sound="hover" data-scramble><span>(03) Works</span></a>
+        <a href="#dream" class="nav-item" data-sound="hover" data-scramble><span>(04) Dream</span></a>
+        <a href="#benchmarks" class="nav-item" data-sound="hover" data-scramble><span>(05) Benchmarks</span></a>
+        <a href="#download" class="nav-item nav-download-pill" data-sound="click" data-magnetic><span>Get Binary &darr;</span></a>
       </nav>
 
       <div class="header-controls">
         <!-- Interactive Procedural Audio Waveform Toggle -->
-        <button type="button" id="sound-btn" class="sound-toggle-btn" aria-pressed="false" aria-label="Toggle Sound" data-sound="click">
+        <button type="button" id="sound-btn" class="sound-toggle-btn" aria-pressed="false" aria-label="Toggle Sound" data-sound="click" data-magnetic>
           <svg class="sound-wave-icon" width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
             <polyline class="wave-line animated" points="1.6,6 3.3,7.7 5,8.8 6.6,8.8 8.3,7.7 10,6 11.7,4.3 13.4,3.2 15,3.2 16.7,4.3 18.4,6"></polyline>
           </svg>
@@ -117,23 +138,23 @@
               A high-precision Windows package orchestrator engineered to eliminate phantom installer exits, abolish GDI UI micro-stutters, and synthesize Winget, Store, Pip, and Npm into one fluid direct-composited reality.
             </p>
             <div class="hero-buttons">
-              <a href="#download" class="action-btn action-primary" data-sound="click">
+              <a href="#download" class="action-btn action-primary" data-sound="click" data-magnetic>
                 <span>Download Executable</span>
                 <span class="btn-arrow">&rarr;</span>
               </a>
-              <a href="#works" class="action-btn action-ghost" data-sound="hover">
+              <a href="#works" class="action-btn action-ghost" data-sound="hover" data-magnetic>
                 <span>Explore Works (03)</span>
               </a>
             </div>
           </div>
 
           <div class="subgrid-col-right">
-            <!-- Three.js 3D Interactive Monolith Visualizer -->
+            <!-- Three.js 3D Interactive Monolith Visualizer with Drag Orbit -->
             <div class="hero-canvas-frame" id="canvas-frame">
               <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Monolith Package Model"></canvas>
               <div class="canvas-telemetry">
-                <span class="telemetry-node">CORE_D3D12 // LERP: 0.08</span>
-                <span class="telemetry-node">INTERACTIVE ORBIT</span>
+                <span class="telemetry-node">D3D12 REFRACTIVE PRISM</span>
+                <span class="telemetry-node">DRAG &bull; HOVER &bull; ORBIT</span>
               </div>
             </div>
           </div>
@@ -166,13 +187,13 @@
 
         <div class="about-two-col">
           <div class="about-col">
-            <h3 class="col-head">The Phantom Update Dilemma</h3>
+            <h3 class="col-head" data-scramble>The Phantom Update Dilemma</h3>
             <p class="col-body">
               Every Windows power user has witnessed it: Winget or an updater reports "Successfully Updated", yet launching the app reveals the stale version is still executing. Winget Updater implements mandatory post-update reality verification—probing Authenticode signatures and filesystem byte hashes before granting approval.
             </p>
           </div>
           <div class="about-col">
-            <h3 class="col-head">Hardware DirectComposition</h3>
+            <h3 class="col-head" data-scramble>Hardware DirectComposition</h3>
             <p class="col-body">
               Standard Windows UI frameworks flood the message queue with synchronous GDI invalidations, dropping framerates to 12 FPS during scroll. Winget Updater runs on a completely decoupled background scheduler with 120Hz velocity lerp and native Windows 11 Acrylic backdrops, delivering 0.0% idle CPU load.
             </p>
@@ -193,7 +214,7 @@
           <li class="discipline-item" data-index="01" data-sound="hover">
             <span class="disc-num">(01)</span>
             <div class="disc-main">
-              <span class="disc-title">Multi-Registry Orchestration</span>
+              <span class="disc-title" data-scramble>Multi-Registry Orchestration</span>
               <span class="disc-desc">Simultaneous non-blocking scanner for Winget, Microsoft Store, PIP, and global NPM.</span>
             </div>
             <span class="disc-badge">CORE_REPO</span>
@@ -202,7 +223,7 @@
           <li class="discipline-item" data-index="02" data-sound="hover">
             <span class="disc-num">(02)</span>
             <div class="disc-main">
-              <span class="disc-title">Post-Update Reality Verification</span>
+              <span class="disc-title" data-scramble>Post-Update Reality Verification</span>
               <span class="disc-desc">Subsurface registry interrogation & Authenticode hash audit ensuring the new binary is on disk.</span>
             </div>
             <span class="disc-badge">TRUTH_CHECK</span>
@@ -211,7 +232,7 @@
           <li class="discipline-item" data-index="03" data-sound="hover">
             <span class="disc-num">(03)</span>
             <div class="disc-main">
-              <span class="disc-title">DirectComposition & Mica Glass</span>
+              <span class="disc-title" data-scramble>DirectComposition & Mica Glass</span>
               <span class="disc-desc">Hardware DWM compositor bypassing legacy Win32 GDI locks for 120Hz buttery frame rendering.</span>
             </div>
             <span class="disc-badge">DWM_GPU</span>
@@ -220,7 +241,7 @@
           <li class="discipline-item" data-index="04" data-sound="hover">
             <span class="disc-num">(04)</span>
             <div class="disc-main">
-              <span class="disc-title">Zero-Lag Non-Blocking Scheduler</span>
+              <span class="disc-title" data-scramble>Zero-Lag Non-Blocking Scheduler</span>
               <span class="disc-desc">Sleeping render loops and asynchronous queue worker threads guaranteeing 0.0% idle CPU consumption.</span>
             </div>
             <span class="disc-badge">ZERO_CPU</span>
@@ -229,7 +250,7 @@
           <li class="discipline-item" data-index="05" data-sound="hover">
             <span class="disc-num">(05)</span>
             <div class="disc-main">
-              <span class="disc-title">Cryptographic Authenticode Validation</span>
+              <span class="disc-title" data-scramble>Cryptographic Authenticode Validation</span>
               <span class="disc-desc">Strict SHA-256 certificate and hash matching shielding users from supply-chain hijacking.</span>
             </div>
             <span class="disc-badge">SHA_256</span>
@@ -238,7 +259,7 @@
           <li class="discipline-item" data-index="06" data-sound="hover">
             <span class="disc-num">(06)</span>
             <div class="disc-main">
-              <span class="disc-title">Automated Rollback & Pinning Engine</span>
+              <span class="disc-title" data-scramble>Automated Rollback & Pinning Engine</span>
               <span class="disc-desc">One-click system restore points, package version exclusions, and instant failure rollback.</span>
             </div>
             <span class="disc-badge">SNAPSHOT</span>
@@ -275,7 +296,7 @@
                   <span class="slide-role">SCANNER &bull; DATA TABLE &bull; VELOCITY SCROLL</span>
                   <span class="slide-year">2026</span>
                 </div>
-                <h3 class="slide-title">Translucent Acrylic Glass Table</h3>
+                <h3 class="slide-title" data-scramble>Translucent Acrylic Glass Table</h3>
                 <p class="slide-description">
                   Scans 200+ local applications across 4 repositories in under 2 seconds. Features color-coded status badges, instant search debouncing, and 3-row velocity mousewheel scrolling.
                 </p>
@@ -300,7 +321,7 @@
                   <span class="slide-role">BOOT TELEMETRY &bull; LUXURY STUDIO &bull; DIRECTX 12</span>
                   <span class="slide-year">2026</span>
                 </div>
-                <h3 class="slide-title">Editorial Startup Loading System</h3>
+                <h3 class="slide-title" data-scramble>Editorial Startup Loading System</h3>
                 <p class="slide-description">
                   Obsidian dark theme with neon cyan &amp; crimson edge flares. Masked display typography, technical status lines, and micro-animated percentage counters deliver an editorial luxury studio aesthetic from the moment the binary launches.
                 </p>
@@ -313,7 +334,7 @@
             </div>
           </article>
 
-          <!-- Work Slide 03: Live Interactive Update Modal -->
+          <!-- Work Slide 03: Live Interactive Update Modal Simulator -->
           <article class="work-slide" data-slide="2">
             <div class="slide-inner">
               <div class="slide-media-wrap slide-interactive-wrap">
@@ -325,28 +346,34 @@
                     <span class="hud-title">LIVE_EXECUTION_STREAM // WINGET</span>
                   </div>
                   <div class="hud-center-content">
-                    <div class="neon-morph-spinner">
-                      <div class="neon-arc-ring"></div>
-                      <div class="neon-check-icon">&#10003;</div>
+                    <div class="neon-morph-spinner" id="neon-spinner">
+                      <div class="neon-arc-ring" id="neon-ring"></div>
+                      <div class="neon-check-icon" id="neon-check">&#10003;</div>
                     </div>
-                    <div class="hud-terminal-logs">
+                    <div class="hud-terminal-logs" id="hud-logs">
                       <div class="hud-log text-cyan">&gt; Resolving package manifest: Git.Git...</div>
                       <div class="hud-log text-green">&gt; SHA256 Authenticode signature: PASS</div>
                       <div class="hud-log text-amber">&gt; Executing silent unattended installer...</div>
                       <div class="hud-log text-pink">&gt; Verified disk version: 5.2.4.2 &bull; SUCCESS</div>
                     </div>
                   </div>
+                  <!-- Interactive Simulator Buttons -->
+                  <div class="hud-action-bar">
+                    <button type="button" class="hud-btn" id="hud-sim-btn" data-sound="click" data-magnetic>▶ Simulate Update</button>
+                    <button type="button" class="hud-btn" id="hud-verify-btn" data-sound="click" data-magnetic>◈ Verify SHA-256</button>
+                    <button type="button" class="hud-btn" id="hud-rollback-btn" data-sound="click" data-magnetic>⟲ Test Rollback</button>
+                  </div>
                 </div>
-                <div class="slide-media-badge">03 // LIVE EXECUTION</div>
+                <div class="slide-media-badge">03 // LIVE EXECUTION SIMULATOR</div>
               </div>
               <div class="slide-info-wrap">
                 <div class="slide-meta-row">
                   <span class="slide-role">STREAM &bull; REAL-TIME MORPH &bull; QUEUE POLLING</span>
                   <span class="slide-year">2026</span>
                 </div>
-                <h3 class="slide-title">Real-Time Live Update Pipeline</h3>
+                <h3 class="slide-title" data-scramble>Real-Time Live Update Pipeline</h3>
                 <p class="slide-description">
-                  Features revolving neon gradient arcs that smoothly morph into drawn SVG checkmarks upon completion. Delivers real-time download speed meters, non-blocking UI queue draining, and automatic rollback on failure.
+                  Features revolving neon gradient arcs that smoothly morph into drawn SVG checkmarks upon completion. Delivers real-time download speed meters, non-blocking UI queue draining, and automatic rollback on failure. Try the interactive simulator above!
                 </p>
                 <div class="slide-telemetry-tags">
                   <span class="tag">MORPH DURATION: 280ms</span>
@@ -375,7 +402,7 @@
           <p class="dream-caption">
             Invert the warm editorial paper into an obsidian cyber blueprint with neon cyan laser lines and glowing telemetry.
           </p>
-          <button type="button" id="dream-trigger-btn" class="dream-trigger-cta" data-sound="toggle">
+          <button type="button" id="dream-trigger-btn" class="dream-trigger-cta" data-sound="toggle" data-magnetic>
             <span class="dream-icon">&#x25C8;</span>
             <span class="dream-btn-label">SWITCH TO DREAM MODE</span>
           </button>
@@ -544,17 +571,17 @@
               <span class="shell-dot dot-amber"></span>
               <span class="shell-dot dot-green"></span>
               <span class="shell-title">PowerShell / Windows Terminal</span>
-              <button class="shell-copy-action" id="copy-btn" aria-label="Copy terminal command" data-sound="click">Copy</button>
+              <button class="shell-copy-action" id="copy-btn" aria-label="Copy terminal command" data-sound="click" data-magnetic>Copy</button>
             </div>
             <pre class="shell-body"><code id="code-snippet">winget install --id rupom.WingetUpdater -e</code></pre>
           </div>
 
           <div class="download-action-row">
-            <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe" class="download-big-btn action-primary" download data-sound="click">
+            <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe" class="download-big-btn action-primary" download data-sound="click" data-magnetic>
               <span class="btn-top">Download WingetUpdater.exe (v1.9.0)</span>
               <span class="btn-sub">Direct Standalone Executable &bull; 13.3 MB &bull; Signed</span>
             </a>
-            <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="download-big-btn action-secondary" data-sound="click">
+            <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="download-big-btn action-secondary" data-sound="click" data-magnetic>
               <span class="btn-top">GitHub Repository &rarr;</span>
               <span class="btn-sub">Open Source &bull; MIT License &bull; Full Source</span>
             </a>
@@ -581,14 +608,14 @@
         <span class="coord-label">LAT 35.6762° N &bull; LON 139.6503° E // TOKYO &bull; REDMOND</span>
       </div>
       <div class="footer-col-right">
-        <a href="#hero" class="back-to-top" id="back-to-top" data-sound="click">BACK TO TOP &uarr;</a>
+        <a href="#hero" class="back-to-top" id="back-to-top" data-sound="click" data-magnetic>BACK TO TOP &uarr;</a>
       </div>
     </div>
   </footer>
 
   <!-- Fixed Bottom Wake / Dream Mode Toggle -->
   <aside class="fixed-mode-toggle" aria-label="Theme mode switcher">
-    <button type="button" id="fixed-theme-btn" class="fixed-theme-btn" aria-label="Switch between Wake Mode and Dream Mode" data-sound="toggle">
+    <button type="button" id="fixed-theme-btn" class="fixed-theme-btn" aria-label="Switch between Wake Mode and Dream Mode" data-sound="toggle" data-magnetic>
       <span class="theme-mode-text" id="theme-mode-text">WAKE [●] / DREAM [○]</span>
     </button>
   </aside>
