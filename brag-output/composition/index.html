@@ -196,7 +196,7 @@
 
       /* SCENE 2: ACRYLIC TABLE */
       #scene-table {
-        background: var(--paper);
+        background: radial-gradient(circle at 60% 50%, rgba(255, 255, 255, 0.45) 0%, var(--paper) 70%);
         color: var(--ink);
         z-index: 30;
         padding: 60px 80px;
@@ -209,10 +209,10 @@
       .table-preview-card {
         width: 100%;
         height: 620px;
-        border-radius: 14px;
+        border-radius: 16px;
         overflow: hidden;
-        border: 1px solid var(--border);
-        box-shadow: 0 32px 80px rgba(0, 0, 0, 0.12);
+        border: 1px solid rgba(18, 18, 18, 0.12);
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
         background: #000;
       }
 
@@ -264,7 +264,7 @@
 
       /* SCENE 3: THE TRUTH ENGINE */
       #scene-truth {
-        background: var(--paper);
+        background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.5) 0%, var(--paper) 75%);
         color: var(--ink);
         z-index: 25;
         padding: 80px;
@@ -288,9 +288,10 @@
       }
 
       .truth-card {
-        background: #e4e0d6;
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(8px);
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 24px 36px;
         font-family: var(--font-mono);
         font-size: 18px;
@@ -298,6 +299,7 @@
         flex-direction: column;
         gap: 8px;
         align-items: center;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
       }
 
       .truth-val {
@@ -308,7 +310,7 @@
 
       /* SCENE 4: OBSIDIAN DREAM MODE */
       #scene-dream {
-        background: var(--night);
+        background: radial-gradient(circle at 40% 50%, rgba(0, 240, 255, 0.09) 0%, var(--night) 70%);
         color: var(--night-ink);
         z-index: 20;
         padding: 60px 80px;
@@ -436,21 +438,21 @@
       data-height="1080"
     >
       <!-- Audio Tracks -->
-      <!-- Voiceover Track (Articulate, Warm, Expressive Female Neural Voice) -->
+      <!-- Serene, Soft, Peaceful Neural Voiceover (Emma Serene Master) -->
       <audio
         id="voiceover"
-        data-start="0.6"
-        data-duration="17.4"
+        data-start="0"
+        data-duration="20"
         data-track-index="9"
         data-volume="1.0"
-        src="assets/voice/voiceover.mp3"
+        src="assets/voice/voiceover_serene.mp3"
       ></audio>
       <audio
         id="bg-music"
         data-start="0"
         data-duration="20"
         data-track-index="10"
-        data-volume="0.16"
+        data-volume="0.10"
         src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"
       ></audio>
       <audio
@@ -458,7 +460,7 @@
         data-start="1.8"
         data-duration="0.5"
         data-track-index="11"
-        data-volume="0.75"
+        data-volume="0.25"
         src="assets/sfx/interface/click_002.ogg"
       ></audio>
       <audio
@@ -466,7 +468,7 @@
         data-start="2.6"
         data-duration="2"
         data-track-index="12"
-        data-volume="0.80"
+        data-volume="0.30"
         src="assets/sfx/impact/impactBell_heavy_000.ogg"
       ></audio>
       <audio
@@ -474,7 +476,7 @@
         data-start="13.1"
         data-duration="2"
         data-track-index="13"
-        data-volume="0.80"
+        data-volume="0.30"
         src="assets/sfx/impact/impactSoft_medium_001.ogg"
       ></audio>
       <audio
@@ -482,7 +484,7 @@
         data-start="15.8"
         data-duration="2"
         data-track-index="14"
-        data-volume="0.85"
+        data-volume="0.30"
         src="assets/sfx/impact/impactBell_heavy_003.ogg"
       ></audio>
 
@@ -625,43 +627,43 @@
 
       // Scene 1: The Gate (0s - 2.5s)
       tl.set("#scene-gate", { autoAlpha: 1 }, 0);
-      tl.fromTo("#scene-gate .gate-title", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.2);
-      tl.fromTo("#gate-btn-box", { scale: 0.95 }, { scale: 1.05, repeat: 1, yoyo: true, duration: 0.4 }, 1.4);
-      tl.to("#gate-btn-box", { backgroundColor: "#ffffff", color: "#07080c", duration: 0.15 }, 1.8);
-      tl.to("#scene-gate", { y: -1080, duration: 0.7, ease: "power4.inOut" }, 2.2);
+      tl.fromTo("#scene-gate .gate-title", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.0, ease: "sine.out" }, 0.2);
+      tl.fromTo("#gate-btn-box", { scale: 0.98 }, { scale: 1.03, repeat: 1, yoyo: true, duration: 0.5, ease: "sine.inOut" }, 1.3);
+      tl.to("#gate-btn-box", { backgroundColor: "#ffffff", color: "#07080c", duration: 0.2 }, 1.7);
+      tl.to("#scene-gate", { y: -1080, duration: 0.8, ease: "power3.inOut" }, 2.1);
 
       // Scene 1B: Hero Reveal (2.5s - 5.5s)
       tl.set("#scene-hero", { autoAlpha: 1 }, 2.5);
-      tl.fromTo("#scene-hero .hero-h1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 2.6);
-      tl.fromTo("#scene-hero .hero-subline", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 3.2);
-      tl.to("#scene-hero", { opacity: 0, scale: 0.98, duration: 0.4, ease: "power2.in" }, 5.2);
+      tl.fromTo("#scene-hero .hero-h1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" }, 2.6);
+      tl.fromTo("#scene-hero .hero-subline", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.out" }, 3.3);
+      tl.to("#scene-hero", { opacity: 0, scale: 0.99, duration: 0.5, ease: "sine.in" }, 5.2);
 
       // Scene 2: Acrylic Table (5.5s - 10.0s)
       tl.set("#scene-table", { autoAlpha: 1 }, 5.5);
-      tl.fromTo("#table-card", { opacity: 0, x: -60, scale: 0.95 }, { opacity: 1, x: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 5.6);
-      tl.fromTo(".table-copy-box", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" }, 5.8);
-      tl.fromTo(".pill", { opacity: 0, y: 15 }, { opacity: 1, y: 0, stagger: 0.12, duration: 0.4 }, 6.4);
-      tl.to("#scene-table", { opacity: 0, duration: 0.4, ease: "power2.in" }, 9.7);
+      tl.fromTo("#table-card", { opacity: 0, x: -40, scale: 0.97 }, { opacity: 1, x: 0, scale: 1, duration: 1.0, ease: "power2.out" }, 5.6);
+      tl.fromTo(".table-copy-box", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.9, ease: "power2.out" }, 5.8);
+      tl.fromTo(".pill", { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: "sine.out" }, 6.5);
+      tl.to("#scene-table", { opacity: 0, duration: 0.5, ease: "sine.in" }, 9.7);
 
       // Scene 3: The Truth Engine (10.0s - 13.5s)
       tl.set("#scene-truth", { autoAlpha: 1 }, 10.0);
-      tl.fromTo(".truth-statement", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 10.1);
-      tl.fromTo(".truth-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: "back.out(1.5)" }, 10.6);
-      tl.to("#scene-truth", { opacity: 0, duration: 0.4, ease: "power2.in" }, 13.2);
+      tl.fromTo(".truth-statement", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" }, 10.1);
+      tl.fromTo(".truth-card", { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.16, duration: 0.6, ease: "power2.out" }, 10.6);
+      tl.to("#scene-truth", { opacity: 0, duration: 0.5, ease: "sine.in" }, 13.2);
 
       // Scene 4: Obsidian Dream Mode (13.5s - 17.0s)
       tl.set("#scene-dream", { autoAlpha: 1 }, 13.5);
-      tl.fromTo(".dream-hud-box", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 13.6);
-      tl.to("#hud-ring", { rotation: 720, duration: 2.0, ease: "linear" }, 13.6);
-      tl.fromTo("#hud-check", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 15.6);
-      tl.fromTo(".dream-copy", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.7 }, 14.0);
-      tl.to("#scene-dream", { opacity: 0, duration: 0.4, ease: "power2.in" }, 16.7);
+      tl.fromTo(".dream-hud-box", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.9, ease: "power2.out" }, 13.6);
+      tl.to("#hud-ring", { rotation: 360, duration: 2.5, ease: "linear" }, 13.6);
+      tl.fromTo("#hud-check", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, 15.6);
+      tl.fromTo(".dream-copy", { opacity: 0, x: 25 }, { opacity: 1, x: 0, duration: 0.9, ease: "sine.out" }, 14.0);
+      tl.to("#scene-dream", { opacity: 0, duration: 0.5, ease: "sine.in" }, 16.7);
 
       // Scene 5: Outro & Terminal (17.0s - 20.0s)
       tl.set("#scene-outro", { autoAlpha: 1 }, 17.0);
-      tl.fromTo(".outro-h2", { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 17.1);
-      tl.fromTo(".terminal-box", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 17.5);
-      tl.fromTo(".outro-footer span", { opacity: 0 }, { opacity: 1, stagger: 0.1, duration: 0.4 }, 18.0);
+      tl.fromTo(".outro-h2", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 17.1);
+      tl.fromTo(".terminal-box", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, 17.5);
+      tl.fromTo(".outro-footer span", { opacity: 0 }, { opacity: 1, stagger: 0.12, duration: 0.5, ease: "sine.out" }, 18.0);
 
       window.__timelines["main"] = tl;
       tl.seek(0);
