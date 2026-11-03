@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-90%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="90 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-94%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="94 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.25_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.29_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
 </p>
 
@@ -35,10 +35,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.7.1/WingetUpdater.exe) | Windows 11 (64-bit) | 13.27 MB | `20E53A2807F2B5545BAAF38BD933708CFA540A345C3849CB921DF8E556AAFD4B` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.29 MB | `86594B2E88C3759065CAA73DDDB51C446CFBC01A25FBCE5A902D71D038BC2E15` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.
@@ -47,7 +47,14 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 ## ✨ Key Features
 
-### 🖥️ 1. Multi-Subsystem Inventory Discovery
+### 🎬 1. Animated Live Update Progress Popup (60 FPS Micro-Motion)
+- **Revolving Neon Gradient Arc Spinner:** High-performance Tkinter canvas rotating with inertia and ambient energy rings, automatically morphing into an animated drawn emerald checkmark with cubic ease-out upon batch completion.
+- **Active Package Spotlight Card:** Displays package avatar, source pill (`WinGet`, `Pip`, `Npm`, `Store`), version evolution pill (`1.0.0` → `1.1.0`), and real-time installation phase indicator (`📥 Downloading Payload`, `🔒 Verifying Signature & Hash`, `⚙️ Installing`, `✅ Finalized`).
+- **Real-Time Rolling Monospace Terminal:** Integrated dark terminal (`Cascadia Code`) streaming actual line-by-line stdout/stderr from package managers as commands execute, completely hidden from flashing Windows command prompt windows.
+- **Live Queue Checklist:** Scrollable list of queued packages displaying status badges (⏳ Pending, ⚡ Installing, ✅ Done, ❌ Failed) in real time.
+- **Run in Background & Cancel Safety:** "Run in Background" smoothly hides the modal to a non-intrusive floating toast (restorable with a single click); "Cancel Queue" safely stops subsequent updates without corrupting in-flight installations.
+
+### 🖥️ 2. Multi-Subsystem Inventory Discovery
 Unlike tools that check only one registry location, Software & Package Updater audits five distinct system subsystems simultaneously:
 - **Classic Win32 Applications:** Scans both 64-bit and 32-bit Windows Registry hives (`HKLM\Software`, `HKCU\Software`, `WOW6432Node`).
 - **Microsoft Store & MSIX Packages:** Queries official modern Windows packaged applications via AppX manifests.
@@ -55,7 +62,7 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Browser Extensions:** Discovers extensions installed across Google Chrome, Microsoft Edge, Brave, and Mozilla Firefox.
 - **OEM Device Drivers:** Enumerates third-party device drivers safely (`pnputil /enum-drivers`) in read-only mode.
 
-### ⚡ 2. High-Performance Batched Queries
+### ⚡ 3. High-Performance Batched Queries
 - Queries repository upgrades (`winget upgrade`) and installed registries (`winget list`) in single batch operations.
 - Correlates an entire system inventory of 200–300+ programs in under **3 seconds** without slow, per-item network requests.
 - Never skips software silently: programs without public repositories are explicitly marked **"No update source"** rather than hidden.

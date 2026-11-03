@@ -5,9 +5,9 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 from winget_updater.utils.logger import get_logger
-from winget_updater.utils.process import silent_run
+from winget_updater.utils.process import silent_popen_stream, silent_run
 
 logger = get_logger()
 
@@ -267,7 +267,12 @@ class WingetClient:
             min_os_version=min_os,
         )
 
-    def upgrade_package(self, package_id: str, dry_run: bool = False) -> Tuple[bool, str]:
+    def upgrade_package(
+        self,
+        package_id: str,
+        dry_run: bool = False,
+        log_callback: Optional[Callable[[str], None]] = None,
+    ) -> Tuple[bool, str]:
         """Upgrades a single verified package via winget upgrade --id <id>."""
         if dry_run:
             logger.info(f"[DRY-RUN] Would execute: winget upgrade --id '{package_id}' --exact")
@@ -285,21 +290,36 @@ class WingetClient:
         logger.info(f"Executing winget upgrade for package: {package_id}")
 
         try:
-            res = silent_run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=600,  # Allow up to 10 minutes for large downloads/installs
-            )
-            if res.returncode == 0:
-                logger.info(f"Successfully upgraded {package_id}")
-                return True, "Update completed successfully"
+            if log_callback:
+                ret_code, output_text = silent_popen_stream(
+                    cmd,
+                    line_callback=log_callback,
+                    timeout=600,
+                )
+                if ret_code == 0:
+                    logger.info(f"Successfully upgraded {package_id}")
+                    return True, "Update completed successfully"
+                else:
+                    lines = [ln.strip() for ln in output_text.splitlines() if ln.strip()]
+                    err_msg = lines[-1] if lines else f"Exit code {ret_code}"
+                    logger.error(f"Failed to upgrade {package_id}: {err_msg}")
+                    return False, err_msg
             else:
-                err_msg = res.stderr.strip() or res.stdout.strip() or f"Exit code {res.returncode}"
-                logger.error(f"Failed to upgrade {package_id}: {err_msg}")
-                return False, err_msg
+                res = silent_run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=600,  # Allow up to 10 minutes for large downloads/installs
+                )
+                if res.returncode == 0:
+                    logger.info(f"Successfully upgraded {package_id}")
+                    return True, "Update completed successfully"
+                else:
+                    err_msg = res.stderr.strip() or res.stdout.strip() or f"Exit code {res.returncode}"
+                    logger.error(f"Failed to upgrade {package_id}: {err_msg}")
+                    return False, err_msg
         except subprocess.TimeoutExpired:
             logger.error(f"winget upgrade for {package_id} timed out")
             return False, "Upgrade timed out after 600 seconds"

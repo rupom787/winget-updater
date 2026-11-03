@@ -29,7 +29,7 @@ class BaseSourceAdapter(ABC):
         pass
 
     @abstractmethod
-    def install_update(self, item: ProgramItem, dry_run: bool = False) -> Tuple[bool, str]:
+    def install_update(self, item: ProgramItem, dry_run: bool = False, **kwargs) -> Tuple[bool, str]:
         """Executes the package update using the adapter's verified installation mechanism."""
         pass
 

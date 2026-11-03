@@ -55,6 +55,7 @@ from winget_updater.gui.dialogs import (
     prompt_unverified_allow_confirmation,
     prompt_vendor_installer_confirmation,
 )
+from winget_updater.gui.live_update_modal import LiveUpdateProgressDialog
 from winget_updater.gui.rounded_widgets import (
     RoundedButton,
     RoundedPillBadge,
@@ -126,6 +127,9 @@ class MainWindow(tk.Tk):
         self.selected_item: Optional[ProgramItem] = None
         self.updating_package_ids: Set[str] = set()
         self.is_busy = False
+        self.cancel_update_requested = False
+        self.live_update_dialog: Optional[LiveUpdateProgressDialog] = None
+        self._last_update_summary: Optional[UpdateRunSummary] = None
         self.msg_queue: queue.Queue = queue.Queue()
 
         self._build_layout()
@@ -509,8 +513,10 @@ class MainWindow(tk.Tk):
             fg="#6b7280",
             font=("Segoe UI", 8),
             anchor="w",
+            cursor="hand2",
         )
         self.status_lbl.pack(side=tk.LEFT)
+        self.status_lbl.bind("<Button-1>", self._restore_live_modal_if_background)
 
         self.progress_bar = SmoothLerpProgressBar(self.progress_frame, width=180, height=14)
         self.progress_bar.pack(side=tk.RIGHT)
@@ -1211,18 +1217,64 @@ class MainWindow(tk.Tk):
         if self.is_busy:
             return
 
+        candidates = [it for it in target_items if it.can_auto_update()]
+        if not candidates:
+            self._show_floating_toast("No eligible packages to update", "i")
+            return
+
         self.is_busy = True
+        self.cancel_update_requested = False
         self.btn_scan.config(state=tk.DISABLED)
         self.btn_update.config(state=tk.DISABLED)
         self.btn_update_selected.config(state=tk.DISABLED)
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(state=tk.DISABLED)
         self.progress_bar.set_progress(0)
-        self.status_lbl.config(text=f"Updating {len(target_items)} packages...")
+        self.status_lbl.config(text=f"Updating {len(candidates)} packages...")
         if hasattr(self, "hud"):
             self.hud.set_mode("updating")
 
-        threading.Thread(target=self._update_worker_custom, args=(target_items, dry_run), daemon=True).start()
+        # Open modern animated live update modal
+        def on_run_in_background():
+            self._show_floating_toast(
+                f"Updating {len(candidates)} packages in background. Click status bar to view.",
+                "⬇",
+            )
+
+        def on_cancel_queue():
+            self.cancel_update_requested = True
+            self._show_floating_toast("Cancelling queue after active installation concludes...", "⏹")
+
+        def on_complete_view_summary():
+            if hasattr(self, "_last_update_summary") and self._last_update_summary:
+                failed_items = [it for it in self.all_programs if it.outcome == UpdateOutcome.FAILED]
+                UpdateSummaryDialog(
+                    self,
+                    summary=self._last_update_summary,
+                    failed_items=failed_items,
+                    on_retry=self._retry_failed_updates,
+                    theme=self.current_theme,
+                )
+
+        try:
+            self.live_update_dialog = LiveUpdateProgressDialog(
+                self,
+                items=candidates,
+                theme=self.current_theme,
+                on_run_in_background=on_run_in_background,
+                on_cancel_queue=on_cancel_queue,
+                on_complete_view_summary=on_complete_view_summary,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create LiveUpdateProgressDialog: {e}")
+            self.live_update_dialog = None
+
+        threading.Thread(target=self._update_worker_custom, args=(candidates, dry_run), daemon=True).start()
+
+    def _restore_live_modal_if_background(self, event=None) -> None:
+        """Restores the live update modal to foreground when user clicks status bar."""
+        if hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists():
+            self.live_update_dialog.restore_from_background()
 
     def _update_worker(self, dry_run: bool) -> None:
         self._update_worker_custom(self.all_programs, dry_run)
@@ -1232,6 +1284,19 @@ class MainWindow(tk.Tk):
             pct = int((cur / tot) * 100) if tot > 0 else 0
             self.msg_queue.put(("PROGRESS", pct))
             self.msg_queue.put(("STATUS", f"Updating [{cur}/{tot}]: {item.name}..."))
+            if hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists():
+                self.live_update_dialog.notify_package_started(item, cur, tot)
+
+        def on_log(item: ProgramItem, line: str) -> None:
+            if hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists():
+                self.live_update_dialog.notify_package_log(item, line)
+
+        def on_item_complete(item: ProgramItem, success: bool, message: str) -> None:
+            if hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists():
+                self.live_update_dialog.notify_package_completed(item, success, message)
+
+        def is_cancelled() -> bool:
+            return getattr(self, "cancel_update_requested", False)
 
         try:
             summary = self.engine.execute_batch_update(
@@ -1242,7 +1307,13 @@ class MainWindow(tk.Tk):
                 auto_close_apps=self.auto_close_var.get(),
                 cleanup_after=True,
                 progress_callback=on_progress,
+                log_callback=on_log,
+                item_complete_callback=on_item_complete,
+                cancel_check_callback=is_cancelled,
             )
+            self._last_update_summary = summary
+            if hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists():
+                self.live_update_dialog.notify_queue_finished(summary)
             self.msg_queue.put(("UPDATE_COMPLETE", summary))
         except Exception as e:
             logger.error(f"Update error: {e}")
@@ -1279,16 +1350,18 @@ class MainWindow(tk.Tk):
             self.drawer.set_item(self.selected_item)
 
         self._refresh_counts()
-
         self._show_floating_toast(f"Updated {summary.updated_count} packages", "✓")
-        failed_items = [it for it in self.all_programs if it.outcome == UpdateOutcome.FAILED]
-        UpdateSummaryDialog(
-            self,
-            summary=summary,
-            failed_items=failed_items,
-            on_retry=self._retry_failed_updates,
-            theme=self.current_theme,
-        )
+
+        # If live_update_dialog was not created or already closed, open UpdateSummaryDialog directly
+        if not (hasattr(self, "live_update_dialog") and self.live_update_dialog and self.live_update_dialog.winfo_exists()):
+            failed_items = [it for it in self.all_programs if it.outcome == UpdateOutcome.FAILED]
+            UpdateSummaryDialog(
+                self,
+                summary=summary,
+                failed_items=failed_items,
+                on_retry=self._retry_failed_updates,
+                theme=self.current_theme,
+            )
 
     def _retry_failed_updates(self, items: List[ProgramItem]) -> None:
         """Retries installation for failed updates."""
@@ -1431,41 +1504,11 @@ class MainWindow(tk.Tk):
             threading.Thread(target=worker, daemon=True).start()
 
     def _run_isolated_single_update(self, item: ProgramItem) -> None:
-        pkg_id = item.id or item.name
-        self.updating_package_ids.add(pkg_id)
-        self.status_lbl.config(text=f"Updating {item.name}...")
-        self.drawer.btn_update.config(state="disabled", text="Updating...")
-
-        # Process lock detection and graceful auto-close
-        if self.auto_close_var.get() and not self.dry_run_var.get():
-            running = ProcessLockDetector.find_running_processes_for_item(item)
-            if running:
-                logger.info(f"Closing {len(running)} active processes locking {item.name}...")
-                ProcessLockDetector.terminate_processes([p[0] for p in running], force=False)
-
-        def worker():
-            dry_run = self.dry_run_var.get()
-            success, msg = self.source_manager.install_update(item, dry_run=dry_run)
-            self.updating_package_ids.discard(pkg_id)
-
-            if success:
-                # Re-verify installed version post-install
-                if item.latest_version:
-                    item.installed_version = item.latest_version
-                item.action = UpdateAction.UP_TO_DATE
-                item.outcome = UpdateOutcome.UPDATED
-                item.notes = f"Updated: {msg}"
-                self._show_floating_toast(f"Successfully updated {item.name}!", "✓")
-            else:
-                item.outcome = UpdateOutcome.FAILED
-                item.notes = f"Failed: {msg}"
-                self._show_floating_toast(f"Update failed for {item.name}", "✕")
-
-            self.msg_queue.put(("STATUS", f"Update for {item.name}: {msg}"))
-            self.apply_filter()
-            self.drawer.set_item(item)
-
-        threading.Thread(target=worker, daemon=True).start()
+        """Executes single package update via the live animated update modal."""
+        if not item.can_auto_update():
+            self._show_floating_toast("Package is not eligible for automatic update", "i")
+            return
+        self._execute_update_queue([item], dry_run=self.dry_run_var.get())
 
     def _run_isolated_vendor_installer(self, item: ProgramItem) -> None:
         pkg_id = item.id or item.name

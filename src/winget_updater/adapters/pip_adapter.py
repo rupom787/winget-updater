@@ -7,11 +7,11 @@ import json
 import os
 import shutil
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from winget_updater.adapters.base import BaseSourceAdapter
 from winget_updater.models import PackageType, ProgramItem, UpdateAction
 from winget_updater.utils.logger import get_logger
-from winget_updater.utils.process import silent_run
+from winget_updater.utils.process import silent_popen_stream, silent_run
 
 logger = get_logger()
 
@@ -177,14 +177,26 @@ class PipAdapter(BaseSourceAdapter):
         except Exception as e:
             return False, f"Exception executing pip install: {e}"
 
-    def install_update(self, item: ProgramItem, dry_run: bool = False) -> Tuple[bool, str]:
+    def install_update(
+        self,
+        item: ProgramItem,
+        dry_run: bool = False,
+        log_callback: Optional[Callable[[str], None]] = None,
+    ) -> Tuple[bool, str]:
         """Updates an existing Python package using pip install --upgrade."""
         clean_name = item.name.replace("pip:", "")
         if dry_run:
             return True, f"[Dry Run] Simulated pip upgrade for '{clean_name}'"
 
+        cmd = [self.python_path, "-m", "pip", "install", "--upgrade", clean_name]
         try:
-            res = silent_run([self.python_path, "-m", "pip", "install", "--upgrade", clean_name], timeout=180)
+            if log_callback:
+                ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=180)
+                if ret == 0:
+                    return True, f"Successfully updated pip package '{clean_name}'"
+                lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
+                return False, f"pip update failed: {lines[-1] if lines else f'Code {ret}'}"
+            res = silent_run(cmd, timeout=180)
             if res.returncode == 0:
                 return True, f"Successfully updated pip package '{clean_name}'"
             return False, f"pip update failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"

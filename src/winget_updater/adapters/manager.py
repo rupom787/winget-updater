@@ -94,17 +94,28 @@ class SourceManager:
             return False, f"Package manager '{adapter.display_name}' is not installed or available on this PC."
         return adapter.install_package(pkg_id, dry_run=dry_run)
 
-    def install_update(self, item: ProgramItem, dry_run: bool = False) -> Tuple[bool, str]:
+    def install_update(
+        self,
+        item: ProgramItem,
+        dry_run: bool = False,
+        log_callback: Optional[Callable[[str], None]] = None,
+    ) -> Tuple[bool, str]:
         """Updates an existing package using its designated source adapter."""
         source = (item.source or "").lower()
         adapter = self.get_adapter(source)
         if adapter and adapter.is_available():
-            return adapter.install_update(item, dry_run=dry_run)
+            try:
+                return adapter.install_update(item, dry_run=dry_run, log_callback=log_callback)
+            except TypeError:
+                return adapter.install_update(item, dry_run=dry_run)
 
         # Fallback to winget for standard Win32/Store items
         winget = self.get_adapter("winget")
         if winget:
-            return winget.install_update(item, dry_run=dry_run)
+            try:
+                return winget.install_update(item, dry_run=dry_run, log_callback=log_callback)
+            except TypeError:
+                return winget.install_update(item, dry_run=dry_run)
         return False, f"No viable adapter available for updating '{item.name}'"
 
     def uninstall_package(self, item: ProgramItem) -> Tuple[bool, str]:

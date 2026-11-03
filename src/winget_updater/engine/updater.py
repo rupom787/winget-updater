@@ -59,6 +59,9 @@ class UpdateEngine:
         cleanup_after: bool = True,
         elevation_warning_callback: Optional[Callable[[ProgramItem], None]] = None,
         progress_callback: Optional[Callable[[ProgramItem, int, int], None]] = None,
+        log_callback: Optional[Callable[[ProgramItem, str], None]] = None,
+        item_complete_callback: Optional[Callable[[ProgramItem, bool, str], None]] = None,
+        cancel_check_callback: Optional[Callable[[], bool]] = None,
     ) -> UpdateRunSummary:
         """Executes updates for all qualified packages after single user or schedule approval.
         
@@ -113,6 +116,15 @@ class UpdateEngine:
                     summary.listed_only_count += 1
                 continue
 
+            if cancel_check_callback and cancel_check_callback():
+                logger.info(f"Cancellation requested. Skipping queued item '{item.name}'.")
+                item.outcome = UpdateOutcome.SKIPPED
+                item.notes = "Cancelled by user"
+                summary.skipped_count += 1
+                if item_complete_callback:
+                    item_complete_callback(item, False, "Cancelled by user")
+                continue
+
             current_idx += 1
             if progress_callback:
                 progress_callback(item, current_idx, total_candidates)
@@ -124,6 +136,8 @@ class UpdateEngine:
                 auto_close_apps=auto_close_apps,
                 summary=summary,
                 elevation_warning_callback=elevation_warning_callback,
+                log_callback=log_callback,
+                item_complete_callback=item_complete_callback,
             )
 
         # Post-update disk cleanup of installer temporary files
@@ -155,6 +169,8 @@ class UpdateEngine:
         summary: UpdateRunSummary,
         elevation_warning_callback: Optional[Callable[[ProgramItem], None]],
         auto_close_apps: bool = True,
+        log_callback: Optional[Callable[[ProgramItem, str], None]] = None,
+        item_complete_callback: Optional[Callable[[ProgramItem, bool, str], None]] = None,
     ) -> None:
         """Executes update for a single verified package with isolation."""
         pkg_id = item.id or item.name
@@ -180,6 +196,8 @@ class UpdateEngine:
             item.notes = reasons_str
             self.state_mgr.record_package_end(pkg_id, "skipped", reasons_str)
             summary.skipped_count += 1
+            if item_complete_callback:
+                item_complete_callback(item, False, reasons_str)
             return
 
         # 3. Process Lock Detection: check and gracefully close running executables to prevent error 1618
@@ -199,15 +217,24 @@ class UpdateEngine:
             item.notes = "Simulated upgrade (Dry Run active)"
             self.state_mgr.record_package_end(pkg_id, "simulated", item.notes)
             summary.simulated_count += 1
+            if item_complete_callback:
+                item_complete_callback(item, True, "Simulated upgrade (Dry Run)")
             return
 
         # 6. Execute upgrade via source manager or fallback winget
+        pkg_log_cb = (lambda line: log_callback(item, line)) if log_callback else None
         try:
             source = (item.source or "").lower()
-            if source in ("pip", "npm", "scoop", "chocolatey") and self.source_mgr:
-                success, message = self.source_mgr.install_update(item, dry_run=False)
+            if pkg_log_cb is not None:
+                if source in ("pip", "npm", "scoop", "chocolatey") and self.source_mgr:
+                    success, message = self.source_mgr.install_update(item, dry_run=False, log_callback=pkg_log_cb)
+                else:
+                    success, message = self.client.upgrade_package(pkg_id, dry_run=False, log_callback=pkg_log_cb)
             else:
-                success, message = self.client.upgrade_package(pkg_id, dry_run=False)
+                if source in ("pip", "npm", "scoop", "chocolatey") and self.source_mgr:
+                    success, message = self.source_mgr.install_update(item, dry_run=False)
+                else:
+                    success, message = self.client.upgrade_package(pkg_id, dry_run=False)
             if success:
                 # Re-verify installed status post-installation
                 if item.latest_version:
@@ -217,11 +244,15 @@ class UpdateEngine:
                 item.notes = f"Verified update: {item.name} updated to {item.installed_version}"
                 self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
                 summary.updated_count += 1
+                if item_complete_callback:
+                    item_complete_callback(item, True, item.notes)
             else:
                 item.outcome = UpdateOutcome.FAILED
                 item.notes = f"Update failed: {message}"
                 self.state_mgr.record_package_end(pkg_id, "failed", message)
                 summary.failed_count += 1
+                if item_complete_callback:
+                    item_complete_callback(item, False, item.notes)
         except Exception as e:
             err_msg = f"Unexpected failure executing update for {pkg_id}: {e}"
             logger.error(err_msg)
@@ -229,6 +260,8 @@ class UpdateEngine:
             item.notes = err_msg
             self.state_mgr.record_package_end(pkg_id, "failed", str(e))
             summary.failed_count += 1
+            if item_complete_callback:
+                item_complete_callback(item, False, err_msg)
 
     def execute_vendor_installer(
         self,
