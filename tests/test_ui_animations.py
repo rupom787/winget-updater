@@ -433,6 +433,21 @@ def test_program_table_extended_batch_and_context_menu():
     root.destroy()
 
 
+def test_complete_system_update_dialog_init():
+    root = tk.Tk()
+    root.withdraw()
+
+    from winget_updater.gui.system_update_flow import CompleteSystemUpdateDialog
+    dlg = CompleteSystemUpdateDialog(root)
+    assert dlg.winfo_exists()
+    assert "Complete System Update" in dlg.title()
+    assert dlg.timeline is not None
+    assert dlg.oem_info is not None
+
+    dlg.destroy()
+    root.destroy()
+
+
 
 
 

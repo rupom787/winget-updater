@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-67%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="67 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-73%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="73 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.19_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.4.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.21_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
 </p>
 
@@ -35,13 +35,13 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.19 MB | `0F34082407A6D31B60292FDC393444AD5D475A696ABE15C79670B33FDC0E804B` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.4.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.21 MB | `A7B60FAEA361EDA1911561EB40875F57B7F1F38D4C9DA1509DB9A6D937AC68BB` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.3.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.4.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
-4. **Scan & Update:** Click **"Check for updates"**, select the packages you wish to update, and click **"Update all eligible"**.
+4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.
 
 ---
 
@@ -83,7 +83,15 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Batch & 1-Click "Approve & Allow Update":** Review candidate packages and grant update permission with a single click or in bulk.
 - **1-Click Official Download Web Link:** Instantly launch verified official vendor download pages in your browser for software without public repository packages.
 
-### 💎 6. Windows 11 Acrylic & Frosted Glass Backdrops
+### ⚡ 6. Complete System Update Pipeline (4-Stage Full PC Maintenance)
+- **Unified 1-Click Maintenance:** Orchestrates the ultimate multi-stage PC maintenance routine:
+  - **Stage 1 (Windows Update):** Scans and triggers official Windows Updates, security intelligence rollups, and cumulative patches.
+  - **Stage 2 (Applications & Packages):** Batch updates all Win32 and Microsoft Store applications via `winget upgrade --all` with automated license and source agreement acceptance.
+  - **Stage 3 (OEM Hardware Drivers):** Audits and updates vendor drivers (NVIDIA GeForce Game Ready/Studio drivers, AMD Chipset, Intel Display, Realtek Audio).
+  - **Stage 4 (Intelligent OEM Companion & BIOS):** Automatically interrogates BIOS hardware information to detect manufacturer (ASUS, Lenovo, Dell, HP, MSI, Acer, Surface) and provides 1-click access to official OEM firmware tools (MyASUS, Lenovo Vantage, Dell SupportAssist, etc.).
+- **Authoritative Reboot Required Detection:** Inspects Windows Component Based Servicing (`CBS`), Windows Update Auto-Update, and `PendingFileRenameOperations` registry hives to alert you whenever a restart is required to finalize kernel or driver patches.
+
+### 💎 7. Windows 11 Acrylic & Frosted Glass Backdrops
 - **Native Acrylic / Mica System Backdrops:** Automatically configures Windows 11 `DWMWA_SYSTEMBACKDROP_TYPE` (Attribute 38) for native desktop translucent blur.
 - **Interactive Micro-Animations:** Responsive spring depression dynamics on buttons, hover border illumination, and status badges with breathing indicator lights.
 - **Diagnostic Explanation Alert Box:** Transparent card in the details drawer clearly explaining why any software is listed-only or requires manual binding.
@@ -169,7 +177,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-0F34082407A6D31B60292FDC393444AD5D475A696ABE15C79670B33FDC0E804B
+A7B60FAEA361EDA1911561EB40875F57B7F1F38D4C9DA1509DB9A6D937AC68BB
 ```
 
 ---

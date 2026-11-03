@@ -22,6 +22,7 @@ from winget_updater.engine.restore_point import RestorePointManager
 from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.engine.state_manager import StateManager
 from winget_updater.engine.updater import UpdateEngine, UpdateRunSummary
+from winget_updater.engine.windows_update import WindowsUpdateManager
 from winget_updater.gui.animations import (
     CyberLaserHeaderCanvas,
     FluentFloatingToast,
@@ -55,6 +56,7 @@ from winget_updater.gui.rounded_widgets import (
     RoundedPillBadge,
     apply_native_window_styling,
 )
+from winget_updater.gui.system_update_flow import CompleteSystemUpdateDialog
 from winget_updater.gui.theme import LIGHT_THEME, ThemeColors, get_theme
 from winget_updater.models import PackageType, ProgramItem, UpdateAction, UpdateOutcome
 from winget_updater.utils.logger import get_logger
@@ -171,6 +173,18 @@ class MainWindow(tk.Tk):
         # Frosted Glass Telemetry HUD
         self.hud = GlassyTelemetryHUD(self.top_bar, sys_info=self.sys_info, gpu_name=self.primary_gpu.name)
         self.hud.pack(side=tk.LEFT, padx=(16, 0))
+
+        # Pending Reboot Required Indicator
+        is_reboot, r_reason = WindowsUpdateManager.is_reboot_pending()
+        self.reboot_badge = RoundedPillBadge(
+            self.top_bar,
+            text="⚠️ Restart Required" if is_reboot else "",
+            bg_color="#fef3c7" if is_reboot else "#ffffff",
+            fg_color="#92400e" if is_reboot else "#ffffff",
+            parent_bg="#ffffff",
+        )
+        if is_reboot:
+            self.reboot_badge.pack(side=tk.LEFT, padx=(12, 0))
 
         # Top Right Controls
         self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
@@ -352,6 +366,21 @@ class MainWindow(tk.Tk):
             padding=(16, 8),
         )
         self.btn_scan.pack(side=tk.RIGHT, padx=(10, 0))
+
+        # "Complete System Update" 1-Click Multi-Stage Pipeline
+        self.btn_complete_system = RoundedButton(
+            self.header_btn_box,
+            text="⚡ Complete system update",
+            command=self._open_complete_system_update,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            height=36,
+            font=("Segoe UI", 9, "bold"),
+            padding=(14, 8),
+        )
+        self.btn_complete_system.pack(side=tk.RIGHT, padx=(10, 0))
 
         # "Update All Available" Button
         self.btn_update = RoundedButton(
@@ -552,6 +581,8 @@ class MainWindow(tk.Tk):
         self.bind("<Control-b>", lambda e: self._export_software_backup())
         self.bind("<Control-i>", lambda e: self._import_software_backup())
         self.bind("<Control-e>", lambda e: self._open_exclusions_dialog())
+        self.bind("<Control-Shift-U>", lambda e: self._open_complete_system_update())
+        self.bind("<Control-Shift-u>", lambda e: self._open_complete_system_update())
 
         self.set_theme(self.current_theme.name)
 
@@ -607,8 +638,18 @@ class MainWindow(tk.Tk):
             self.batch_dock.apply_theme(t)
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
+        if hasattr(self, "btn_complete_system"):
+            self.btn_complete_system.config(bg=t.accent_burgundy, fg="#ffffff")
+        if hasattr(self, "reboot_badge"):
+            is_reb, _ = WindowsUpdateManager.is_reboot_pending()
+            if is_reb:
+                self.reboot_badge.set_badge("⚠️ Restart Required", bg_color="#fef3c7", fg_color="#92400e")
 
         self.config.set_theme(t.name)
+
+    def _open_complete_system_update(self) -> None:
+        """Launches the 4-stage Complete System Update workflow dialog."""
+        CompleteSystemUpdateDialog(self, theme=self.current_theme, on_finished=self.start_scan)
 
     def toggle_theme(self) -> None:
         """Toggles between Dark Mode and Light Mode."""
@@ -1074,6 +1115,16 @@ class MainWindow(tk.Tk):
             bytes_freed, cleanup_msg = DiskCleanupManager.cleanup_temp_and_cache()
             if bytes_freed > 0:
                 self._show_floating_toast(cleanup_msg, "✓")
+
+        # Check and update pending reboot badge
+        if hasattr(self, "reboot_badge"):
+            is_reb, _ = WindowsUpdateManager.is_reboot_pending()
+            if is_reb:
+                self.reboot_badge.set_badge("⚠️ Restart Required", bg_color="#fef3c7", fg_color="#92400e")
+                if not self.reboot_badge.winfo_ismapped():
+                    self.reboot_badge.pack(side=tk.LEFT, padx=(12, 0))
+            else:
+                self.reboot_badge.pack_forget()
 
         # Refresh table and drawer
         self.apply_filter()
