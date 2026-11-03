@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>SaaSWAVE — 3D Motion Video</title>
+
+    <!-- Google Fonts: Inter Tight & DM Mono & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter+Tight:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+
+    <style>
+      :root {
+        --purple-deep: #160b2e;
+        --purple-mid: #2e1065;
+        --purple-vibrant: #7c3aed;
+        --magenta: #d946ef;
+        --coral: #fb7185;
+        --coral-hot: #ff2a6d;
+        --white: #ffffff;
+        --paper: #f8fafc;
+        --ink: #0f172a;
+        --font-main: "Plus Jakarta Sans", "Inter Tight", sans-serif;
+        --font-mono: "DM Mono", monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0f0728;
+        font-family: var(--font-main);
+        color: #ffffff;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+
+      /* 3D WebGL Canvas Layer */
+      #webgl-canvas {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      /* Cinematic Post-Processing & Grain */
+      .cinematic-vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 2;
+        background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(15, 7, 40, 0.45) 100%);
+      }
+
+      /* UI Overlay Layer */
+      .ui-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      /* SCENE 1 2D OVERLAYS: TOP METRIC & BRAND TAG */
+      .scene-tag-top {
+        position: absolute;
+        top: 60px;
+        left: 80px;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--coral-hot);
+        box-shadow: 0 0 12px var(--coral-hot);
+      }
+
+      /* SCENE 3 OVERLAY: SUNNY MINIMALIST WHITE INTERFACE (16s - 30s) */
+      #scene-3-overlay {
+        position: absolute;
+        inset: 0;
+        background: #ffffff;
+        color: var(--ink);
+        opacity: 0;
+        visibility: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 80px;
+        z-index: 20;
+      }
+
+      .sky-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 480px;
+        background: linear-gradient(180deg, #60a5fa 0%, #93c5fd 60%, #ffffff 100%);
+        opacity: 0;
+      }
+
+      .s3-title-wrap {
+        text-align: center;
+        margin-bottom: 50px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .s3-kicker {
+        font-family: var(--font-mono);
+        font-size: 16px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--vibrant, #7c3aed);
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      .s3-h1 {
+        font-size: 72px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+        color: #0f172a;
+      }
+
+      .s3-h1 span.highlight {
+        background: linear-gradient(135deg, #7c3aed 0%, #d946ef 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      /* Course Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 280px);
+        gap: 24px;
+        margin-bottom: 60px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .stat-card {
+        background: #f8fafc;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 20px;
+        padding: 32px 24px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      }
+
+      .stat-num {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #7c3aed;
+        margin-bottom: 8px;
+      }
+
+      .stat-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #334155;
+      }
+
+      /* Final SaaSWAVE Logo Centerpiece */
+      .brand-centerpiece {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      .saaswave-logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 64px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: #0f172a;
+        margin-bottom: 14px;
+      }
+
+      .logo-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #7c3aed 0%, #ff2a6d 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 32px;
+        box-shadow: 0 15px 35px rgba(217, 70, 239, 0.35);
+      }
+
+      .saaswave-tagline {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        letter-spacing: 0.18em;
+        color: #334155;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Audio Soundtrack & Synchronized SFX (30s) -->
+      <audio
+        id="bg-music"
+        data-start="0"
+        data-duration="30"
+        data-track-index="10"
+        data-volume="0.80"
+        src="assets/music/track.mp3"
+      ></audio>
+
+      <!-- Scene 1 Digital Pop SFX -->
+      <audio
+        id="pop-1"
+        data-start="0.6"
+        data-duration="0.5"
+        data-track-index="11"
+        data-volume="0.75"
+        src="assets/sfx/pop1.ogg"
+      ></audio>
+      <audio
+        id="pop-2"
+        data-start="1.4"
+        data-duration="0.5"
+        data-track-index="12"
+        data-volume="0.75"
+        src="assets/sfx/pop2.ogg"
+      ></audio>
+      <audio
+        id="pop-3"
+        data-start="2.2"
+        data-duration="0.5"
+        data-track-index="13"
+        data-volume="0.75"
+        src="assets/sfx/pop3.ogg"
+      ></audio>
+
+      <!-- Scene 2 Whoosh Camera Transitions -->
+      <audio
+        id="whoosh-1"
+        data-start="4.5"
+        data-duration="0.8"
+        data-track-index="14"
+        data-volume="0.70"
+        src="assets/sfx/whoosh1.ogg"
+      ></audio>
+      <audio
+        id="whoosh-2"
+        data-start="10.8"
+        data-duration="0.8"
+        data-track-index="15"
+        data-volume="0.70"
+        src="assets/sfx/whoosh2.ogg"
+      ></audio>
+
+      <!-- Scene 3 Final Celebration Chime -->
+      <audio
+        id="chime"
+        data-start="21.8"
+        data-duration="3.0"
+        data-track-index="16"
+        data-volume="0.85"
+        src="assets/sfx/chime.ogg"
+      ></audio>
+
+      <!-- 3D Three.js WebGL Canvas -->
+      <canvas id="webgl-canvas" data-layout-allow-overflow></canvas>
+
+      <!-- Vignette Atmosphere -->
+      <div class="cinematic-vignette"></div>
+
+      <!-- UI Layer -->
+      <div class="ui-layer">
+        <div class="scene-tag-top" id="top-tag" data-layout-ignore data-layout-allow-occlusion>
+          <span class="pulse-dot"></span>
+          <span>SAASWAVE // 3D CREATIVE WORKFLOW MOTION</span>
+        </div>
+      </div>
+
+      <!-- SCENE 3: SUNNY MINIMALIST WHITE INTERFACE (16s - 30s) -->
+      <div id="scene-3-overlay">
+        <div class="sky-backdrop" id="sky-bg"></div>
+
+        <div class="s3-title-wrap" id="s3-header">
+          <div class="s3-kicker">CURRICULUM ARCHITECTURE</div>
+          <h1 class="s3-h1">
+            Answers and <span class="highlight">easy workflows.</span>
+          </h1>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num">64</div>
+            <div class="stat-label">Video Tutorials</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">12h+</div>
+            <div class="stat-label">Masterclass Content</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">4.9★</div>
+            <div class="stat-label">Student Rating</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">100%</div>
+            <div class="stat-label">Workflow Automation</div>
+          </div>
+        </div>
+
+        <div class="brand-centerpiece" id="brand-centerpiece">
+          <div class="saaswave-logo">
+            <div class="logo-icon">&#9650;</div>
+            <span>SaaSWAVE</span>
+          </div>
+          <div class="saaswave-tagline">THE NEXT ERA OF DIGITAL PRODUCT CREATION</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D WebGL Studio & GSAP Timeline Controller -->
+    <script>
+      // ==========================================
+      // 1. THREE.JS 3D SCENE SETUP
+      // ==========================================
+      const canvas = document.getElementById("webgl-canvas");
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x13072b);
+      scene.fog = new THREE.FogExp2(0x13072b, 0.035);
+
+      const camera = new THREE.PerspectiveCamera(40, 1920 / 1080, 0.1, 100);
+      camera.position.set(0, 12, 0.1); // Initial Top-Down flat lay
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        powerPreference: "high-performance",
+      });
+      renderer.setSize(1920, 1080);
+      renderer.setPixelRatio(1);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+
+      // ==========================================
+      // 2. HIGH-KEY SOFT CLAY LIGHTING
+      // ==========================================
+      const ambientLight = new THREE.AmbientLight(0x7c3aed, 0.9);
+      scene.add(ambientLight);
+
+      // Top Key Light (Soft Warm White)
+      const keyLight = new THREE.DirectionalLight(0xfff7ed, 2.2);
+      keyLight.position.set(6, 15, 8);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 0.5;
+      keyLight.shadow.camera.far = 40;
+      keyLight.shadow.bias = -0.0005;
+      scene.add(keyLight);
+
+      // Rim Light 1 (Vibrant Magenta / Coral)
+      const rimLight1 = new THREE.DirectionalLight(0xff2a6d, 2.8);
+      rimLight1.position.set(-10, 4, -8);
+      scene.add(rimLight1);
+
+      // Rim Light 2 (Soft Cyan Fill)
+      const rimLight2 = new THREE.DirectionalLight(0x00f0ff, 1.2);
+      rimLight2.position.set(10, 2, -6);
+      scene.add(rimLight2);
+
+      // Ground Fill
+      const groundLight = new THREE.HemisphereLight(0xd946ef, 0x160b2e, 0.6);
+      scene.add(groundLight);
+
+      // ==========================================
+      // 3. CLAY MATERIAL DEFINITIONS
+      // ==========================================
+      const clayMaterials = {
+        desk: new THREE.MeshPhysicalMaterial({
+          color: 0x1e1145,
+          roughness: 0.45,
+          metalness: 0.05,
+          clearcoat: 0.2,
+          clearcoatRoughness: 0.4,
+        }),
+        phoneBody: new THREE.MeshPhysicalMaterial({
+          color: 0x2e1065,
+          roughness: 0.35,
+          metalness: 0.1,
+          clearcoat: 0.6,
+        }),
+        phoneScreen: new THREE.MeshBasicMaterial({
+          color: 0x7c3aed,
+        }),
+        bubbleWhite: new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          roughness: 0.25,
+          metalness: 0.05,
+          clearcoat: 0.5,
+        }),
+        bubbleMagenta: new THREE.MeshPhysicalMaterial({
+          color: 0xd946ef,
+          roughness: 0.25,
+          metalness: 0.05,
+          clearcoat: 0.5,
+        }),
+        bubbleCoral: new THREE.MeshPhysicalMaterial({
+          color: 0xfb7185,
+          roughness: 0.25,
+          metalness: 0.05,
+          clearcoat: 0.5,
+        }),
+        laptopBase: new THREE.MeshPhysicalMaterial({
+          color: 0x3b1875,
+          roughness: 0.3,
+          metalness: 0.2,
+          clearcoat: 0.4,
+        }),
+        laptopScreen: new THREE.MeshBasicMaterial({
+          color: 0x0f172a,
+        }),
+        publishBtn: new THREE.MeshPhysicalMaterial({
+          color: 0x8b5cf6,
+          roughness: 0.2,
+          metalness: 0.1,
+          clearcoat: 0.7,
+          emissive: 0x7c3aed,
+          emissiveIntensity: 0.25,
+        }),
+        umbrellaFabric: new THREE.MeshPhysicalMaterial({
+          color: 0xff2a6d,
+          roughness: 0.3,
+          metalness: 0.05,
+          clearcoat: 0.5,
+          transmission: 0.15,
+        }),
+        umbrellaHandle: new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          roughness: 0.2,
+          metalness: 0.1,
+        }),
+        paperNote: new THREE.MeshPhysicalMaterial({
+          color: 0xfef08a,
+          roughness: 0.65,
+          metalness: 0.0,
+        }),
+        markerBody: new THREE.MeshPhysicalMaterial({
+          color: 0x06b6d4,
+          roughness: 0.3,
+          metalness: 0.05,
+        }),
+      };
+
+      // Helper: Canvas Texture for text on 3D clay bubbles
+      function createTextTexture(text, bgHex = "#ffffff", textHex = "#160b2e", sub = "") {
+        const c = document.createElement("canvas");
+        c.width = 512;
+        c.height = 192;
+        const ctx = c.getContext("2d");
+
+        ctx.fillStyle = bgHex;
+        ctx.beginPath();
+        ctx.roundRect(10, 10, 492, 172, 40);
+        ctx.fill();
+
+        ctx.fillStyle = textHex;
+        ctx.font = "bold 38px 'Plus Jakarta Sans', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, 256, sub ? 80 : 96);
+
+        if (sub) {
+          ctx.font = "24px 'DM Mono', monospace";
+          ctx.fillStyle = "#7c3aed";
+          ctx.fillText(sub, 256, 128);
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.needsUpdate = true;
+        return tex;
+      }
+
+      // ==========================================
+      // 4. SCENE 1 OBJECTS: DESK & CLAY PHONE & BUBBLES
+      // ==========================================
+      const deskGeo = new THREE.PlaneGeometry(60, 60);
+      const deskMesh = new THREE.Mesh(deskGeo, clayMaterials.desk);
+      deskMesh.rotation.x = -Math.PI / 2;
+      deskMesh.position.y = -0.5;
+      deskMesh.receiveShadow = true;
+      scene.add(deskMesh);
+
+      // Clay Smartphone
+      const phoneGroup = new THREE.Group();
+      const bodyGeo = new THREE.BoxGeometry(2.4, 0.18, 4.8);
+      const bodyMesh = new THREE.Mesh(bodyGeo, clayMaterials.phoneBody);
+      bodyMesh.castShadow = true;
+      bodyMesh.receiveShadow = true;
+      phoneGroup.add(bodyMesh);
+
+      const screenGeo = new THREE.PlaneGeometry(2.1, 4.3);
+      const screenMesh = new THREE.Mesh(screenGeo, clayMaterials.phoneScreen);
+      screenMesh.rotation.x = -Math.PI / 2;
+      screenMesh.position.y = 0.1;
+      phoneGroup.add(screenMesh);
+
+      phoneGroup.position.set(0, 0, 0);
+      scene.add(phoneGroup);
+
+      // Notification Bubbles (Pop up around phone in 3D)
+      const bubbles = [];
+      const bubbleData = [
+        { text: "Where da course at? 🔥", bg: "#ffffff", color: "#160b2e", x: -2.8, y: 1.8, z: -1.2, r: -0.15 },
+        { text: "Need workflows! ⚡", bg: "#d946ef", color: "#ffffff", x: 2.9, y: 2.4, z: -0.6, r: 0.18 },
+        { text: "SaaSWAVE Drop When? 🚀", bg: "#ffffff", color: "#160b2e", x: -1.8, y: 3.2, z: 2.2, r: 0.12 },
+        { text: "Answers & Easy Workflows", bg: "#fb7185", color: "#ffffff", x: 2.2, y: 3.8, z: 1.8, r: -0.1 },
+      ];
+
+      bubbleData.forEach((d) => {
+        const bGroup = new THREE.Group();
+        const mat = new THREE.MeshBasicMaterial({
+          map: createTextTexture(d.text, d.bg, d.color),
+          transparent: true,
+        });
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.35), mat);
+        plane.rotation.x = -Math.PI / 2.2;
+        bGroup.add(plane);
+
+        bGroup.position.set(d.x, d.y, d.z);
+        bGroup.rotation.z = d.r;
+        bGroup.scale.set(0, 0, 0); // start invisible
+        scene.add(bGroup);
+        bubbles.push(bGroup);
+      });
+
+      // Deterministic Seeded PRNG for Particles (Hyperframes Compliant)
+      function mulberry32(a) {
+        return function () {
+          let t = (a += 0x6d2b79f5);
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      const seededRandom = mulberry32(1337);
+
+      // Drifting Glimmers & Dust Particles
+      const particleCount = 200;
+      const particleGeo = new THREE.BufferGeometry();
+      const pPositions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        pPositions[i] = (seededRandom() - 0.5) * 30;
+        pPositions[i + 1] = seededRandom() * 15;
+        pPositions[i + 2] = (seededRandom() - 0.5) * 30;
+      }
+      particleGeo.setAttribute("position", new THREE.BufferAttribute(pPositions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0xfb7185,
+        size: 0.12,
+        transparent: true,
+        opacity: 0.75,
+      });
+      const particleSystem = new THREE.Points(particleGeo, particleMat);
+      scene.add(particleSystem);
+
+      // ==========================================
+      // 5. SCENE 2 OBJECTS: LAPTOP, PUBLISH BUTTON, TOOLS & UMBRELLA
+      // ==========================================
+      const scene2Group = new THREE.Group();
+      scene2Group.position.set(0, 0, -25); // Set further back
+      scene.add(scene2Group);
+
+      // 3D Laptop
+      const laptopGroup = new THREE.Group();
+      const lapBase = new THREE.Mesh(new THREE.BoxGeometry(7, 0.3, 4.8), clayMaterials.laptopBase);
+      lapBase.position.y = 0.15;
+      lapBase.castShadow = true;
+      laptopGroup.add(lapBase);
+
+      const lapScreen = new THREE.Mesh(new THREE.BoxGeometry(7, 4.6, 0.25), clayMaterials.laptopBase);
+      lapScreen.position.set(0, 2.4, -2.4);
+      lapScreen.rotation.x = 0.15;
+      lapScreen.castShadow = true;
+      laptopGroup.add(lapScreen);
+
+      // Glowing display texture
+      const screenDisplayTex = createTextTexture("SaaSWAVE STUDIO", "#0f172a", "#d946ef", "READY TO PUBLISH");
+      const lapDisp = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4.0), new THREE.MeshBasicMaterial({ map: screenDisplayTex }));
+      lapDisp.position.set(0, 2.4, -2.25);
+      lapDisp.rotation.x = 0.15;
+      laptopGroup.add(lapDisp);
+
+      scene2Group.add(laptopGroup);
+
+      // Floating Stylized Purple "PUBLISH" Button
+      const publishTex = createTextTexture("PUBLISH ▶", "#7c3aed", "#ffffff");
+      const publishBtn = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 1.3),
+        new THREE.MeshBasicMaterial({ map: publishTex, transparent: true })
+      );
+      publishBtn.position.set(0, 6.0, 0);
+      publishBtn.scale.set(0, 0, 0);
+      scene2Group.add(publishBtn);
+
+      // Creative Tools: Sticky Notes & Marker
+      const notes = [];
+      const noteColors = [0xfef08a, 0xfb7185, 0x67e8f9];
+      for (let i = 0; i < 3; i++) {
+        const note = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.6, 1.6),
+          new THREE.MeshPhysicalMaterial({ color: noteColors[i], roughness: 0.6 })
+        );
+        note.rotation.x = -Math.PI / 2 + 0.1;
+        note.rotation.z = (i - 1) * 0.35;
+        note.position.set((i - 1) * 3.5, 4.0, (i - 1) * 1.5);
+        note.scale.set(0, 0, 0);
+        scene2Group.add(note);
+        notes.push(note);
+      }
+
+      // Marker Pen
+      const markerGroup = new THREE.Group();
+      const markerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.4, 16), clayMaterials.markerBody);
+      const markerTip = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 16), new THREE.MeshBasicMaterial({ color: 0xff2a6d }));
+      markerTip.position.y = 1.35;
+      markerGroup.add(markerBody);
+      markerGroup.add(markerTip);
+      markerGroup.position.set(3, 4.5, 2);
+      markerGroup.rotation.z = -Math.PI / 3;
+      markerGroup.scale.set(0, 0, 0);
+      scene2Group.add(markerGroup);
+
+      // 3D Pink Umbrella
+      const umbrellaGroup = new THREE.Group();
+      const canopyGeo = new THREE.SphereGeometry(3.0, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const canopyMesh = new THREE.Mesh(canopyGeo, clayMaterials.umbrellaFabric);
+      canopyMesh.castShadow = true;
+      umbrellaGroup.add(canopyMesh);
+
+      // Umbrella Shaft & Handle
+      const shaftGeo = new THREE.CylinderGeometry(0.08, 0.08, 3.8, 16);
+      const shaftMesh = new THREE.Mesh(shaftGeo, clayMaterials.umbrellaHandle);
+      shaftMesh.position.y = -1.2;
+      umbrellaGroup.add(shaftMesh);
+
+      // Hook Handle
+      const hookGeo = new THREE.TorusGeometry(0.35, 0.07, 16, 32, Math.PI);
+      const hookMesh = new THREE.Mesh(hookGeo, clayMaterials.umbrellaHandle);
+      hookMesh.position.set(-0.35, -3.1, 0);
+      hookMesh.rotation.z = Math.PI / 2;
+      umbrellaGroup.add(hookMesh);
+
+      umbrellaGroup.position.set(0, 7.5, 0);
+      umbrellaGroup.scale.set(0, 0, 0);
+      scene2Group.add(umbrellaGroup);
+
+      // Render Loop synchronized to timeline seek
+      function renderScene() {
+        renderer.render(scene, camera);
+      }
+      renderScene();
+
+      // ==========================================
+      // 6. MASTER GSAP ANIMATION TIMELINE (30.0s)
+      // ==========================================
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // --- SCENE 1 (0.0s - 4.5s): TOP-DOWN DESK & NOTIFICATION FLURRY ---
+      tl.set(camera.position, { x: 0, y: 13, z: 0.1 }, 0);
+      tl.to(camera.position, { y: 9.5, z: 1.5, duration: 4.5, ease: "sine.inOut" }, 0);
+
+      // Notifications pop up with spring bounce
+      bubbles.forEach((b, idx) => {
+        const startTime = 0.5 + idx * 0.75;
+        tl.to(b.scale, { x: 1, y: 1, z: 1, duration: 0.6, ease: "back.out(2)" }, startTime);
+        tl.to(b.position, { y: "+=0.8", duration: 1.2, ease: "sine.inOut" }, startTime);
+        tl.to(b.rotation, { z: "+=0.1", duration: 1.2, ease: "sine.inOut" }, startTime);
+      });
+
+      // --- TRANSITION TO SCENE 2 (4.5s - 6.0s): FLUID SWOOPING DIVE ---
+      tl.to(camera.position, { x: 8, y: 4, z: -18, duration: 2.2, ease: "power3.inOut" }, 4.5);
+      tl.to(camera.rotation, { x: -0.15, y: 0.45, z: 0.05, duration: 2.2, ease: "power3.inOut" }, 4.5);
+
+      // Hide Scene 1 bubbles
+      bubbles.forEach((b) => {
+        tl.to(b.scale, { x: 0, y: 0, z: 0, duration: 0.4, ease: "power2.in" }, 4.8);
+      });
+
+      // --- SCENE 2 (6.0s - 15.5s): LAPTOP, PUBLISH BUTTON, TOOLS & UMBRELLA ---
+      // "Publish" Button Glides into air
+      tl.to(publishBtn.scale, { x: 1, y: 1, z: 1, duration: 0.7, ease: "back.out(1.8)" }, 6.0);
+      tl.to(publishBtn.position, { y: 4.2, z: -1.2, duration: 1.5, ease: "power2.out" }, 6.2);
+
+      // Tools animate in as if assembled by an invisible force
+      notes.forEach((n, i) => {
+        tl.to(n.scale, { x: 1, y: 1, z: 1, duration: 0.6, ease: "back.out(2)" }, 7.0 + i * 0.4);
+        tl.to(n.position, { y: "+=1.5", duration: 2.0, ease: "sine.inOut" }, 7.5 + i * 0.4);
+        tl.to(n.rotation, { z: "+=0.4", duration: 2.0, ease: "sine.inOut" }, 7.5 + i * 0.4);
+      });
+
+      // Marker draws glowing line
+      tl.to(markerGroup.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "back.out(1.5)" }, 8.2);
+      tl.to(markerGroup.position, { x: -2.5, y: 3.5, z: 0, duration: 1.8, ease: "power2.inOut" }, 8.6);
+
+      // Camera swoops around laptop
+      tl.to(camera.position, { x: -6, y: 5.5, z: -20, duration: 5.0, ease: "sine.inOut" }, 8.0);
+      tl.to(camera.rotation, { y: -0.35, duration: 5.0, ease: "sine.inOut" }, 8.0);
+
+      // Pink Umbrella gathers everything underneath
+      tl.to(umbrellaGroup.scale, { x: 1, y: 1, z: 1, duration: 1.2, ease: "back.out(1.5)" }, 11.2);
+      tl.to(umbrellaGroup.rotation, { y: Math.PI * 2, duration: 4.0, ease: "power1.inOut" }, 11.5);
+
+      // Notes gather under umbrella
+      notes.forEach((n) => {
+        tl.to(n.position, { x: 0, y: 6.2, z: 0, duration: 1.4, ease: "power2.inOut" }, 11.8);
+        tl.to(n.scale, { x: 0.3, y: 0.3, z: 0.3, duration: 1.0 }, 12.5);
+      });
+
+      // --- TRANSITION TO SCENE 3 (15.5s - 18.0s): SUNNY SKY ASCENT ---
+      tl.to(camera.position, { x: 0, y: 14, z: -25, duration: 2.5, ease: "power3.inOut" }, 15.0);
+      tl.to(scene.background, { r: 1, g: 1, b: 1, duration: 1.8 }, 16.0); // flash to white
+
+      // Reveal Scene 3 Overlay (16.5s - 30.0s)
+      tl.set("#scene-3-overlay", { autoAlpha: 1 }, 16.5);
+      tl.to("#sky-bg", { opacity: 0.35, duration: 1.2 }, 16.5);
+
+      // Header reveal
+      tl.fromTo("#s3-header", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 16.8);
+
+      // Course Stats Cards Stagger
+      tl.fromTo(
+        ".stat-card",
+        { opacity: 0, y: 50, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, stagger: 0.2, duration: 0.7, ease: "back.out(1.5)" },
+        17.8
+      );
+
+      // Gentle floating bobbing on stat cards
+      tl.to(".stat-card", { y: "-=10", duration: 1.4, repeat: 1, yoyo: true, ease: "sine.inOut" }, 19.4);
+
+      // Final SaaSWAVE Logo Centerpiece
+      tl.fromTo(
+        "#brand-centerpiece",
+        { opacity: 0, scale: 0.85, y: 30 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.9, ease: "back.out(1.7)" },
+        21.2
+      );
+      tl.fromTo(".logo-icon", { rotation: -30 }, { rotation: 0, duration: 0.8, ease: "elastic.out(1, 0.4)" }, 21.6);
+
+      // Keep timeline update bound to WebGL render
+      tl.eventCallback("onUpdate", () => {
+        // Continuous subtle particle drift
+        particleSystem.rotation.y = tl.time() * 0.08;
+        renderScene();
+      });
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      renderScene();
+    </script>
+  </body>
+</html>
