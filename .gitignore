@@ -37,3 +37,8 @@ skills-lock.json
 *.swo
 Thumbs.db
 Desktop.ini
+
+# Node / Frontend Build
+node_modules/
+website/node_modules/
+website/dist/
