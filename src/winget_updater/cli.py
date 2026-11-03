@@ -164,9 +164,16 @@ def main() -> int:
     if args.update or args.no_gui:
         return run_cli_scan(scan_only=False, dry_run=args.dry_run, auto_approve=args.yes, is_scheduled=False)
 
-    # Launch GUI
+    # Launch GUI with luxury editorial startup splash screen
     from winget_updater.gui.app import MainWindow
+    from winget_updater.gui.splash import EditorialStartupSplashScreen
     app = MainWindow()
+    app.withdraw()
+    splash = EditorialStartupSplashScreen(
+        parent=app,
+        on_complete=app.deiconify,
+        duration_ms=1600,
+    )
     app.mainloop()
     return 0
 

@@ -534,6 +534,31 @@ def test_cannot_update_filter_and_batch_auto_resolve():
         app.destroy()
 
 
+def test_editorial_startup_splash_screen():
+    import tkinter as tk
+    from winget_updater.gui.splash import EditorialStartupSplashScreen
+
+    root = tk.Tk()
+    root.withdraw()
+
+    done = []
+    splash = EditorialStartupSplashScreen(
+        parent=root,
+        on_complete=lambda: done.append(True),
+        duration_ms=50,
+    )
+    assert splash.winfo_exists()
+
+    splash.set_status("INITIALIZING CORE REPOSITORIES... [WINGET / MS STORE]")
+    splash.set_progress(78.0)
+    assert splash.progress_val == 78.0
+
+    splash._finish_and_close()
+    assert done == [True]
+
+    root.destroy()
+
+
 
 
 
