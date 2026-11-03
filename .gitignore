@@ -30,6 +30,8 @@ ENV/
 .vscode/
 .idea/
 .agents/
+.hyperframes/
+**/composition/.hyperframes/
 skills-lock.json
 *.swp
 *.swo
