@@ -1348,6 +1348,15 @@ class MainWindow(tk.Tk):
             self._show_floating_toast("Item cannot be updated individually via winget.", "i")
             return
 
+        # Pre-condition: Must have a valid available version
+        if not item.latest_version or str(item.latest_version).strip() in ("", "—", "None", "Unknown", "Not Installed"):
+            self._show_floating_toast(f"No update release available for '{item.name}'", "i")
+            return
+
+        if item.installed_version and str(item.latest_version).strip().lower() == str(item.installed_version).strip().lower():
+            self._show_floating_toast(f"'{item.name}' is already up to date ({item.installed_version})", "✓")
+            return
+
         # Confirm before starting an update
         if messagebox.askyesno(
             "Confirm Update",

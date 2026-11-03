@@ -821,11 +821,7 @@ class DetailsDrawer(tk.Frame):
             self.diagnostic_box.pack_forget()
 
         # Update button state
-        can_update = item.can_auto_update() or (
-            item.action == UpdateAction.AVAILABLE
-            and item.compatibility.is_compatible
-            and item.is_verified_winget
-        )
+        can_update = item.can_auto_update()
 
         if can_update:
             self.btn_update.config(state="normal", text="Update application", bg="#881337", fg="#ffffff")

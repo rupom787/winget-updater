@@ -399,6 +399,10 @@ class PackageMatcher:
 
         # 6. Match in general winget installed list
         matched_installed = installed_by_id.get(norm_id) if norm_id else None
+        if not matched_installed and norm_id:
+            # Check if norm_id matches end of ARP id (e.g. ARP\User\X64\ODPhotosOneDriveSetup.exe)
+            matched_installed = next((v for k, v in installed_by_id.items() if k.endswith(norm_id) or norm_id in k), None)
+
         if not matched_installed:
             candidates = None
             if norm_name in name_to_installed:
@@ -407,18 +411,31 @@ class PackageMatcher:
                 candidates = name_to_installed[base_name]
 
             if candidates:
-                if len(candidates) == 1:
+                # Disambiguate by matching installed version
+                ver_match = None
+                if item.installed_version:
+                    clean_iv = item.installed_version.strip().lower()
+                    ver_match = next((c for c in candidates if (c.version and c.version.strip().lower() == clean_iv)), None)
+
+                if ver_match:
+                    matched_installed = ver_match
+                elif len(candidates) == 1:
                     matched_installed = candidates[0]
                 else:
-                    logger.warning(f"Multiple winget installed candidates for '{item.name}'. Ambiguous match marked for review.")
-                    item.action = UpdateAction.UNVERIFIED
-                    item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
-                    item.is_ambiguous = True
-                    item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
-                    item.unavailability_reason = (
-                        f"Multiple candidate packages match name. Use 'Bind Winget ID' to link."
-                    )
-                    return
+                    # Disambiguate by publisher
+                    pub_match = next((c for c in candidates if publishers_match(item.publisher, c.publisher)), None)
+                    if pub_match:
+                        matched_installed = pub_match
+                    else:
+                        logger.warning(f"Multiple winget installed candidates for '{item.name}'. Ambiguous match marked for review.")
+                        item.action = UpdateAction.UNVERIFIED
+                        item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
+                        item.is_ambiguous = True
+                        item.notes = f"Ambiguous match ({len(candidates)} packages match). Marked for review."
+                        item.unavailability_reason = (
+                            f"Multiple candidate packages match name. Use 'Bind Winget ID' to link."
+                        )
+                        return
 
         if matched_installed:
             self._apply_winget_installed_match(item, matched_installed)
