@@ -109,6 +109,8 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         self.c_accent = "#881337" if not is_dark else "#9f1239"
         self.c_accent_light = "#f43f5e"
         self.c_success = "#059669"
+        self.c_warning = "#d97706"
+        self.c_error = "#dc2626"
         self.c_failed = "#dc2626"
         self.c_terminal_bg = "#070a13"
         self.c_terminal_fg = "#e2e8f0"
@@ -610,11 +612,25 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         self.lbl_queue_metric.config(
             text=f"Queue Finished: {self.succeeded_count} updated, {self.failed_count} failed."
         )
-        self.lbl_active_name.config(text="All queued updates completed.")
-        self.lbl_active_phase.config(
-            text="✓ Transaction resolved. You can inspect logs or view full summary.",
-            fg=self.c_success,
-        )
+
+        if self.failed_count > 0 and self.succeeded_count == 0:
+            self.lbl_active_name.config(text="Update batch failed.")
+            self.lbl_active_phase.config(
+                text=f"✗ {self.failed_count} update{'s' if self.failed_count > 1 else ''} failed to apply. See terminal details below.",
+                fg=self.c_error,
+            )
+        elif self.failed_count > 0:
+            self.lbl_active_name.config(text=f"Completed with warnings: {self.succeeded_count} updated, {self.failed_count} failed.")
+            self.lbl_active_phase.config(
+                text=f"⚠ {self.succeeded_count} succeeded, {self.failed_count} failed. Check error logs below.",
+                fg=self.c_warning,
+            )
+        else:
+            self.lbl_active_name.config(text="All queued updates completed.")
+            self.lbl_active_phase.config(
+                text="✓ All updates applied successfully. System is up to date.",
+                fg=self.c_success,
+            )
 
         # Switch action buttons
         self.btn_cancel.pack_forget()
@@ -723,42 +739,73 @@ class LiveUpdateProgressDialog(tk.Toplevel):
                 outline="",
             )
         else:
-            # Succeeded state: Drawn animated emerald checkmark with cubic ease-out
-            # Circle base
-            cv.create_oval(
-                cx - r,
-                cy - r,
-                cx + r,
-                cy + r,
-                fill="#059669",
-                outline="#10b981",
-                width=3,
-            )
-
-            # Draw checkmark segments based on checkmark_progress (0.0 to 1.0)
-            # Checkmark points: p1=(cx-10, cy), p2=(cx-2, cy+8), p3=(cx+12, cy-8)
-            p1 = (cx - 11, cy)
-            p2 = (cx - 2, cy + 9)
-            p3 = (cx + 12, cy - 8)
-
-            t = self.checkmark_progress
-            # Cubic ease-out
-            eased_t = 1.0 - math.pow(1.0 - t, 3)
-
-            if eased_t <= 0.4:
-                seg_t = eased_t / 0.4
-                curr_x = p1[0] + (p2[0] - p1[0]) * seg_t
-                curr_y = p1[1] + (p2[1] - p1[1]) * seg_t
-                cv.create_line(p1[0], p1[1], curr_x, curr_y, fill="#ffffff", width=4, capstyle=tk.ROUND)
+            if self.failed_count > 0 and self.succeeded_count == 0:
+                # 100% Failed state: Crimson circle with bold white 'X'
+                cv.create_oval(
+                    cx - r,
+                    cy - r,
+                    cx + r,
+                    cy + r,
+                    fill="#dc2626",
+                    outline="#ef4444",
+                    width=3,
+                )
+                cv.create_line(cx - 9, cy - 9, cx + 9, cy + 9, fill="#ffffff", width=4, capstyle=tk.ROUND)
+                cv.create_line(cx + 9, cy - 9, cx - 9, cy + 9, fill="#ffffff", width=4, capstyle=tk.ROUND)
+            elif self.failed_count > 0:
+                # Partial warning state: Amber gold circle with bold white '!'
+                cv.create_oval(
+                    cx - r,
+                    cy - r,
+                    cx + r,
+                    cy + r,
+                    fill="#d97706",
+                    outline="#f59e0b",
+                    width=3,
+                )
+                cv.create_line(cx, cy - 10, cx, cy + 2, fill="#ffffff", width=4, capstyle=tk.ROUND)
+                cv.create_oval(cx - 2.5, cy + 6, cx + 2.5, cy + 11, fill="#ffffff", outline="")
             else:
-                cv.create_line(p1[0], p1[1], p2[0], p2[1], fill="#ffffff", width=4, capstyle=tk.ROUND)
-                seg_t = (eased_t - 0.4) / 0.6
-                curr_x = p2[0] + (p3[0] - p2[0]) * seg_t
-                curr_y = p2[1] + (p3[1] - p2[1]) * seg_t
-                cv.create_line(p2[0], p2[1], curr_x, curr_y, fill="#ffffff", width=4, capstyle=tk.ROUND)
+                # Clean Success state: Drawn animated emerald checkmark with cubic ease-out
+                cv.create_oval(
+                    cx - r,
+                    cy - r,
+                    cx + r,
+                    cy + r,
+                    fill="#059669",
+                    outline="#10b981",
+                    width=3,
+                )
+
+                p1 = (cx - 11, cy)
+                p2 = (cx - 2, cy + 9)
+                p3 = (cx + 12, cy - 8)
+
+                t = self.checkmark_progress
+                eased_t = 1.0 - math.pow(1.0 - t, 3)
+
+                if eased_t <= 0.4:
+                    seg_t = eased_t / 0.4
+                    curr_x = p1[0] + (p2[0] - p1[0]) * seg_t
+                    curr_y = p1[1] + (p2[1] - p1[1]) * seg_t
+                    cv.create_line(p1[0], p1[1], curr_x, curr_y, fill="#ffffff", width=4, capstyle=tk.ROUND)
+                else:
+                    cv.create_line(p1[0], p1[1], p2[0], p2[1], fill="#ffffff", width=4, capstyle=tk.ROUND)
+                    seg_t = (eased_t - 0.4) / 0.6
+                    curr_x = p2[0] + (p3[0] - p2[0]) * seg_t
+                    curr_y = p2[1] + (p3[1] - p2[1]) * seg_t
+                    cv.create_line(p2[0], p2[1], curr_x, curr_y, fill="#ffffff", width=4, capstyle=tk.ROUND)
 
         # Header Titles & Telemetry
-        title_text = "UPDATING SYSTEM SOFTWARE" if not self.is_finished else "UPDATE BATCH COMPLETED"
+        if not self.is_finished:
+            title_text = "UPDATING SYSTEM SOFTWARE"
+        elif self.failed_count > 0 and self.succeeded_count == 0:
+            title_text = "UPDATE BATCH FAILED"
+        elif self.failed_count > 0:
+            title_text = "UPDATE COMPLETED WITH WARNINGS"
+        else:
+            title_text = "UPDATE BATCH COMPLETED"
+
         cv.create_text(
             110,
             cy - 12,
@@ -796,7 +843,14 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         # Lerped progress fill
         fill_w = max(0.0, min(float(w), (self.current_progress_pct / 100.0) * float(w)))
         if fill_w > 0:
-            fill_color = self.c_accent if not self.is_finished else self.c_success
+            if not self.is_finished:
+                fill_color = self.c_accent
+            elif self.failed_count > 0 and self.succeeded_count == 0:
+                fill_color = self.c_error
+            elif self.failed_count > 0:
+                fill_color = self.c_warning
+            else:
+                fill_color = self.c_success
             cv.create_rectangle(0, 0, fill_w, h, fill=fill_color, width=0)
 
             # Subtle glow cap on leading edge

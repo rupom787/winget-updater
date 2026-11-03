@@ -168,49 +168,13 @@ class MainWindow(tk.Tk):
         if len(gpu_display) > 28:
             gpu_display = gpu_display.replace("NVIDIA ", "").replace("Graphics", "").strip()
 
-        self.lbl_app_title = tk.Label(
-            self.top_bar,
-            text="Software & Package Updater",
-            bg="#ffffff",
-            fg="#881337",
-            font=("Segoe UI", 12, "bold"),
-            anchor="w",
-        )
-        self.lbl_app_title.pack(side=tk.LEFT)
-
-        self.lbl_app_sub = tk.Label(
-            self.top_bar,
-            text="  •  Windows 11  •  Hardware Accelerated",
-            bg="#ffffff",
-            fg="#64748b",
-            font=("Segoe UI", 9),
-            anchor="w",
-        )
-        self.lbl_app_sub.pack(side=tk.LEFT)
-
-        # Frosted Glass Telemetry HUD
-        self.hud = GlassyTelemetryHUD(self.top_bar, sys_info=self.sys_info, gpu_name=self.primary_gpu.name)
-        self.hud.pack(side=tk.LEFT, padx=(16, 0))
-
-        # Pending Reboot Required Indicator
-        is_reboot, r_reason = WindowsUpdateManager.is_reboot_pending()
-        self.reboot_badge = RoundedPillBadge(
-            self.top_bar,
-            text="⚠️ Restart Required" if is_reboot else "",
-            bg_color="#fef3c7" if is_reboot else "#ffffff",
-            fg_color="#92400e" if is_reboot else "#ffffff",
-            parent_bg="#ffffff",
-        )
-        if is_reboot:
-            self.reboot_badge.pack(side=tk.LEFT, padx=(12, 0))
-
-        # Top Right Controls
+        # 1. Top Right Controls (pack right first to guarantee visibility)
         self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
-        self.top_controls.pack(side=tk.RIGHT)
+        self.top_controls.pack(side=tk.RIGHT, padx=(0, 2))
 
         self.btn_restore = RoundedButton(
             self.top_controls,
-            text="Restore Stack",
+            text="Restore",
             command=self._import_software_backup,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -219,13 +183,13 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_restore.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_restore.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_backup = RoundedButton(
             self.top_controls,
-            text="Backup Stack",
+            text="Backup",
             command=self._export_software_backup,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -234,13 +198,13 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_backup.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_backup.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_sources = RoundedButton(
             self.top_controls,
-            text="Refresh sources",
+            text="Refresh",
             command=self._refresh_sources_dialog,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -249,9 +213,9 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_sources.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_sources.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_exclusions = RoundedButton(
             self.top_controls,
@@ -264,9 +228,9 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_exclusions.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_exclusions.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_schedule = RoundedButton(
             self.top_controls,
@@ -279,9 +243,9 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_schedule.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_schedule.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_settings = RoundedButton(
             self.top_controls,
@@ -294,13 +258,13 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8, "bold"),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_settings.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_settings.pack(side=tk.LEFT, padx=(2, 0))
 
         self.btn_export = RoundedButton(
             self.top_controls,
-            text="Export report",
+            text="Export",
             command=self._export_report_dialog,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -309,17 +273,17 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(8, 4),
+            padding=(6, 4),
         )
-        self.btn_export.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_export.pack(side=tk.LEFT, padx=(2, 0))
 
         # iOS-style Light / Dark Mode Switch
         self.theme_box = tk.Frame(self.top_controls, bg="#ffffff")
-        self.theme_box.pack(side=tk.LEFT, padx=(8, 0))
+        self.theme_box.pack(side=tk.LEFT, padx=(6, 0))
 
         self.lbl_theme_mode = tk.Label(
             self.theme_box,
-            text="Light / Dark",
+            text="Theme",
             bg="#ffffff",
             fg="#64748b",
             font=("Segoe UI", 8),
@@ -337,6 +301,43 @@ class MainWindow(tk.Tk):
             parent_bg="#ffffff",
         )
         self.sw_theme.pack(side=tk.RIGHT)
+
+        # 2. Top Left Brand & Status
+        self.lbl_app_title = tk.Label(
+            self.top_bar,
+            text="Software & Package Updater",
+            bg="#ffffff",
+            fg="#881337",
+            font=("Segoe UI", 12, "bold"),
+            anchor="w",
+        )
+        self.lbl_app_title.pack(side=tk.LEFT)
+
+        self.lbl_app_sub = tk.Label(
+            self.top_bar,
+            text="  •  Win11",
+            bg="#ffffff",
+            fg="#64748b",
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.lbl_app_sub.pack(side=tk.LEFT)
+
+        # Frosted Glass Telemetry HUD
+        self.hud = GlassyTelemetryHUD(self.top_bar, sys_info=self.sys_info, gpu_name=self.primary_gpu.name)
+        self.hud.pack(side=tk.LEFT, padx=(12, 0))
+
+        # Pending Reboot Required Indicator
+        is_reboot, r_reason = WindowsUpdateManager.is_reboot_pending()
+        self.reboot_badge = RoundedPillBadge(
+            self.top_bar,
+            text="⚠️ Restart Required" if is_reboot else "",
+            bg_color="#fef3c7" if is_reboot else "#ffffff",
+            fg_color="#92400e" if is_reboot else "#ffffff",
+            parent_bg="#ffffff",
+        )
+        if is_reboot:
+            self.reboot_badge.pack(side=tk.LEFT, padx=(10, 0))
 
         # Backwards compatible btn_theme
         self.btn_theme = RoundedButton(
@@ -363,10 +364,10 @@ class MainWindow(tk.Tk):
         )
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
-        # Right Column: Action & Controls Sidebar (width 225)
+        # Right Column: Action & Controls Sidebar (width 245)
         self.right_action_sidebar = tk.Frame(
             self.main_body,
-            width=225,
+            width=245,
             bg="#ffffff",
             padx=12,
             pady=12,
@@ -527,7 +528,7 @@ class MainWindow(tk.Tk):
         self.row_p3.pack(fill=tk.X, pady=(3, 0))
         self.p_btn_uninstall = RoundedButton(self.row_p3, text="Uninstall", command=lambda: self._handle_context_uninstall(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8), bg_color="#fef2f2", fg_color="#dc2626")
         self.p_btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_update = RoundedButton(self.row_p3, text="Update application", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color="#881337", fg_color="#ffffff")
+        self.p_btn_update = RoundedButton(self.row_p3, text="Update App", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color="#881337", fg_color="#ffffff")
         self.p_btn_update.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
         # Center Column: Main Content Container (expands)
@@ -902,7 +903,7 @@ class MainWindow(tk.Tk):
             self.btn_update.config(state="disabled")
             self.btn_update_selected.config(state="disabled")
             self._search_catalog(self.search_query.strip() or "popular")
-        elif filter_name in ("Cannot Update", "Review & cannot update"):
+        elif filter_name in ("Cannot Update", "Review & cannot update", "Review & issues"):
             self.lbl_view_title.config(text="Review & Cannot Update")
             self.lbl_view_subtitle.config(text="Applications requiring review, publisher variance verification, or repository linking")
             if hasattr(self, "diag_banner"):
@@ -1260,7 +1261,7 @@ class MainWindow(tk.Tk):
             if filter_mode == "Updates Available":
                 if item.action != UpdateAction.AVAILABLE:
                     continue
-            elif filter_mode in ("Cannot Update", "Review & cannot update"):
+            elif filter_mode in ("Cannot Update", "Review & cannot update", "Review & issues"):
                 if item.action not in (
                     UpdateAction.UNVERIFIED,
                     UpdateAction.NO_SOURCE,
@@ -1309,7 +1310,7 @@ class MainWindow(tk.Tk):
         self.filtered_programs = filtered
         self.table.populate(filtered)
         count = len(filtered)
-        if self.active_filter in ("Cannot Update", "Review & cannot update"):
+        if self.active_filter in ("Cannot Update", "Review & cannot update", "Review & issues"):
             unverified_cnt = sum(1 for it in filtered if it.action == UpdateAction.UNVERIFIED)
             no_source_cnt = sum(1 for it in filtered if it.action == UpdateAction.NO_SOURCE)
             self.lbl_view_subtitle.config(

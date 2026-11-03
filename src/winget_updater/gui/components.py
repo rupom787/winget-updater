@@ -26,7 +26,7 @@ class SidebarNavigation(tk.Frame):
     FILTERS = [
         ("All Software", "⊞ All applications"),
         ("Updates Available", "🔔 Updates available"),
-        ("Cannot Update", "📄 Review & cannot update"),
+        ("Cannot Update", "📄 Review & issues"),
         ("Up to Date", "🕒 Installed & current"),
         ("Ignored Updates", "⊘ Excluded applications"),
         ("Software Catalog", "⚙️ Discover & install"),
