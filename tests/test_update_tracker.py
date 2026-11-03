@@ -184,3 +184,4 @@ def test_update_tracker_dialog_ui(temp_tracker):
     finally:
         dlg.destroy()
         root.destroy()
+

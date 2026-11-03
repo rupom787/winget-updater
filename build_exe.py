@@ -51,6 +51,10 @@ def build():
                 shutil.copy2(src_cfg, dst_cfg)
                 print(f"Copied {cfg_file} to dist/")
 
+        # Also compile Uninstall.exe
+        from build_uninstaller import build_uninstaller
+        build_uninstaller()
+
         return True
     else:
         print("Error: Target executable was not found after build.")
