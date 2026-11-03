@@ -135,6 +135,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Simulate updates without modifying system")
     parser.add_argument("-y", "--yes", action="store_true", help="Auto-approve verified updates in CLI mode")
     parser.add_argument("--scheduled", action="store_true", help="Run in scheduled daily background mode")
+    parser.add_argument("--tracker", action="store_true", help="Display tracked available updates and pending durations")
     parser.add_argument("--relaunch-attempted", action="store_true", help="Internal flag for elevation check")
     parser.add_argument("--no-gui", action="store_true", help="Force command-line mode")
 
@@ -155,6 +156,22 @@ def main() -> int:
         pass
 
     # Step 3: Determine execution mode (Scheduled, CLI scan, CLI update, or GUI)
+    if args.tracker:
+        from winget_updater.engine.tracker import UpdateTracker
+        tracker = UpdateTracker()
+        items = tracker.get_tracked_items()
+        metrics = tracker.get_metrics()
+        print("\n=== App Update Tracker ===")
+        print(f"Total Tracked: {metrics['total_tracked']} | Pending: {metrics['pending_count']} | Resolved: {metrics['updated_count']} | Oldest: {metrics['oldest_pending_days']} days\n")
+        if not items:
+            print("No tracked updates found. Run a scan to discover available updates.")
+        else:
+            print(f"{'Package / Name':<32} {'Source':<10} {'Installed':<14} {'Available':<14} {'Pending':<12} {'Status'}")
+            print("-" * 95)
+            for it in items:
+                print(f"{it.name[:30]:<32} {it.source[:8]:<10} {it.installed_version[:12]:<14} {it.available_version[:12]:<14} {str(it.days_pending) + ' days':<12} {it.status}")
+        return 0
+
     if args.scheduled:
         return run_cli_scan(scan_only=False, dry_run=args.dry_run, auto_approve=True, is_scheduled=True)
 

@@ -21,6 +21,7 @@ from winget_updater.engine.process_lock import ProcessLockDetector
 from winget_updater.engine.restore_point import RestorePointManager
 from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.engine.state_manager import StateManager
+from winget_updater.engine.tracker import UpdateTracker
 from winget_updater.engine.updater import UpdateEngine, UpdateRunSummary
 from winget_updater.engine.windows_update import WindowsUpdateManager
 from winget_updater.gui.animations import (
@@ -46,6 +47,7 @@ from winget_updater.gui.components import (
 )
 from winget_updater.gui.dialogs import (
     BindWingetSourceDialog,
+    AppUpdateTrackerDialog,
     CannotUpdateHelpDialog,
     ExclusionManagerDialog,
     ScheduleConfigDialog,
@@ -110,6 +112,7 @@ class MainWindow(tk.Tk):
         self.sys_info = SystemInfoProvider()
         self.checker = CompatibilityChecker(system_info=self.sys_info)
         self.state_mgr = StateManager()
+        self.update_tracker = UpdateTracker()
         self.scheduler = SchedulerManager(sys_info=self.sys_info)
         self.source_manager = SourceManager(config=self.config)
         self.engine = UpdateEngine(
@@ -360,6 +363,7 @@ class MainWindow(tk.Tk):
             on_filter_changed=self._on_sidebar_filter_changed,
             on_search_changed=self._on_sidebar_search_changed,
             on_category_changed=self._on_sidebar_category_changed,
+            on_open_tracker=self._open_update_tracker,
             sys_info=self.sys_info,
         )
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
@@ -688,6 +692,8 @@ class MainWindow(tk.Tk):
         self.bind("<Control-b>", lambda e: self._export_software_backup())
         self.bind("<Control-i>", lambda e: self._import_software_backup())
         self.bind("<Control-e>", lambda e: self._open_exclusions_dialog())
+        self.bind("<Control-t>", lambda e: self._open_update_tracker())
+        self.bind("<Control-T>", lambda e: self._open_update_tracker())
         self.bind("<Control-Shift-U>", lambda e: self._open_complete_system_update())
         self.bind("<Control-Shift-u>", lambda e: self._open_complete_system_update())
 
@@ -810,6 +816,10 @@ class MainWindow(tk.Tk):
     def _copy_package_id(self, item: Optional[ProgramItem]) -> None:
         if self.drawer:
             self.drawer._on_copy_id_click()
+
+    def _open_update_tracker(self) -> None:
+        """Opens the App Update Tracker dialog."""
+        AppUpdateTrackerDialog(self, tracker=self.update_tracker, theme=self.theme)
 
     def _open_settings(self) -> None:
         """Opens the Settings & System Configuration modal."""
@@ -1220,6 +1230,10 @@ class MainWindow(tk.Tk):
         )
 
         # Update sidebar live counts
+        # Record to App Update Tracker
+        if hasattr(self, "update_tracker"):
+            self.update_tracker.track_scan_results(items)
+
         self.sidebar.update_counts(
             total=total,
             updates=updates,

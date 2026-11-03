@@ -38,6 +38,7 @@ class SidebarNavigation(tk.Frame):
         on_filter_changed: Callable[[str], None],
         on_search_changed: Callable[[str], None],
         on_category_changed: Callable[[str], None],
+        on_open_tracker: Optional[Callable[[], None]] = None,
         sys_info=None,
     ):
         super().__init__(
@@ -53,6 +54,7 @@ class SidebarNavigation(tk.Frame):
         self.on_filter_changed = on_filter_changed
         self.on_search_changed = on_search_changed
         self.on_category_changed = on_category_changed
+        self.on_open_tracker = on_open_tracker
         self.sys_info = sys_info
         self.theme: ThemeColors = LIGHT_THEME
 
@@ -121,6 +123,22 @@ class SidebarNavigation(tk.Frame):
             btn_canvas.bind("<Button-1>", lambda e, f=internal_name: self._on_filter_click(f))
             btn_canvas.bind("<Enter>", lambda e, f=internal_name: self._on_filter_hover(f, True))
             btn_canvas.bind("<Leave>", lambda e, f=internal_name: self._on_filter_hover(f, False))
+
+        # Quick Update Tracker Button
+        self.btn_open_tracker = RoundedButton(
+            self,
+            text="📊 App Update Tracker",
+            command=self._on_tracker_click,
+            bg_color="#ffffff",
+            fg_color="#881337",
+            hover_bg="#fff1f2",
+            border_color="#f3d5d9",
+            radius=8,
+            height=30,
+            font=("Segoe UI", 9, "bold"),
+            padding=(6, 2),
+        )
+        self.btn_open_tracker.pack(fill=tk.X, pady=(6, 0))
 
         # Separator line
         self.sep1 = tk.Frame(self, bg="#f3d5d9", height=1)
@@ -386,6 +404,10 @@ class SidebarNavigation(tk.Frame):
     def _on_filter_hover(self, filter_name: str, entering: bool) -> None:
         self.hovered_filter = filter_name if entering else None
         self._render_navigation_items()
+
+    def _on_tracker_click(self) -> None:
+        if self.on_open_tracker:
+            self.on_open_tracker()
 
     def _on_filter_click(self, filter_name: str) -> None:
         self.current_filter = filter_name

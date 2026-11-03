@@ -8,6 +8,7 @@ from typing import Callable, List, Optional
 from winget_updater.config import ConfigManager, ExclusionRule, VendorSourceEntry
 from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge
+from winget_updater.engine.tracker import TrackedAppUpdate, UpdateTracker
 from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
 from winget_updater.models import ProgramItem
 
@@ -1435,3 +1436,298 @@ class UpdateSummaryDialog(tk.Toplevel):
         self.destroy()
         if self.on_retry:
             self.on_retry(items)
+
+
+
+class AppUpdateTrackerDialog(tk.Toplevel):
+    """Interactive dashboard dialog displaying tracked available updates, pending durations, and evolution history."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        tracker: UpdateTracker,
+        theme: Optional[ThemeColors] = None,
+        on_update_requested: Optional[Callable[[List[str]], None]] = None,
+    ):
+        super().__init__(parent)
+        self.title("App Update Tracker — Windows 11 Edition")
+        self.geometry("820x560")
+        self.minsize(700, 440)
+        self.tracker = tracker
+        self.theme = theme or LIGHT_THEME
+        self.on_update_requested = on_update_requested
+        self.current_filter = "all"
+
+        self.configure(bg=self.theme.bg_root)
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+        self._refresh_data()
+
+    def _build_ui(self) -> None:
+        t = self.theme
+        root_frame = tk.Frame(self, bg=t.bg_root, padx=20, pady=16)
+        root_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Header Title
+        header_frame = tk.Frame(root_frame, bg=t.bg_root)
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+
+        lbl_title = tk.Label(
+            header_frame,
+            text="📊 App Update Tracker",
+            bg=t.bg_root,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_sub = tk.Label(
+            header_frame,
+            text="Continuously tracks when updates become available for installed applications, measuring pending duration and version jumps.",
+            bg=t.bg_root,
+            fg=t.fg_secondary,
+            font=("Segoe UI", 9),
+        )
+        lbl_sub.pack(anchor=tk.W, pady=(2, 0))
+
+        # Metrics Ribbon (4 Cards)
+        self.metrics_frame = tk.Frame(root_frame, bg=t.bg_root)
+        self.metrics_frame.pack(fill=tk.X, pady=(0, 12))
+
+        self.card_total = self._create_metric_card(self.metrics_frame, "TOTAL TRACKED", "0", "#334155")
+        self.card_pending = self._create_metric_card(self.metrics_frame, "PENDING UPDATES", "0", "#881337")
+        self.card_updated = self._create_metric_card(self.metrics_frame, "RESOLVED / CURRENT", "0", "#059669")
+        self.card_oldest = self._create_metric_card(self.metrics_frame, "OLDEST PENDING", "0d", "#d97706")
+
+        # Filter Tabs Row
+        filter_bar = tk.Frame(root_frame, bg=t.bg_root)
+        filter_bar.pack(fill=tk.X, pady=(0, 8))
+
+        self.btn_tab_all = RoundedButton(
+            filter_bar,
+            text="All Tracked",
+            command=lambda: self._set_filter("all"),
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            radius=6,
+            height=26,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 2),
+        )
+        self.btn_tab_all.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_tab_pending = RoundedButton(
+            filter_bar,
+            text="⏳ Pending Only",
+            command=lambda: self._set_filter("available"),
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            radius=6,
+            height=26,
+            font=("Segoe UI", 8),
+            padding=(8, 2),
+        )
+        self.btn_tab_pending.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_tab_updated = RoundedButton(
+            filter_bar,
+            text="✅ Updated",
+            command=lambda: self._set_filter("updated"),
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            radius=6,
+            height=26,
+            font=("Segoe UI", 8),
+            padding=(8, 2),
+        )
+        self.btn_tab_updated.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_tab_failed = RoundedButton(
+            filter_bar,
+            text="❌ Failed Attempts",
+            command=lambda: self._set_filter("failed"),
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            radius=6,
+            height=26,
+            font=("Segoe UI", 8),
+            padding=(8, 2),
+        )
+        self.btn_tab_failed.pack(side=tk.LEFT, padx=(0, 4))
+
+        # Main Table Container
+        table_frame = tk.Frame(
+            root_frame,
+            bg=t.bg_card,
+            highlightbackground=t.border,
+            highlightthickness=1,
+        )
+        table_frame.pack(fill=tk.BOTH, expand=True)
+
+        cols = ("Name", "Source", "Installed", "Available", "PendingDays", "FirstSeen", "Status")
+        self.tree = ttk.Treeview(
+            table_frame,
+            columns=cols,
+            show="headings",
+            selectmode="browse",
+        )
+        self.tree.heading("Name", text="Application Name")
+        self.tree.heading("Source", text="Manager")
+        self.tree.heading("Installed", text="Installed Ver")
+        self.tree.heading("Available", text="Available Target")
+        self.tree.heading("PendingDays", text="Days Pending")
+        self.tree.heading("FirstSeen", text="First Detected")
+        self.tree.heading("Status", text="Tracking State")
+
+        self.tree.column("Name", width=190, anchor="w")
+        self.tree.column("Source", width=80, anchor="center")
+        self.tree.column("Installed", width=95, anchor="center")
+        self.tree.column("Available", width=105, anchor="center")
+        self.tree.column("PendingDays", width=85, anchor="center")
+        self.tree.column("FirstSeen", width=110, anchor="center")
+        self.tree.column("Status", width=95, anchor="center")
+
+        scroll = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Bottom Action Controls
+        bottom_frame = tk.Frame(root_frame, bg=t.bg_root)
+        bottom_frame.pack(fill=tk.X, pady=(12, 0))
+
+        self.lbl_status = tk.Label(
+            bottom_frame,
+            text="",
+            bg=t.bg_root,
+            fg=t.fg_secondary,
+            font=("Segoe UI", 8),
+        )
+        self.lbl_status.pack(side=tk.LEFT)
+
+        btn_close = RoundedButton(
+            bottom_frame,
+            text="Close",
+            command=self.destroy,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 9, "bold"),
+            width=80,
+            parent_bg=t.bg_root,
+        )
+        btn_close.pack(side=tk.RIGHT)
+
+        btn_clear = RoundedButton(
+            bottom_frame,
+            text="🧹 Clear Resolved",
+            command=self._clear_resolved,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            width=120,
+            parent_bg=t.bg_root,
+        )
+        btn_clear.pack(side=tk.RIGHT, padx=(0, 6))
+
+        btn_refresh = RoundedButton(
+            bottom_frame,
+            text="🔄 Refresh",
+            command=self._refresh_data,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            width=90,
+            parent_bg=t.bg_root,
+        )
+        btn_refresh.pack(side=tk.RIGHT, padx=(0, 6))
+
+    def _create_metric_card(self, parent: tk.Widget, label: str, init_val: str, color: str) -> Dict[str, Any]:
+        t = self.theme
+        card = tk.Frame(
+            parent,
+            bg=t.bg_card,
+            padx=12,
+            pady=8,
+            highlightbackground=t.border,
+            highlightthickness=1,
+        )
+        card.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+
+        lbl_caption = tk.Label(card, text=label, bg=t.bg_card, fg=t.fg_secondary, font=("Segoe UI", 7, "bold"), anchor="w")
+        lbl_caption.pack(anchor=tk.W)
+
+        lbl_val = tk.Label(card, text=init_val, bg=t.bg_card, fg=color, font=("Segoe UI", 14, "bold"), anchor="w")
+        lbl_val.pack(anchor=tk.W)
+
+        return {"frame": card, "val": lbl_val}
+
+    def _set_filter(self, filter_name: str) -> None:
+        self.current_filter = filter_name
+        t = self.theme
+
+        # Reset button colors
+        for btn, name in [
+            (self.btn_tab_all, "all"),
+            (self.btn_tab_pending, "available"),
+            (self.btn_tab_updated, "updated"),
+            (self.btn_tab_failed, "failed"),
+        ]:
+            if name == filter_name:
+                btn.config(bg=t.accent_burgundy, fg="#ffffff")
+            else:
+                btn.config(bg=t.bg_button, fg=t.fg_primary)
+
+        self._refresh_data()
+
+    def _refresh_data(self) -> None:
+        metrics = self.tracker.get_metrics()
+        self.card_total["val"].config(text=str(metrics["total_tracked"]))
+        self.card_pending["val"].config(text=str(metrics["pending_count"]))
+        self.card_updated["val"].config(text=str(metrics["updated_count"]))
+        self.card_oldest["val"].config(text=f"{metrics['oldest_pending_days']}d")
+
+        # Clear tree
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        filter_arg = None if self.current_filter == "all" else self.current_filter
+        items = self.tracker.get_tracked_items(filter_arg)
+
+        for it in items:
+            dt_str = it.first_detected[:10] if len(it.first_detected) >= 10 else it.first_detected
+            status_display = {
+                "available": f"⏳ Pending ({it.days_pending}d)",
+                "updated": "✅ Up to Date",
+                "failed": "❌ Failed",
+                "skipped": "⏭️ Skipped",
+            }.get(it.status, it.status.capitalize())
+
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    it.name,
+                    it.source.upper(),
+                    it.installed_version,
+                    it.available_version,
+                    f"{it.days_pending} day{'s' if it.days_pending != 1 else ''}",
+                    dt_str,
+                    status_display,
+                ),
+            )
+
+        self.lbl_status.config(text=f"Showing {len(items)} tracked update records.")
+
+    def _clear_resolved(self) -> None:
+        count = self.tracker.clear_resolved()
+        self._refresh_data()
+        self.lbl_status.config(text=f"Cleared {count} resolved records.")
+
