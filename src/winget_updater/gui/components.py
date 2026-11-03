@@ -438,6 +438,15 @@ class SidebarNavigation(tk.Frame):
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
 
+    def apply_typography(self, typo) -> None:
+        """Applies dynamic font scaling to sidebar elements."""
+        self.lbl_title.config(font=getattr(typo, "title", ("Segoe UI", 12, "bold")))
+        self.lbl_version_tag.config(font=getattr(typo, "caption", ("Segoe UI", 9)))
+        self.lbl_nav_header.config(font=getattr(typo, "section", ("Segoe UI", 9, "bold")))
+        self.lbl_search_header.config(font=getattr(typo, "section", ("Segoe UI", 9, "bold")))
+        self.lbl_cat_header.config(font=getattr(typo, "section", ("Segoe UI", 9, "bold")))
+        self._render_navigation_items()
+
 
 class DetailsDrawer(tk.Frame):
     """Bottom slide-up details drawer showing selected program icon, metadata, and rounded action buttons."""
@@ -1258,6 +1267,19 @@ class ProgramTableView(tk.Frame):
 
         self.skeleton.apply_theme(theme)
         self.context_menu.config(bg=theme.bg_card, fg=theme.fg_primary, activebackground=theme.bg_card_hover, activeforeground=theme.accent_burgundy)
+
+    def apply_typography(self, typo) -> None:
+        """Applies dynamic font scaling and row height to treeview."""
+        style = ttk.Style()
+        style.configure(
+            "CleanWine.Treeview",
+            rowheight=getattr(typo, "row_height", 36),
+            font=getattr(typo, "table", ("Segoe UI", 10)),
+        )
+        style.configure(
+            "CleanWine.Treeview.Heading",
+            font=getattr(typo, "table_bold", ("Segoe UI", 10, "bold")),
+        )
 
     def show_skeleton(self) -> None:
         self.skeleton.lift()

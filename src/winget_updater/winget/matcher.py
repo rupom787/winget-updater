@@ -297,6 +297,35 @@ class PackageMatcher:
                 item.notes = f"Installed & managed via {item.source}"
             return
 
+        # 2c. Safe handling of Microsoft Visual C++ static runtimes
+        lower_name = (item.name or "").lower()
+        if getattr(self.config, "ignore_legacy_vcredist", True) and ("visual c++" in lower_name or "vcredist" in lower_name):
+            # Check if winget actually has an explicit upgrade waiting
+            has_explicit_upgrade = any(
+                lower_name in k or k in lower_name for k in name_to_upgrade
+            ) or (item.id and item.id.lower() in upgrades_by_id)
+            if not has_explicit_upgrade:
+                item.action = UpdateAction.UP_TO_DATE
+                item.outcome = UpdateOutcome.LISTED_ONLY
+                item.is_verified_winget = True
+                item.publisher = item.publisher or "Microsoft Corporation"
+                item.notes = "Microsoft Visual C++ Runtime (System Component, Up to date)"
+                item.unavailability_reason = "System runtime maintained as a stable dependency. No update required."
+                return
+
+        # 2d. Safe handling of Store/MSIX modern apps
+        if item.package_type == PackageType.STORE_MSIX:
+            norm_sid = (item.id or "").strip().lower()
+            if norm_sid in upgrades_by_id:
+                self._apply_winget_upgrade_match(item, upgrades_by_id[norm_sid])
+                return
+            # If not in pending upgrades, it is current via Windows Store
+            item.action = UpdateAction.UP_TO_DATE
+            item.outcome = UpdateOutcome.LISTED_ONLY
+            item.is_verified_winget = True
+            item.notes = "Microsoft Store App (Maintained via Store)"
+            return
+
         norm_name = normalize_app_name(item.name)
         base_name = strip_version_from_name(item.name)
         norm_id = (item.id or "").strip().lower()

@@ -135,6 +135,11 @@ class ProgramItem:
             return False
         if self.action != UpdateAction.AVAILABLE:
             return False
+        # Prevent phantom updates: reject placeholder dashes or identical versions
+        if self.latest_version == "—":
+            return False
+        if self.installed_version and self.latest_version and str(self.latest_version).strip().lower() == str(self.installed_version).strip().lower():
+            return False
         if not self.compatibility.is_compatible:
             return False
         if self.package_type not in (

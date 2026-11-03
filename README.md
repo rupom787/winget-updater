@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-83%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="83 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-90%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="90 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -35,7 +35,7 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.26 MB | `4E9682528995784BAFC705434763682F803A9075DFFEEF3C24B156ADF546E2C5` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.7.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.27 MB | `2BDFADC829C68BC9DE14112D63C16E5F6BD8E088514C221AF000E5F6481DF494` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
 1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
@@ -195,7 +195,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-4E9682528995784BAFC705434763682F803A9075DFFEEF3C24B156ADF546E2C5
+2BDFADC829C68BC9DE14112D63C16E5F6BD8E088514C221AF000E5F6481DF494
 ```
 
 ---

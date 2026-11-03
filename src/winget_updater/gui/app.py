@@ -49,6 +49,8 @@ from winget_updater.gui.dialogs import (
     CannotUpdateHelpDialog,
     ExclusionManagerDialog,
     ScheduleConfigDialog,
+    SettingsDialog,
+    UpdateSummaryDialog,
     prompt_downgrade_confirmation,
     prompt_unverified_allow_confirmation,
     prompt_vendor_installer_confirmation,
@@ -59,7 +61,7 @@ from winget_updater.gui.rounded_widgets import (
     apply_native_window_styling,
 )
 from winget_updater.gui.system_update_flow import CompleteSystemUpdateDialog
-from winget_updater.gui.theme import LIGHT_THEME, ThemeColors, get_theme
+from winget_updater.gui.theme import LIGHT_THEME, ThemeColors, Typography, get_theme, get_typography
 from winget_updater.models import PackageType, ProgramItem, UpdateAction, UpdateOutcome
 from winget_updater.utils.logger import get_logger
 from winget_updater.winget.client import WingetClient
@@ -101,6 +103,7 @@ class MainWindow(tk.Tk):
         # Core services
         self.config = config_manager or ConfigManager()
         self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "light"))
+        self.typography: Typography = get_typography(getattr(self.config, "font_scale", "normal"))
         self.winget = WingetClient()
         self.sys_info = SystemInfoProvider()
         self.checker = CompatibilityChecker(system_info=self.sys_info)
@@ -132,7 +135,9 @@ class MainWindow(tk.Tk):
         self.after(50, self._on_ready_startup)
 
     def _on_ready_startup(self) -> None:
-        self.start_scan()
+        self.set_font_scale(getattr(self.config, "font_scale", "normal"))
+        if getattr(self.config, "auto_scan_on_startup", True):
+            self.start_scan()
 
     def _show_floating_toast(self, text: str, icon: str = "✓") -> None:
         """Presents a clean floating notification dropping from top."""
@@ -207,6 +212,21 @@ class MainWindow(tk.Tk):
             padding=(10, 4),
         )
         self.btn_theme.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_settings = RoundedButton(
+            self.top_controls,
+            text="⚙️ Settings",
+            command=self._open_settings,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8, "bold"),
+            padding=(10, 4),
+        )
+        self.btn_settings.pack(side=tk.RIGHT, padx=(6, 0))
 
         self.btn_schedule = RoundedButton(
             self.top_controls,
@@ -659,6 +679,30 @@ class MainWindow(tk.Tk):
                 self.reboot_badge.set_badge("⚠️ Restart Required", bg_color="#fef3c7", fg_color="#92400e")
 
         self.config.set_theme(t.name)
+
+    def _open_settings(self) -> None:
+        """Opens the Settings & System Configuration modal."""
+        SettingsDialog(
+            self,
+            config=self.config,
+            on_theme_changed=self.set_theme,
+            on_font_scale_changed=self.set_font_scale,
+            on_settings_saved=self._on_settings_saved,
+            theme=self.current_theme,
+        )
+
+    def set_font_scale(self, scale: str) -> None:
+        """Applies typography font scale dynamically across UI components."""
+        self.typography = get_typography(scale)
+        if hasattr(self, "table") and hasattr(self.table, "apply_typography"):
+            self.table.apply_typography(self.typography)
+        if hasattr(self, "sidebar") and hasattr(self.sidebar, "apply_typography"):
+            self.sidebar.apply_typography(self.typography)
+        self._show_floating_toast(f"Font scale set to {scale.replace('_', ' ').capitalize()}", "🔍")
+
+    def _on_settings_saved(self) -> None:
+        """Invoked when user updates configuration settings."""
+        self._show_floating_toast("Settings saved successfully", "✓")
 
     def _open_complete_system_update(self) -> None:
         """Launches the 4-stage Complete System Update workflow dialog."""
@@ -1236,16 +1280,20 @@ class MainWindow(tk.Tk):
 
         self._refresh_counts()
 
-        res_msg = (
-            f"Update Process Completed\n\n"
-            f"• Updated: {summary.updated_count}\n"
-            f"• Failed: {summary.failed_count}\n"
-            f"• Skipped: {summary.skipped_count}\n"
-            f"• Simulated: {summary.simulated_count}\n\n"
-            f"All application statuses have been refreshed."
-        )
         self._show_floating_toast(f"Updated {summary.updated_count} packages", "✓")
-        messagebox.showinfo("Update Summary", res_msg, parent=self)
+        failed_items = [it for it in self.all_programs if it.outcome == UpdateOutcome.FAILED]
+        UpdateSummaryDialog(
+            self,
+            summary=summary,
+            failed_items=failed_items,
+            on_retry=self._retry_failed_updates,
+            theme=self.current_theme,
+        )
+
+    def _retry_failed_updates(self, items: List[ProgramItem]) -> None:
+        """Retries installation for failed updates."""
+        if items:
+            self._execute_update_queue(items, dry_run=self.dry_run_var.get())
 
     def _handle_row_double_click(self, item: ProgramItem) -> None:
         if item.action == UpdateAction.NEWER_THAN_SOURCE:

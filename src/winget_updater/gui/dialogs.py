@@ -905,3 +905,533 @@ class CannotUpdateHelpDialog(tk.Toplevel):
             parent_bg=t.bg_sidebar,
         )
         btn_close.pack(side=tk.RIGHT)
+
+
+
+class SettingsDialog(tk.Toplevel):
+    """Modern Settings modal with Velvet Burgundy aesthetic, typography scaling, manager toggles, and safety options."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        config: ConfigManager,
+        on_theme_changed: Optional[Callable[[str], None]] = None,
+        on_font_scale_changed: Optional[Callable[[str], None]] = None,
+        on_settings_saved: Optional[Callable[[], None]] = None,
+        theme: Optional[ThemeColors] = None,
+    ):
+        super().__init__(parent)
+        self.title("Settings & Preferences")
+        self.geometry("680x560")
+        self.minsize(580, 480)
+        self.config = config
+        self.on_theme_changed = on_theme_changed
+        self.on_font_scale_changed = on_font_scale_changed
+        self.on_settings_saved = on_settings_saved
+        self.theme = theme or LIGHT_THEME
+        self.configure(bg=self.theme.bg_root)
+
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        t = self.theme
+
+        # Top Header
+        top_header = tk.Frame(self, bg=t.bg_card, padx=20, pady=16, highlightbackground=t.border, highlightthickness=1)
+        top_header.pack(fill=tk.X)
+
+        lbl_title = tk.Label(
+            top_header,
+            text="⚙️ Preferences & System Configuration",
+            bg=t.bg_card,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            top_header,
+            text="Customize font scaling, UI themes, package ecosystems, safety parameters, and update behaviors.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 0))
+
+        # Main notebook
+        style = ttk.Style()
+        style.configure("Settings.TNotebook", background=t.bg_root, borderwidth=0)
+        style.configure("Settings.TNotebook.Tab", padding=[14, 8], font=("Segoe UI", 9, "bold"))
+        self.notebook = ttk.Notebook(self, style="Settings.TNotebook")
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=14)
+
+        # Tab 1: Appearance & Display
+        self.tab_appearance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_appearance, text="🎨 Appearance & Text")
+        self._build_appearance_tab()
+
+        # Tab 2: Package Ecosystems
+        self.tab_managers = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_managers, text="📦 Package Managers")
+        self._build_managers_tab()
+
+        # Tab 3: Safety & Automation
+        self.tab_safety = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_safety, text="🛡️ Safety & Automation")
+        self._build_safety_tab()
+
+        # Bottom Action Bar
+        bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
+        bottom.pack(fill=tk.X, side=tk.BOTTOM)
+
+        btn_save = RoundedButton(
+            bottom,
+            text="Save Preferences",
+            command=self._save_and_close,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            hover_bg=t.accent_burgundy_hover,
+            radius=6,
+            font=("Segoe UI", 9, "bold"),
+            width=140,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        btn_save.pack(side=tk.RIGHT, padx=(8, 0))
+
+        btn_cancel = RoundedButton(
+            bottom,
+            text="Cancel",
+            command=self.destroy,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            hover_bg=t.bg_button_hover,
+            radius=6,
+            font=("Segoe UI", 9),
+            width=90,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        btn_cancel.pack(side=tk.RIGHT)
+
+    def _build_appearance_tab(self) -> None:
+        t = self.theme
+
+        # Typography scaling
+        card_font = tk.Frame(self.tab_appearance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_font.pack(fill=tk.X, pady=(0, 10))
+
+        lbl_fhead = tk.Label(card_font, text="Text & Font Size Scaling", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_fhead.pack(anchor=tk.W)
+
+        lbl_fdesc = tk.Label(
+            card_font,
+            text="Choose typography sizing calibrated for your monitor resolution (improves legibility on 1080p, 1440p, and 4K).",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_fdesc.pack(anchor=tk.W, pady=(2, 8))
+
+        self.font_scale_var = tk.StringVar(value=getattr(self.config, "font_scale", "normal"))
+        font_options = [
+            ("Compact (90%) - For small displays", "compact"),
+            ("Normal (100%) - Recommended standard", "normal"),
+            ("Large (115%) - Clearer, larger typography", "large"),
+            ("Extra Large (130%) - High-DPI & accessibility", "extra_large"),
+        ]
+        for label, val in font_options:
+            rb = tk.Radiobutton(
+                card_font,
+                text=label,
+                value=val,
+                variable=self.font_scale_var,
+                bg=t.bg_card,
+                fg=t.fg_primary,
+                activebackground=t.bg_card,
+                activeforeground=t.accent_burgundy,
+                selectcolor=t.bg_input,
+                font=("Segoe UI", 9),
+            )
+            rb.pack(anchor=tk.W, pady=2)
+
+        # Theme selection
+        card_theme = tk.Frame(self.tab_appearance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_theme.pack(fill=tk.X, pady=(0, 10))
+
+        lbl_thead = tk.Label(card_theme, text="Color Theme", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_thead.pack(anchor=tk.W)
+
+        self.theme_var = tk.StringVar(value=getattr(self.config, "theme", "light"))
+        theme_options = [
+            ("Clean Velvet Wine (Light)", "light"),
+            ("Cyber Burgundy (Dark Mode)", "dark"),
+        ]
+        for label, val in theme_options:
+            rb = tk.Radiobutton(
+                card_theme,
+                text=label,
+                value=val,
+                variable=self.theme_var,
+                bg=t.bg_card,
+                fg=t.fg_primary,
+                activebackground=t.bg_card,
+                activeforeground=t.accent_burgundy,
+                selectcolor=t.bg_input,
+                font=("Segoe UI", 9),
+            )
+            rb.pack(anchor=tk.W, pady=2)
+
+        # Smooth animations toggle
+        card_anim = tk.Frame(self.tab_appearance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_anim.pack(fill=tk.X)
+
+        self.anim_var = tk.BooleanVar(value=getattr(self.config, "smooth_animations", True))
+        chk_anim = tk.Checkbutton(
+            card_anim,
+            text="Enable fluid 60 FPS animations, deck counters, and laser scanning pulses",
+            variable=self.anim_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9),
+        )
+        chk_anim.pack(anchor=tk.W)
+
+    def _build_managers_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_managers, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        lbl_head = tk.Label(card, text="Integrated Package Managers", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Enable or disable package ecosystems queried during scans and updates.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 10))
+
+        self.manager_vars: Dict[str, tk.BooleanVar] = {}
+        managers = [
+            ("winget", "Windows Package Manager (WinGet)", "Native Microsoft package catalog (MSIX, InnoSetup, MSI)"),
+            ("pip", "Python Package Index (Pip)", "Audits outdated libraries across all discovered Python runtimes"),
+            ("npm", "Node.js (Npm & Corepack)", "Global Node.js CLI packages and toolchains"),
+            ("scoop", "Scoop Package Manager", "Developer toolchain command-line installer"),
+            ("chocolatey", "Chocolatey (choco)", "Windows community package repository"),
+            ("store", "Microsoft Store Apps", "Modern UWP packaged store applications"),
+        ]
+
+        cfg_managers = getattr(self.config, "enabled_managers", {})
+        for key, name, desc in managers:
+            var = tk.BooleanVar(value=cfg_managers.get(key, True))
+            self.manager_vars[key] = var
+
+            m_row = tk.Frame(card, bg=t.bg_card)
+            m_row.pack(fill=tk.X, pady=4)
+
+            chk = tk.Checkbutton(
+                m_row,
+                text=name,
+                variable=var,
+                bg=t.bg_card,
+                fg=t.fg_primary,
+                activebackground=t.bg_card,
+                activeforeground=t.accent_burgundy,
+                selectcolor=t.bg_input,
+                font=("Segoe UI", 9, "bold"),
+            )
+            chk.pack(anchor=tk.W)
+
+            lbl_sub = tk.Label(m_row, text=desc, bg=t.bg_card, fg=t.fg_muted, font=("Segoe UI", 8))
+            lbl_sub.pack(anchor=tk.W, padx=(24, 0))
+
+    def _build_safety_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_safety, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        lbl_head = tk.Label(card, text="Safety Guards & Automation", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        self.vcredist_var = tk.BooleanVar(value=getattr(self.config, "ignore_legacy_vcredist", True))
+        chk_vc = tk.Checkbutton(
+            card,
+            text="Safely ignore legacy Visual C++ runtime DLLs from batch updates (Recommended)",
+            variable=self.vcredist_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_vc.pack(anchor=tk.W, pady=(8, 0))
+        lbl_vc_sub = tk.Label(
+            card,
+            text="Treats static Visual C++ 2005-2013 runtimes as stable system components, preventing failed update errors.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+        )
+        lbl_vc_sub.pack(anchor=tk.W, padx=(24, 0), pady=(0, 8))
+
+        self.restore_var = tk.BooleanVar(value=getattr(self.config, "create_restore_point", False))
+        chk_rp = tk.Checkbutton(
+            card,
+            text="Create Windows System Restore Point prior to batch updating",
+            variable=self.restore_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_rp.pack(anchor=tk.W, pady=(4, 0))
+
+        self.autoclose_var = tk.BooleanVar(value=getattr(self.config, "auto_close_apps", True))
+        chk_ac = tk.Checkbutton(
+            card,
+            text="Gracefully close running applications before updating to prevent installer lock errors",
+            variable=self.autoclose_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_ac.pack(anchor=tk.W, pady=(4, 0))
+
+        self.cleanup_var = tk.BooleanVar(value=getattr(self.config, "cleanup_temp_cache", True))
+        chk_cl = tk.Checkbutton(
+            card,
+            text="Automatically purge installer cache & temporary setup files after update routine",
+            variable=self.cleanup_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_cl.pack(anchor=tk.W, pady=(4, 0))
+
+        self.autoscan_var = tk.BooleanVar(value=getattr(self.config, "auto_scan_on_startup", True))
+        chk_as = tk.Checkbutton(
+            card,
+            text="Automatically check for software updates upon launch",
+            variable=self.autoscan_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_as.pack(anchor=tk.W, pady=(4, 0))
+
+    def _save_and_close(self) -> None:
+        # Save font scale
+        old_scale = getattr(self.config, "font_scale", "normal")
+        new_scale = self.font_scale_var.get()
+        self.config.font_scale = new_scale
+
+        # Save theme
+        old_theme = getattr(self.config, "theme", "light")
+        new_theme = self.theme_var.get()
+        self.config.theme = new_theme
+
+        # Save safety flags
+        self.config.smooth_animations = self.anim_var.get()
+        self.config.ignore_legacy_vcredist = self.vcredist_var.get()
+        self.config.create_restore_point = self.restore_var.get()
+        self.config.auto_close_apps = self.autoclose_var.get()
+        self.config.cleanup_temp_cache = self.cleanup_var.get()
+        self.config.auto_scan_on_startup = self.autoscan_var.get()
+
+        # Save manager states
+        for k, v in self.manager_vars.items():
+            self.config.enabled_managers[k] = v.get()
+
+        self.config.save_settings()
+
+        # Fire callbacks if values changed
+        if old_theme != new_theme and self.on_theme_changed:
+            self.on_theme_changed(new_theme)
+        if old_scale != new_scale and self.on_font_scale_changed:
+            self.on_font_scale_changed(new_scale)
+        if self.on_settings_saved:
+            self.on_settings_saved()
+
+        self.destroy()
+
+
+class UpdateSummaryDialog(tk.Toplevel):
+    """Modern velvet glass modal displaying batch update results, failure diagnosis, and retry capabilities."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        summary,
+        failed_items: Optional[List[ProgramItem]] = None,
+        on_retry: Optional[Callable[[List[ProgramItem]], None]] = None,
+        theme: Optional[ThemeColors] = None,
+    ):
+        super().__init__(parent)
+        self.title("Update Routine Completed")
+        self.geometry("620x520" if (failed_items and len(failed_items) > 0) else "540x360")
+        self.minsize(500, 340)
+        self.summary = summary
+        self.failed_items = failed_items or []
+        self.on_retry = on_retry
+        self.theme = theme or LIGHT_THEME
+        self.configure(bg=self.theme.bg_root)
+
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        t = self.theme
+
+        # Header Frame
+        header = tk.Frame(self, bg=t.bg_card, padx=20, pady=16, highlightbackground=t.border, highlightthickness=1)
+        header.pack(fill=tk.X)
+
+        title_text = "🎉 Update Routine Completed" if self.summary.failed_count == 0 else "⚠️ Update Routine Completed with Warnings"
+        lbl_title = tk.Label(
+            header,
+            text=title_text,
+            bg=t.bg_card,
+            fg=t.accent_emerald if self.summary.failed_count == 0 else t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_sub = tk.Label(
+            header,
+            text="All system software statuses have been reconciled with repositories.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_sub.pack(anchor=tk.W, pady=(2, 0))
+
+        # Metric Tiles Container
+        body = tk.Frame(self, bg=t.bg_root, padx=20, pady=16)
+        body.pack(fill=tk.BOTH, expand=True)
+
+        tiles_frame = tk.Frame(body, bg=t.bg_root)
+        tiles_frame.pack(fill=tk.X, pady=(0, 12))
+
+        metrics = [
+            ("Updated", str(self.summary.updated_count), "#10b981", "#ecfdf5"),
+            ("Failed", str(self.summary.failed_count), "#ef4444" if self.summary.failed_count > 0 else "#6b7280", "#fef2f2" if self.summary.failed_count > 0 else "#f3f4f6"),
+            ("Skipped", str(self.summary.skipped_count), "#f59e0b", "#fffbeb"),
+            ("Simulated", str(self.summary.simulated_count), "#3b82f6", "#eff6ff"),
+        ]
+
+        for i, (m_title, m_val, col_fg, col_bg) in enumerate(metrics):
+            card = tk.Frame(tiles_frame, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=12, pady=10)
+            card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0 if i == 0 else 8, 0))
+
+            lbl_v = tk.Label(card, text=m_val, bg=t.bg_card, fg=col_fg, font=("Segoe UI", 16, "bold"))
+            lbl_v.pack()
+
+            lbl_lbl = tk.Label(card, text=m_title, bg=t.bg_card, fg=t.fg_muted, font=("Segoe UI", 8, "bold"))
+            lbl_lbl.pack()
+
+        # Detailed Failure Diagnosis if any items failed
+        if self.failed_items and len(self.failed_items) > 0:
+            diag_frame = tk.Frame(body, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=12, pady=10)
+            diag_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+
+            lbl_fhead = tk.Label(
+                diag_frame,
+                text="Diagnostic Failure Details (Inspect issues below):",
+                bg=t.bg_card,
+                fg=t.accent_crimson,
+                font=("Segoe UI", 9, "bold"),
+                anchor="w",
+            )
+            lbl_fhead.pack(anchor=tk.W, pady=(0, 6))
+
+            # Scrollable text list
+            txt_box = tk.Text(
+                diag_frame,
+                bg=t.bg_root,
+                fg=t.fg_primary,
+                font=("Cascadia Code", 8),
+                height=8,
+                relief=tk.FLAT,
+                highlightbackground=t.border,
+                highlightthickness=1,
+                padx=8,
+                pady=6,
+            )
+            txt_box.pack(fill=tk.BOTH, expand=True)
+
+            for it in self.failed_items:
+                reason = it.notes or "Update installer reported failure."
+                txt_box.insert(tk.END, f"• {it.name} ({it.installed_version} -> {it.latest_version or 'Latest'})\n")
+                txt_box.insert(tk.END, f"  Issue: {reason}\n\n")
+
+            txt_box.config(state="disabled")
+
+        # Bottom Bar
+        bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
+        bottom.pack(fill=tk.X, side=tk.BOTTOM)
+
+        btn_done = RoundedButton(
+            bottom,
+            text="Done",
+            command=self.destroy,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            hover_bg=t.accent_burgundy_hover,
+            radius=6,
+            font=("Segoe UI", 9, "bold"),
+            width=100,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        btn_done.pack(side=tk.RIGHT)
+
+        if self.failed_items and len(self.failed_items) > 0 and self.on_retry:
+            btn_retry = RoundedButton(
+                bottom,
+                text="🔄 Retry Failed Updates",
+                command=self._do_retry,
+                bg_color=t.bg_button,
+                fg_color=t.fg_primary,
+                hover_bg=t.bg_button_hover,
+                radius=6,
+                font=("Segoe UI", 9),
+                width=160,
+                height=32,
+                parent_bg=t.bg_sidebar,
+            )
+            btn_retry.pack(side=tk.RIGHT, padx=(0, 8))
+
+    def _do_retry(self) -> None:
+        items = list(self.failed_items)
+        self.destroy()
+        if self.on_retry:
+            self.on_retry(items)

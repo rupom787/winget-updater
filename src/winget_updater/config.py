@@ -63,6 +63,21 @@ class ConfigManager:
         self.skipped_path = self.base_dir / DEFAULT_SKIPPED_FILE
         
         self.theme: str = "light"
+        self.font_scale: str = "normal"  # "compact", "normal", "large", "extra_large"
+        self.auto_scan_on_startup: bool = True
+        self.create_restore_point: bool = False
+        self.auto_close_apps: bool = True
+        self.cleanup_temp_cache: bool = True
+        self.ignore_legacy_vcredist: bool = True
+        self.smooth_animations: bool = True
+        self.enabled_managers: Dict[str, bool] = {
+            "winget": True,
+            "pip": True,
+            "npm": True,
+            "scoop": True,
+            "chocolatey": True,
+            "store": True,
+        }
         self.exclusions: List[ExclusionRule] = []
         self.vendor_sources: List[VendorSourceEntry] = []
         self.custom_mappings: Dict[str, str] = {}
@@ -238,18 +253,28 @@ class ConfigManager:
         return False
 
     def load_settings(self) -> None:
-        """Loads persistent user configuration preferences like theme."""
+        """Loads persistent user configuration preferences like theme, typography, and safety flags."""
         if self.config_path.exists():
             try:
                 with open(self.config_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self.theme = data.get("theme", "light")
+                    self.font_scale = data.get("font_scale", "normal")
+                    self.auto_scan_on_startup = bool(data.get("auto_scan_on_startup", True))
+                    self.create_restore_point = bool(data.get("create_restore_point", False))
+                    self.auto_close_apps = bool(data.get("auto_close_apps", True))
+                    self.cleanup_temp_cache = bool(data.get("cleanup_temp_cache", True))
+                    self.ignore_legacy_vcredist = bool(data.get("ignore_legacy_vcredist", True))
+                    self.smooth_animations = bool(data.get("smooth_animations", True))
+                    managers = data.get("enabled_managers", {})
+                    if isinstance(managers, dict):
+                        for k, v in managers.items():
+                            self.enabled_managers[k.lower()] = bool(v)
             except Exception as e:
                 logger.error(f"Error loading {self.config_path.name}: {e}")
 
-    def set_theme(self, theme: str) -> None:
-        """Persists the user theme preference ('dark' or 'light') to config.json."""
-        self.theme = theme.lower()
+    def save_settings(self) -> None:
+        """Persists all current user settings and preferences to config.json."""
         try:
             data = {}
             if self.config_path.exists():
@@ -259,11 +284,30 @@ class ConfigManager:
                 except Exception:
                     data = {}
             data["theme"] = self.theme
+            data["font_scale"] = self.font_scale
+            data["auto_scan_on_startup"] = self.auto_scan_on_startup
+            data["create_restore_point"] = self.create_restore_point
+            data["auto_close_apps"] = self.auto_close_apps
+            data["cleanup_temp_cache"] = self.cleanup_temp_cache
+            data["ignore_legacy_vcredist"] = self.ignore_legacy_vcredist
+            data["smooth_animations"] = self.smooth_animations
+            data["enabled_managers"] = self.enabled_managers
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-            logger.info(f"Theme preference saved: {self.theme}")
+            logger.info("Saved settings to config.json")
         except Exception as e:
-            logger.error(f"Error saving theme to {self.config_path.name}: {e}")
+            logger.error(f"Error saving settings to {self.config_path.name}: {e}")
+
+    def set_theme(self, theme: str) -> None:
+        """Persists the user theme preference ('dark' or 'light') to config.json."""
+        self.theme = theme.lower()
+        self.save_settings()
+
+    def set_font_scale(self, scale: str) -> None:
+        """Updates the font scaling preset ('compact', 'normal', 'large', 'extra_large')."""
+        if scale in ("compact", "normal", "large", "extra_large"):
+            self.font_scale = scale
+            self.save_settings()
 
     def load_exclusions(self) -> List[ExclusionRule]:
         """Loads human-readable exclusions from exclusions.json."""

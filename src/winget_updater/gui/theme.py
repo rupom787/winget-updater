@@ -185,3 +185,107 @@ def get_theme(name: str) -> ThemeColors:
     if not name:
         return LIGHT_THEME
     return THEMES.get(name.lower(), LIGHT_THEME)
+
+
+@dataclass
+class Typography:
+    """Scalable typography bundle for high-DPI displays and user font scale preferences."""
+    preset: str
+    font_family: str
+    code_family: str
+    title: tuple
+    subtitle: tuple
+    section: tuple
+    body: tuple
+    body_bold: tuple
+    table: tuple
+    table_bold: tuple
+    button: tuple
+    caption: tuple
+    caption_bold: tuple
+    mono: tuple
+    mono_bold: tuple
+    row_height: int
+
+
+TYPOGRAPHY_PRESETS: Dict[str, Typography] = {
+    "compact": Typography(
+        preset="compact",
+        font_family="Segoe UI",
+        code_family="Cascadia Code",
+        title=("Segoe UI", 12, "bold"),
+        subtitle=("Segoe UI", 9),
+        section=("Segoe UI", 8, "bold"),
+        body=("Segoe UI", 9),
+        body_bold=("Segoe UI", 9, "bold"),
+        table=("Segoe UI", 9),
+        table_bold=("Segoe UI", 9, "bold"),
+        button=("Segoe UI", 8, "bold"),
+        caption=("Segoe UI", 8),
+        caption_bold=("Segoe UI", 8, "bold"),
+        mono=("Cascadia Code", 8),
+        mono_bold=("Cascadia Code", 8, "bold"),
+        row_height=30,
+    ),
+    "normal": Typography(
+        preset="normal",
+        font_family="Segoe UI",
+        code_family="Cascadia Code",
+        title=("Segoe UI", 13, "bold"),
+        subtitle=("Segoe UI", 10),
+        section=("Segoe UI", 9, "bold"),
+        body=("Segoe UI", 10),
+        body_bold=("Segoe UI", 10, "bold"),
+        table=("Segoe UI", 10),
+        table_bold=("Segoe UI", 10, "bold"),
+        button=("Segoe UI", 9, "bold"),
+        caption=("Segoe UI", 9),
+        caption_bold=("Segoe UI", 9, "bold"),
+        mono=("Cascadia Code", 9),
+        mono_bold=("Cascadia Code", 9, "bold"),
+        row_height=36,
+    ),
+    "large": Typography(
+        preset="large",
+        font_family="Segoe UI",
+        code_family="Cascadia Code",
+        title=("Segoe UI", 15, "bold"),
+        subtitle=("Segoe UI", 11),
+        section=("Segoe UI", 10, "bold"),
+        body=("Segoe UI", 11),
+        body_bold=("Segoe UI", 11, "bold"),
+        table=("Segoe UI", 11),
+        table_bold=("Segoe UI", 11, "bold"),
+        button=("Segoe UI", 10, "bold"),
+        caption=("Segoe UI", 10),
+        caption_bold=("Segoe UI", 10, "bold"),
+        mono=("Cascadia Code", 10),
+        mono_bold=("Cascadia Code", 10, "bold"),
+        row_height=42,
+    ),
+    "extra_large": Typography(
+        preset="extra_large",
+        font_family="Segoe UI",
+        code_family="Cascadia Code",
+        title=("Segoe UI", 17, "bold"),
+        subtitle=("Segoe UI", 13),
+        section=("Segoe UI", 12, "bold"),
+        body=("Segoe UI", 12),
+        body_bold=("Segoe UI", 12, "bold"),
+        table=("Segoe UI", 12),
+        table_bold=("Segoe UI", 12, "bold"),
+        button=("Segoe UI", 11, "bold"),
+        caption=("Segoe UI", 11),
+        caption_bold=("Segoe UI", 11, "bold"),
+        mono=("Cascadia Code", 11),
+        mono_bold=("Cascadia Code", 11, "bold"),
+        row_height=48,
+    ),
+}
+
+
+def get_typography(preset: str = "normal") -> Typography:
+    """Returns the Typography bundle corresponding to the given preset name."""
+    if not preset:
+        return TYPOGRAPHY_PRESETS["normal"]
+    return TYPOGRAPHY_PRESETS.get(preset.lower(), TYPOGRAPHY_PRESETS["normal"])
