@@ -14,6 +14,18 @@
 </p>
 
 <p align="center">
+  <a href="https://rupom787.github.io/winget-updater/">
+    <img src="https://img.shields.io/badge/🌐_Official_Website-Live_Online-059669?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Official Website" />
+  </a>
+  <a href="https://rupom787.github.io/winget-updater/voices.html">
+    <img src="https://img.shields.io/badge/🎙️_Voice_Studio-12_Demos-7c3aed?style=for-the-badge" alt="Voice Studio" />
+  </a>
+  <a href="https://rupom787.github.io/winget-updater/motion.html">
+    <img src="https://img.shields.io/badge/🎬_3D_Motion-30s_SaaSWAVE-d946ef?style=for-the-badge" alt="3D Motion Video" />
+  </a>
+</p>
+
+<p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe">
     <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.30_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
