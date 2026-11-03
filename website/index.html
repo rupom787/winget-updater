@@ -93,6 +93,7 @@
 
       <nav class="desktop-nav" aria-label="Site Navigation">
         <a href="#about" class="nav-item" data-sound="hover" data-scramble><span>(01) About</span></a>
+        <a href="#film" class="nav-item" data-sound="hover" data-scramble><span>(★) Film</span></a>
         <a href="#disciplines" class="nav-item" data-sound="hover" data-scramble><span>(02) Disciplines</span></a>
         <a href="#works" class="nav-item" data-sound="hover" data-scramble><span>(03) Works</span></a>
         <a href="#dream" class="nav-item" data-sound="hover" data-scramble><span>(04) Dream</span></a>
@@ -142,8 +143,12 @@
                 <span>Download Executable</span>
                 <span class="btn-arrow">&rarr;</span>
               </a>
+              <a href="#film" class="action-btn action-film" data-sound="click" data-magnetic id="hero-film-btn">
+                <span class="btn-play-circle">&#9654;</span>
+                <span>Watch Film (20s)</span>
+              </a>
               <a href="#works" class="action-btn action-ghost" data-sound="hover" data-magnetic>
-                <span>Explore Works (03)</span>
+                <span>Works (03)</span>
               </a>
             </div>
           </div>
@@ -197,6 +202,53 @@
             <p class="col-body">
               Standard Windows UI frameworks flood the message queue with synchronous GDI invalidations, dropping framerates to 12 FPS during scroll. Winget Updater runs on a completely decoupled background scheduler with 120Hz velocity lerp and native Windows 11 Acrylic backdrops, delivering 0.0% idle CPU load.
             </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CINEMATIC PREMIERE THEATER SECTION -->
+    <section id="film" class="film-theater-section" aria-label="Official Launch Film">
+      <div class="section-bounds">
+        <div class="section-header-rule">
+          <span class="section-tag">CINEMATIC PREMIERE // 20-SECOND ARCHITECTURE FILM</span>
+          <span class="section-jp">映像記録 — システム真実性の検証</span>
+        </div>
+
+        <div class="theater-wrapper">
+          <div class="theater-card" id="theater-card">
+            <video
+              id="launch-video"
+              class="theater-video"
+              playsinline
+              preload="metadata"
+              poster="assets/brag.jpg"
+              src="assets/brag.mp4"
+            ></video>
+
+            <!-- Custom Elegant Video Overlay Controls -->
+            <div class="theater-overlay" id="video-overlay">
+              <button type="button" class="theater-play-btn" id="play-btn" aria-label="Play launch film" data-sound="click" data-magnetic>
+                <span class="play-icon-shape">&#9654;</span>
+              </button>
+              <div class="theater-badge-top">1080P &bull; 60 FPS &bull; BEAT-SYNCED AUDIO</div>
+              <div class="theater-telemetry-bottom">
+                <span class="film-title">WINGET UPDATER: THE TRUTH ENGINE</span>
+                <span class="film-duration" id="film-duration">00:00 / 00:20</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="theater-caption-row">
+            <div class="caption-left">
+              <span class="cap-tag">ARCHITECTURE TRAILER</span>
+              <p class="cap-desc">DirectComposition 120Hz velocity lerp, subsurface Authenticode audit, and obsidian cyber blueprint transitions captured in real-time.</p>
+            </div>
+            <div class="caption-right">
+              <button type="button" class="sound-toggle-video" id="video-sound-toggle" data-sound="click" data-magnetic>
+                <span id="video-sound-label">&#x1F50A; Audio: Unmuted</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

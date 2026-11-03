@@ -56,3 +56,4 @@ Create a short, ultra-polished, shareable launch video for Winget Updater v1.9.0
 - Music treatment: Starts at 0.0s, full volume through main beats, smooth fade out from 19.0s to 20.0s.
 - Music cue guidance: Major reveals at 2.46s (Hero typography), 7.79s (Table scan), 13.11s (Dream mode transition), 17.47s (Outro terminal).
 - Audio files: Copied into `brag-output/composition/assets/`
+

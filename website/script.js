@@ -915,6 +915,102 @@
     });
   }
 
+  // ==========================================
+  // 17. CINEMATIC THEATER VIDEO CONTROLLER
+  // ==========================================
+  const launchVideo = document.getElementById("launch-video");
+  const theaterCard = document.getElementById("theater-card");
+  const playBtn = document.getElementById("play-btn");
+  const filmDuration = document.getElementById("film-duration");
+  const videoSoundToggle = document.getElementById("video-sound-toggle");
+  const videoSoundLabel = document.getElementById("video-sound-label");
+  const heroFilmBtn = document.getElementById("hero-film-btn");
+
+  if (launchVideo && theaterCard) {
+    function toggleVideoPlay() {
+      if (launchVideo.paused) {
+        launchVideo.play().then(() => {
+          theaterCard.classList.add("playing");
+          if (playBtn) playBtn.innerHTML = '<span class="play-icon-shape">&#10074;&#10074;</span>';
+          audio.playClick(1400, 500, 0.04);
+        }).catch(() => {});
+      } else {
+        launchVideo.pause();
+        theaterCard.classList.remove("playing");
+        if (playBtn) playBtn.innerHTML = '<span class="play-icon-shape">&#9654;</span>';
+        audio.playClick(900, 400, 0.04);
+      }
+    }
+
+    if (playBtn) {
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleVideoPlay();
+      });
+    }
+
+    theaterCard.addEventListener("click", (e) => {
+      if (e.target.closest(".sound-toggle-video")) return;
+      toggleVideoPlay();
+    });
+
+    launchVideo.addEventListener("timeupdate", () => {
+      if (!filmDuration) return;
+      const cur = Math.floor(launchVideo.currentTime);
+      const dur = Math.floor(launchVideo.duration || 20);
+      const curSec = cur < 10 ? `0${cur}` : cur;
+      const durSec = dur < 10 ? `0${dur}` : dur;
+      filmDuration.textContent = `00:${curSec} / 00:${durSec}`;
+    });
+
+    launchVideo.addEventListener("ended", () => {
+      theaterCard.classList.remove("playing");
+      if (playBtn) playBtn.innerHTML = '<span class="play-icon-shape">&#9654;</span>';
+      launchVideo.currentTime = 0;
+      audio.playSuccessChime();
+      showToast("✓ LAUNCH FILM COMPLETE &bull; GET V1.9.0");
+    });
+
+    if (videoSoundToggle && videoSoundLabel) {
+      videoSoundToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        launchVideo.muted = !launchVideo.muted;
+        videoSoundLabel.textContent = launchVideo.muted ? "🔇 Audio: Muted" : "🔊 Audio: Unmuted";
+        audio.playBlip(1200, 0.03, 0.03);
+      });
+    }
+
+    // Auto-pause video when scrolling away
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting && !launchVideo.paused) {
+          launchVideo.pause();
+          theaterCard.classList.remove("playing");
+          if (playBtn) playBtn.innerHTML = '<span class="play-icon-shape">&#9654;</span>';
+        }
+      });
+    }, { threshold: 0.25 });
+    videoObserver.observe(theaterCard);
+
+    // Hero Watch Film CTA: smoothly scroll down and start
+    if (heroFilmBtn) {
+      heroFilmBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const filmSec = document.getElementById("film");
+        if (filmSec) {
+          if (lenis) {
+            lenis.scrollTo(filmSec, { offset: -30 });
+          } else {
+            filmSec.scrollIntoView({ behavior: "smooth" });
+          }
+          setTimeout(() => {
+            if (launchVideo.paused) toggleVideoPlay();
+          }, 800);
+        }
+      });
+    }
+  }
+
   // Initialize audio event listeners
   bindAudioTriggers();
 })();

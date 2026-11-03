@@ -602,6 +602,28 @@ html.dream-mode .clock-city {
   box-shadow: 0 10px 24px var(--border-strong);
 }
 
+.action-film {
+  background: rgba(18, 18, 18, 0.06);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+}
+
+.action-film:hover {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.btn-play-circle {
+  font-size: 11px;
+  color: var(--accent-red);
+}
+
+html.dream-mode .btn-play-circle {
+  color: var(--accent-cyan);
+}
+
 .action-ghost {
   background: transparent;
   color: var(--ink);
@@ -715,6 +737,162 @@ html.dream-mode .clock-city {
   font-size: 15px;
   line-height: 1.7;
   color: var(--ink-dim);
+}
+
+/* CINEMATIC PREMIERE THEATER SECTION */
+.film-theater-section {
+  padding: 120px 0;
+  border-top: 1px solid var(--border);
+}
+
+.theater-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.theater-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+
+.theater-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.theater-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px;
+  background: rgba(7, 8, 26, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.theater-card.playing .theater-overlay {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.theater-card.playing:hover .theater-overlay {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  background: rgba(7, 8, 26, 0.3);
+}
+
+.theater-play-btn {
+  margin: auto;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #ffffff;
+  color: #07080c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  cursor: pointer;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 40px var(--glow-cyan);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.theater-play-btn:hover {
+  transform: scale(1.12);
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #000000;
+}
+
+.play-icon-shape {
+  margin-left: 6px;
+}
+
+.theater-badge-top {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.theater-telemetry-bottom {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.theater-caption-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding: 0 4px;
+}
+
+.cap-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent-red);
+  display: block;
+  margin-bottom: 6px;
+}
+
+html.dream-mode .cap-tag {
+  color: var(--accent-cyan);
+}
+
+.cap-desc {
+  font-size: 15px;
+  color: var(--ink-dim);
+  max-width: 680px;
+}
+
+.sound-toggle-video {
+  background: var(--card-bg);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sound-toggle-video:hover {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 /* SECTION 3: DISCIPLINES */

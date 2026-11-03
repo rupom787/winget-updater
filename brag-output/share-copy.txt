@@ -30,3 +30,4 @@ winget install --id rupom.WingetUpdater -e
 Winget Updater v1.9.0 is out! Completely eliminates phantom updates, runs at 0.0% idle CPU with DirectComposition 120Hz hardware acceleration, and scans 200+ packages in 1.8s.
 Run: `winget install --id rupom.WingetUpdater -e`
 GitHub: https://github.com/rupom787/winget-updater
+
