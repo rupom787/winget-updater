@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en" data-theme="wake">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Audition Studio // Winget Updater</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --paper: #eceae4;
+        --paper-card: #f5f4ef;
+        --ink: #121212;
+        --ink-muted: rgba(18, 18, 18, 0.6);
+        --border: rgba(18, 18, 18, 0.12);
+        --accent: #991b1b;
+        --cyan: #007788;
+        --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        --font-sans: "Inter Tight", -apple-system, sans-serif;
+        --font-serif: "Instrument Serif", Georgia, serif;
+        --font-mono: "DM Mono", monospace;
+      }
+
+      html.dream-mode {
+        --paper: #07081a;
+        --paper-card: #0e0f2b;
+        --ink: #f4f4f8;
+        --ink-muted: rgba(244, 244, 248, 0.65);
+        --border: rgba(255, 255, 255, 0.14);
+        --accent: #ff2a6d;
+        --cyan: #00f0ff;
+        --card-shadow: 0 15px 40px rgba(0, 240, 255, 0.08);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        transition: background-color 0.4s ease, color 0.4s ease;
+        padding: 40px 24px 100px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      /* Header */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 32px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 40px;
+      }
+
+      .back-link {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        color: var(--ink);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        transition: all 0.2s ease;
+      }
+
+      .back-link:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .theme-btn {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .theme-btn:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      /* Hero Section */
+      .hero-section {
+        margin-bottom: 48px;
+      }
+
+      .tagline {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.2em;
+        color: var(--accent);
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        font-size: clamp(36px, 5vw, 64px);
+        font-weight: 400;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        margin-bottom: 16px;
+      }
+
+      .hero-desc {
+        font-size: 18px;
+        color: var(--ink-muted);
+        max-width: 720px;
+        line-height: 1.6;
+      }
+
+      /* Filter Tabs */
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 36px;
+      }
+
+      .filter-btn {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .filter-btn.active,
+      .filter-btn:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      /* Voice Grid */
+      .voice-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 24px;
+      }
+
+      .voice-card {
+        background: var(--paper-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 20px;
+        box-shadow: var(--card-shadow);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .voice-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--cyan);
+      }
+
+      .voice-card.is-playing {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 2px var(--cyan), var(--card-shadow);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .voice-category {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .voice-name {
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin-top: 4px;
+      }
+
+      .voice-tag {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(18, 18, 18, 0.06);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+
+      html.dream-mode .voice-tag {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .voice-quote {
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--ink-muted);
+        font-style: italic;
+        padding: 12px 16px;
+        background: rgba(18, 18, 18, 0.03);
+        border-radius: 8px;
+        border-left: 2px solid var(--border);
+      }
+
+      html.dream-mode .voice-quote {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      /* Player Controls */
+      .player-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .play-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--paper);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: transform 0.15s ease, background-color 0.2s ease;
+      }
+
+      .play-btn:hover {
+        transform: scale(1.08);
+        background: var(--cyan);
+        color: #ffffff;
+      }
+
+      .progress-bar-wrap {
+        flex-grow: 1;
+        height: 8px;
+        background: rgba(18, 18, 18, 0.1);
+        border-radius: 999px;
+        overflow: hidden;
+        cursor: pointer;
+        position: relative;
+      }
+
+      html.dream-mode .progress-bar-wrap {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: var(--cyan);
+        transition: width 0.1s linear;
+      }
+
+      .time-code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--ink-muted);
+        min-width: 42px;
+        text-align: right;
+      }
+
+      /* Choose CTA */
+      .choose-btn {
+        width: 100%;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        padding: 12px 18px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .choose-btn:hover {
+        background: var(--cyan);
+        color: #ffffff;
+        border-color: var(--cyan);
+      }
+
+      /* Notification Toast */
+      #toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--ink);
+        color: var(--paper);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        padding: 14px 28px;
+        border-radius: 999px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        z-index: 1000;
+        border: 1px solid var(--border);
+      }
+
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/analytics-CIjF5wJ1.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <a href="index.html#film" class="back-link">&larr; Back to Launch Film</a>
+        <button type="button" class="theme-btn" id="theme-btn">Wake / Dream</button>
+      </header>
+
+      <section class="hero-section">
+        <div class="tagline">Voice Audition Studio // 12 Distinct Voices</div>
+        <h1>Choose Your Perfect Voice</h1>
+        <p class="hero-desc">
+          Click <strong>Play</strong> on any voice demo below to hear how she sounds. When you find the one you love, click <strong>Choose This Voice</strong> and tell me her name in chat to generate your personalized launch video!
+        </p>
+      </section>
+
+      <!-- Category Filters -->
+      <div class="filters">
+        <button type="button" class="filter-btn active" data-filter="all">All Voices (12)</button>
+        <button type="button" class="filter-btn" data-filter="Cute & Playful">Cute & Playful</button>
+        <button type="button" class="filter-btn" data-filter="Warm & Natural">Warm & Natural</button>
+        <button type="button" class="filter-btn" data-filter="British Accents">British Accents</button>
+        <button type="button" class="filter-btn" data-filter="International Charms">International</button>
+        <button type="button" class="filter-btn" data-filter="Modern & Confident">Tech & Confident</button>
+      </div>
+
+      <!-- Voice Cards Grid -->
+      <div class="voice-grid" id="voice-grid">
+        <!-- 1. Ana Cute -->
+        <div class="voice-card" data-category="Cute & Playful" data-id="ana_cute">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Cute & Playful</span>
+              <span class="voice-tag">en-US &bull; Anime Style</span>
+            </div>
+            <h2 class="voice-name">Ana (Cute & Youthful)</h2>
+          </div>
+          <p class="voice-quote">"Hi there! I'm Ana. Welcome to Winget Updater — the sweetest, fastest update experience for Windows 11."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/ana_cute.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Ana (Cute & Youthful)">&#9733; Choose Ana (Cute)</button>
+        </div>
+
+        <!-- 2. Ana Soft -->
+        <div class="voice-card" data-category="Cute & Playful" data-id="ana_soft">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Cute & Playful</span>
+              <span class="voice-tag">en-US &bull; Sweet & Soft</span>
+            </div>
+            <h2 class="voice-name">Ana (Ultra-Soft Sweet)</h2>
+          </div>
+          <p class="voice-quote">"Hi! Welcome to Winget Updater. Scanning all your apps in pure peace and quiet... zero phantom updates."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/ana_soft.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Ana (Ultra-Soft Sweet)">&#9733; Choose Ana (Soft)</button>
+        </div>
+
+        <!-- 3. Jenny Warm -->
+        <div class="voice-card" data-category="Warm & Natural" data-id="jenny_warm">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Warm & Natural</span>
+              <span class="voice-tag">en-US &bull; Conversational</span>
+            </div>
+            <h2 class="voice-name">Jenny (Friendly & Natural)</h2>
+          </div>
+          <p class="voice-quote">"Hey! I'm Jenny. Winget Updater makes managing your Windows software super effortless and clean."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/jenny_warm.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Jenny (Friendly & Natural)">&#9733; Choose Jenny (Friendly)</button>
+        </div>
+
+        <!-- 4. Jenny Cozy ASMR -->
+        <div class="voice-card" data-category="Warm & Natural" data-id="jenny_cozy">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Warm & Natural</span>
+              <span class="voice-tag">en-US &bull; Cozy ASMR</span>
+            </div>
+            <h2 class="voice-name">Jenny (Cozy & Gentle)</h2>
+          </div>
+          <p class="voice-quote">"Welcome to Winget Updater. Sit back, relax, and let your Windows system update with absolute stillness."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/jenny_cozy.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Jenny (Cozy & Gentle)">&#9733; Choose Jenny (Cozy)</button>
+        </div>
+
+        <!-- 5. Maisie British -->
+        <div class="voice-card" data-category="British Accents" data-id="maisie_british">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">British Accents</span>
+              <span class="voice-tag">en-GB &bull; Sweet British</span>
+            </div>
+            <h2 class="voice-name">Maisie (Sweet British Girl)</h2>
+          </div>
+          <p class="voice-quote">"Hello! I'm Maisie. Welcome to Winget Updater — a lovely, tranquil way to keep Windows 11 updated."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/maisie_british.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Maisie (Sweet British Girl)">&#9733; Choose Maisie (British)</button>
+        </div>
+
+        <!-- 6. Libby Soft UK -->
+        <div class="voice-card" data-category="British Accents" data-id="libby_soft_uk">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">British Accents</span>
+              <span class="voice-tag">en-GB &bull; Polite & Soft</span>
+            </div>
+            <h2 class="voice-name">Libby (Polite Storyteller)</h2>
+          </div>
+          <p class="voice-quote">"Welcome to Winget Updater. A calm, beautiful update experience designed specifically for Windows 11."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/libby_soft_uk.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Libby (Polite Storyteller)">&#9733; Choose Libby (UK)</button>
+        </div>
+
+        <!-- 7. Sonia UK -->
+        <div class="voice-card" data-category="British Accents" data-id="sonia_uk">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">British Accents</span>
+              <span class="voice-tag">en-GB &bull; Warm & Soothing</span>
+            </div>
+            <h2 class="voice-name">Sonia (Warm British)</h2>
+          </div>
+          <p class="voice-quote">"Step into Winget Updater. Real-time Authenticode verification, zero phantom updates, and pure peace of mind."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/sonia_uk.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Sonia (Warm British)">&#9733; Choose Sonia (Warm UK)</button>
+        </div>
+
+        <!-- 8. Natasha Aussie -->
+        <div class="voice-card" data-category="International Charms" data-id="natasha_aussie">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">International Charms</span>
+              <span class="voice-tag">en-AU &bull; Relaxed Australian</span>
+            </div>
+            <h2 class="voice-name">Natasha (Sunny Australian)</h2>
+          </div>
+          <p class="voice-quote">"G'day! Welcome to Winget Updater. Light on your CPU, fast on your downloads, and completely hassle-free."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/natasha_aussie.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Natasha (Sunny Australian)">&#9733; Choose Natasha (AU)</button>
+        </div>
+
+        <!-- 9. Clara Canadian -->
+        <div class="voice-card" data-category="International Charms" data-id="clara_canadian">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">International Charms</span>
+              <span class="voice-tag">en-CA &bull; Sweet & Crisp</span>
+            </div>
+            <h2 class="voice-name">Clara (Sweet Canadian)</h2>
+          </div>
+          <p class="voice-quote">"Hi! I'm Clara. Keep your entire PC verified and up-to-date in under two seconds."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/clara_canadian.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Clara (Sweet Canadian)">&#9733; Choose Clara (CA)</button>
+        </div>
+
+        <!-- 10. Michelle Soft -->
+        <div class="voice-card" data-category="Cute & Playful" data-id="michelle_soft">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Soft & Breathy</span>
+              <span class="voice-tag">en-US &bull; Gentle Breathy</span>
+            </div>
+            <h2 class="voice-name">Michelle (Gentle & Breathy)</h2>
+          </div>
+          <p class="voice-quote">"Welcome to Winget Updater. Step into Obsidian Dream mode, and let your system breathe."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/michelle_soft.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Michelle (Gentle & Breathy)">&#9733; Choose Michelle</button>
+        </div>
+
+        <!-- 11. Ava Crisp -->
+        <div class="voice-card" data-category="Modern & Confident" data-id="ava_crisp">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Modern & Confident</span>
+              <span class="voice-tag">en-US &bull; Tech Founder</span>
+            </div>
+            <h2 class="voice-name">Ava (Modern Tech Founder)</h2>
+          </div>
+          <p class="voice-quote">"Meet Winget Updater — direct composition architecture, hardware velocity lerp, and verified reality."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/ava_crisp.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Ava (Modern Tech Founder)">&#9733; Choose Ava</button>
+        </div>
+
+        <!-- 12. Aria Confident -->
+        <div class="voice-card" data-category="Modern & Confident" data-id="aria_confident">
+          <div>
+            <div class="card-header">
+              <span class="voice-category">Modern & Confident</span>
+              <span class="voice-tag">en-US &bull; Articulate</span>
+            </div>
+            <h2 class="voice-name">Aria (Articulate & Confident)</h2>
+          </div>
+          <p class="voice-quote">"Traditional package managers claim exit code 0 while stale files linger. We built the truth engine."</p>
+          <div class="player-row">
+            <button type="button" class="play-btn" data-src="assets/voice-demos/aria_confident.mp3" aria-label="Play">&#9654;</button>
+            <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+            <span class="time-code">0:00</span>
+          </div>
+          <button type="button" class="choose-btn" data-name="Aria (Articulate & Confident)">&#9733; Choose Aria</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast">Selected! Tell the assistant: "Use Ana (Cute)"</div>
+
+    <script>
+      // Theme Toggle
+      const themeBtn = document.getElementById("theme-btn");
+      themeBtn.addEventListener("click", () => {
+        const isDream = document.documentElement.classList.toggle("dream-mode");
+        themeBtn.textContent = isDream ? "DREAM [•] / WAKE [o]" : "Wake / Dream";
+      });
+
+      // Audio Controller
+      let currentAudio = null;
+      let currentPlayBtn = null;
+      let currentBar = null;
+      let currentTimeCode = null;
+      let currentCard = null;
+
+      function stopCurrent() {
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          if (currentPlayBtn) currentPlayBtn.innerHTML = "&#9654;";
+          if (currentCard) currentCard.classList.remove("is-playing");
+          if (currentBar) currentBar.style.width = "0%";
+          if (currentTimeCode) currentTimeCode.textContent = "0:00";
+        }
+      }
+
+      document.querySelectorAll(".voice-card").forEach((card) => {
+        const playBtn = card.querySelector(".play-btn");
+        const progressBar = card.querySelector(".progress-bar");
+        const timeCode = card.querySelector(".time-code");
+        const audioSrc = playBtn.getAttribute("data-src");
+        const audio = new Audio(audioSrc);
+
+        playBtn.addEventListener("click", () => {
+          if (currentAudio === audio && !audio.paused) {
+            audio.pause();
+            playBtn.innerHTML = "&#9654;";
+            card.classList.remove("is-playing");
+            return;
+          }
+
+          stopCurrent();
+
+          currentAudio = audio;
+          currentPlayBtn = playBtn;
+          currentBar = progressBar;
+          currentTimeCode = timeCode;
+          currentCard = card;
+
+          audio.play().catch(() => {});
+          playBtn.innerHTML = "&#10074;&#10074;";
+          card.classList.add("is-playing");
+        });
+
+        audio.addEventListener("timeupdate", () => {
+          if (!audio.duration) return;
+          const pct = (audio.currentTime / audio.duration) * 100;
+          progressBar.style.width = pct + "%";
+          const sec = Math.floor(audio.currentTime);
+          timeCode.textContent = `0:0${sec}`;
+        });
+
+        audio.addEventListener("ended", () => {
+          playBtn.innerHTML = "&#9654;";
+          card.classList.remove("is-playing");
+          progressBar.style.width = "0%";
+          timeCode.textContent = "0:00";
+        });
+      });
+
+      // Filter Buttons
+      const filterBtns = document.querySelectorAll(".filter-btn");
+      const cards = document.querySelectorAll(".voice-card");
+
+      filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          filterBtns.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const filter = btn.getAttribute("data-filter");
+
+          cards.forEach((card) => {
+            if (filter === "all" || card.getAttribute("data-category") === filter) {
+              card.style.display = "flex";
+            } else {
+              card.style.display = "none";
+            }
+          });
+        });
+      });
+
+      // Choose Button Toast
+      const toast = document.getElementById("toast");
+      document.querySelectorAll(".choose-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const name = btn.getAttribute("data-name");
+          navigator.clipboard.writeText(`Use ${name}`).catch(() => {});
+          toast.textContent = `Copied to clipboard: "Use ${name}" — Paste it here in chat!`;
+          toast.classList.add("show");
+          setTimeout(() => {
+            toast.classList.remove("show");
+          }, 3500);
+        });
+      });
+    </script>
+    
+    <!-- Vercel Web Analytics -->
+  </body>
+</html>
