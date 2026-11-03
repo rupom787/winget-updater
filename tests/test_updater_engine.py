@@ -117,3 +117,56 @@ def test_vendor_fallback_signature_rejection(tmp_path):
         assert success is False
         assert "verification failed" in msg.lower()
 
+
+def test_post_update_version_verification_catches_phantom_updates():
+    """Guarantees that an installer exiting 0 without changing files on disk is detected as FAILED,
+
+    preventing false-positive 'Updated' reports to user.
+    """
+    mock_client = MagicMock(spec=WingetClient)
+    mock_checker = MagicMock()
+    mock_checker.check.return_value = MagicMock(is_compatible=True)
+    engine = UpdateEngine(winget_client=mock_client, compatibility_checker=mock_checker)
+
+    # 1. Phantom update: Winget reports success, but disk version remains 1.0.0
+    mock_client.upgrade_package.return_value = (True, "Command returned 0")
+    mock_client.get_package_installed_version.return_value = "1.0.0"
+
+    phantom_item = ProgramItem(
+        name="PhantomApp",
+        id="app.phantom",
+        installed_version="1.0.0",
+        latest_version="2.0.0",
+        action=UpdateAction.AVAILABLE,
+        package_type=PackageType.WIN32_EXE,
+        is_verified_winget=True,
+    )
+
+    summary = engine.execute_batch_update([phantom_item])
+    assert summary.failed_count == 1
+    assert summary.updated_count == 0
+    assert phantom_item.outcome == UpdateOutcome.FAILED
+    assert phantom_item.installed_version == "1.0.0"
+    assert "still on version 1.0.0" in phantom_item.notes
+
+    # 2. Legitimate update: Winget reports success and disk version is confirmed as 2.0.0
+    mock_client.get_package_installed_version.return_value = "2.0.0"
+
+    legit_item = ProgramItem(
+        name="LegitApp",
+        id="app.legit",
+        installed_version="1.0.0",
+        latest_version="2.0.0",
+        action=UpdateAction.AVAILABLE,
+        package_type=PackageType.WIN32_EXE,
+        is_verified_winget=True,
+    )
+
+    summary2 = engine.execute_batch_update([legit_item])
+    assert summary2.updated_count == 1
+    assert summary2.failed_count == 0
+    assert legit_item.outcome == UpdateOutcome.UPDATED
+    assert legit_item.installed_version == "2.0.0"
+    assert "successfully updated" in legit_item.notes.lower()
+
+

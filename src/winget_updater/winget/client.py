@@ -267,6 +267,28 @@ class WingetClient:
             min_os_version=min_os,
         )
 
+    def get_package_installed_version(self, package_id: str) -> Optional[str]:
+        """Queries the current installed version for a single package via winget list --id <id> --exact."""
+        clean_id = package_id
+        for pfx in ("winget:", "msstore:"):
+            if clean_id.lower().startswith(pfx):
+                clean_id = clean_id[len(pfx):].strip()
+
+        cmd = [self.winget_path, "list", "--id", clean_id, "--exact", "--accept-source-agreements"]
+        try:
+            res = silent_run(cmd, timeout=20)
+            if res.returncode == 0 and res.stdout:
+                parsed = self._parse_table_output(res.stdout, is_upgrade_table=False)
+                for entry in parsed.values():
+                    if entry.id and entry.id.lower() == clean_id.lower():
+                        return entry.version
+                if parsed:
+                    first = next(iter(parsed.values()))
+                    return first.version
+        except Exception as e:
+            logger.debug(f"Error querying installed version for {clean_id}: {e}")
+        return None
+
     def upgrade_package(
         self,
         package_id: str,
@@ -274,20 +296,36 @@ class WingetClient:
         log_callback: Optional[Callable[[str], None]] = None,
     ) -> Tuple[bool, str]:
         """Upgrades a single verified package via winget upgrade --id <id>."""
+        clean_id = package_id
+        for pfx in ("winget:", "msstore:"):
+            if clean_id.lower().startswith(pfx):
+                clean_id = clean_id[len(pfx):].strip()
+
         if dry_run:
-            logger.info(f"[DRY-RUN] Would execute: winget upgrade --id '{package_id}' --exact")
+            logger.info(f"[DRY-RUN] Would execute: winget upgrade --id '{clean_id}' --exact")
             return True, "Simulated successful upgrade (dry run)"
 
         cmd = [
             self.winget_path,
             "upgrade",
-            "--id", package_id,
+            "--id", clean_id,
             "--exact",
             "--accept-source-agreements",
             "--accept-package-agreements",
             "--disable-interactivity",
         ]
-        logger.info(f"Executing winget upgrade for package: {package_id}")
+        logger.info(f"Executing winget upgrade for package: {clean_id}")
+
+        FAILURE_PATTERNS = (
+            "no applicable update found",
+            "no available upgrade found",
+            "no installed package found",
+            "multiple packages found",
+            "installer failed",
+            "failed in attempting to update",
+            "an unexpected error occurred",
+            "another installation is in progress",
+        )
 
         try:
             if log_callback:
@@ -296,13 +334,21 @@ class WingetClient:
                     line_callback=log_callback,
                     timeout=600,
                 )
+                low_out = (output_text or "").lower()
+                matched_fail = next((pat for pat in FAILURE_PATTERNS if pat in low_out), None)
+                if matched_fail:
+                    lines = [ln.strip() for ln in output_text.splitlines() if ln.strip()]
+                    err_msg = lines[-1] if lines else f"Failed with: {matched_fail}"
+                    logger.error(f"Winget reported failure for {clean_id}: {err_msg}")
+                    return False, err_msg
+
                 if ret_code == 0:
-                    logger.info(f"Successfully upgraded {package_id}")
+                    logger.info(f"Successfully upgraded {clean_id}")
                     return True, "Update completed successfully"
                 else:
                     lines = [ln.strip() for ln in output_text.splitlines() if ln.strip()]
                     err_msg = lines[-1] if lines else f"Exit code {ret_code}"
-                    logger.error(f"Failed to upgrade {package_id}: {err_msg}")
+                    logger.error(f"Failed to upgrade {clean_id}: {err_msg}")
                     return False, err_msg
             else:
                 res = silent_run(
@@ -313,18 +359,26 @@ class WingetClient:
                     errors="replace",
                     timeout=600,  # Allow up to 10 minutes for large downloads/installs
                 )
+                combined_out = f"{res.stdout or ''}\n{res.stderr or ''}".lower()
+                matched_fail = next((pat for pat in FAILURE_PATTERNS if pat in combined_out), None)
+                if matched_fail:
+                    lines = [ln.strip() for ln in (res.stderr or res.stdout or "").splitlines() if ln.strip()]
+                    err_msg = lines[-1] if lines else f"Failed with: {matched_fail}"
+                    logger.error(f"Winget reported failure for {clean_id}: {err_msg}")
+                    return False, err_msg
+
                 if res.returncode == 0:
-                    logger.info(f"Successfully upgraded {package_id}")
+                    logger.info(f"Successfully upgraded {clean_id}")
                     return True, "Update completed successfully"
                 else:
                     err_msg = res.stderr.strip() or res.stdout.strip() or f"Exit code {res.returncode}"
-                    logger.error(f"Failed to upgrade {package_id}: {err_msg}")
+                    logger.error(f"Failed to upgrade {clean_id}: {err_msg}")
                     return False, err_msg
         except subprocess.TimeoutExpired:
-            logger.error(f"winget upgrade for {package_id} timed out")
+            logger.error(f"winget upgrade for {clean_id} timed out")
             return False, "Upgrade timed out after 600 seconds"
         except Exception as e:
-            logger.error(f"Exception during winget upgrade of {package_id}: {e}")
+            logger.error(f"Exception during winget upgrade of {clean_id}: {e}")
             return False, str(e)
 
     def uninstall_package(self, package_id: str, dry_run: bool = False) -> Tuple[bool, str]:

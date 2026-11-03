@@ -227,26 +227,80 @@ class NpmAdapter(BaseSourceAdapter):
         except Exception as e:
             return False, f"Exception executing npm install: {e}"
 
+    def get_package_version(self, pkg_name: str) -> Optional[str]:
+        """Queries the current installed version of a specific global npm package."""
+        clean_name = pkg_name.replace("npm:", "").strip()
+
+        # 1. Direct filesystem check in node_modules across prefixes (fastest & most accurate)
+        prefixes = self.get_node_prefixes()
+        for prefix in prefixes:
+            pj = os.path.join(prefix, "node_modules", clean_name, "package.json")
+            if os.path.isfile(pj):
+                try:
+                    with open(pj, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        v = data.get("version")
+                        if v:
+                            return str(v).strip()
+                except Exception:
+                    pass
+
+        # 2. CLI check via npm list -g --depth=0 <clean_name> --json
+        for prefix in prefixes:
+            try:
+                cmd = [self.npm_path, "list", "-g", "--depth=0", clean_name, "--json", "--prefix", prefix]
+                res = silent_run(cmd, timeout=15)
+                if res.stdout:
+                    data = json.loads(res.stdout)
+                    deps = data.get("dependencies", {})
+                    if clean_name in deps:
+                        info = deps[clean_name]
+                        ver = info.get("version") if isinstance(info, dict) else info
+                        if ver:
+                            return str(ver).strip()
+            except Exception:
+                pass
+
+        # 3. Direct binary version check if package is npm or corepack
+        if clean_name.lower() == "npm":
+            try:
+                res = silent_run([self.npm_path, "--version"], timeout=10)
+                if res.returncode == 0 and res.stdout:
+                    return res.stdout.strip()
+            except Exception:
+                pass
+        elif clean_name.lower() == "corepack":
+            try:
+                cp_path = shutil.which("corepack") or "corepack"
+                res = silent_run([cp_path, "--version"], timeout=10)
+                if res.returncode == 0 and res.stdout:
+                    return res.stdout.strip()
+            except Exception:
+                pass
+
+        return None
+
     def install_update(
         self,
         item: ProgramItem,
         dry_run: bool = False,
         log_callback: Optional[Callable[[str], None]] = None,
     ) -> Tuple[bool, str]:
-        """Updates a global npm package using npm update -g."""
-        clean_name = item.name.replace("npm:", "")
+        """Updates a global npm package using npm install -g <pkg>@latest."""
+        clean_name = item.name.replace("npm:", "").strip()
         if dry_run:
-            return True, f"[Dry Run] Simulated npm update -g for '{clean_name}'"
+            return True, f"[Dry Run] Simulated npm install -g for '{clean_name}@latest'"
 
-        cmd = [self.npm_path, "update", "-g", clean_name]
+        # Use npm install -g <pkg>@latest to ensure major and breaking updates apply correctly
+        cmd = [self.npm_path, "install", "-g", f"{clean_name}@latest"]
         try:
             if log_callback:
-                ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=180)
+                ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=240)
                 if ret == 0:
                     return True, f"Successfully updated npm package '{clean_name}'"
                 lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
                 return False, f"npm update failed: {lines[-1] if lines else f'Code {ret}'}"
-            res = silent_run(cmd, timeout=180)
+            res = silent_run(cmd, timeout=240)
             if res.returncode == 0:
                 return True, f"Successfully updated npm package '{clean_name}'"
             return False, f"npm update failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"

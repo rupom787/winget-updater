@@ -212,3 +212,4 @@ class EditorialStartupSplashScreen(tk.Toplevel):
             except Exception:
                 pass
         self.destroy()
+

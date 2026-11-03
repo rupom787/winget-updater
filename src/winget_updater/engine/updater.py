@@ -162,6 +162,52 @@ class UpdateEngine:
 
         return summary
 
+    def query_real_installed_version(self, item: ProgramItem) -> Optional[str]:
+        """Queries the current installed version directly from package manager or system to verify update reality."""
+        source = (item.source or "").lower()
+        clean_name = item.name
+        pkg_id = item.id or item.name
+
+        # 1. NPM
+        if source == "npm" and self.source_mgr:
+            adapter = self.source_mgr.get_adapter("npm")
+            if adapter and hasattr(adapter, "get_package_version"):
+                ver = adapter.get_package_version(clean_name)
+                if ver and isinstance(ver, str):
+                    return ver
+
+        # 2. PIP
+        if source == "pip" and self.source_mgr:
+            adapter = self.source_mgr.get_adapter("pip")
+            if adapter and hasattr(adapter, "get_package_version"):
+                ver = adapter.get_package_version(clean_name)
+                if ver and isinstance(ver, str):
+                    return ver
+
+        # 3. WINGET / MSSTORE
+        if source in ("winget", "msstore", ""):
+            clean_id = pkg_id
+            for pfx in ("winget:", "msstore:"):
+                if clean_id.lower().startswith(pfx):
+                    clean_id = clean_id[len(pfx):].strip()
+            ver = self.client.get_package_installed_version(clean_id)
+            if ver and isinstance(ver, str):
+                return ver
+
+        # 4. Registry check for Win32 applications
+        try:
+            from winget_updater.discovery.registry import RegistryScanner
+            reg = RegistryScanner()
+            items = reg.scan_all()
+            for it in items:
+                if it.name.lower() == item.name.lower() or (it.id and item.id and it.id.lower() == item.id.lower()):
+                    if it.installed_version and isinstance(it.installed_version, str):
+                        return it.installed_version
+        except Exception:
+            pass
+
+        return None
+
     def _update_single_package(
         self,
         item: ProgramItem,
@@ -223,6 +269,9 @@ class UpdateEngine:
 
         # 6. Execute upgrade via source manager or fallback winget
         pkg_log_cb = (lambda line: log_callback(item, line)) if log_callback else None
+        orig_version = item.installed_version or ""
+        target_version = item.latest_version or ""
+
         try:
             source = (item.source or "").lower()
             if pkg_log_cb is not None:
@@ -235,17 +284,75 @@ class UpdateEngine:
                     success, message = self.source_mgr.install_update(item, dry_run=False)
                 else:
                     success, message = self.client.upgrade_package(pkg_id, dry_run=False)
+
             if success:
-                # Re-verify installed status post-installation
-                if item.latest_version:
-                    item.installed_version = item.latest_version
-                item.action = UpdateAction.UP_TO_DATE
-                item.outcome = UpdateOutcome.UPDATED
-                item.notes = f"Verified update: {item.name} updated to {item.installed_version}"
-                self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
-                summary.updated_count += 1
-                if item_complete_callback:
-                    item_complete_callback(item, True, item.notes)
+                # Real Post-Update Reality Verification:
+                verified_version = self.query_real_installed_version(item)
+                if not isinstance(verified_version, str):
+                    verified_version = None
+
+                actually_updated = False
+                if verified_version:
+                    from winget_updater.winget.version_comparator import compare_versions
+                    if target_version and verified_version == target_version:
+                        actually_updated = True
+                    elif orig_version and compare_versions(verified_version, orig_version) > 0:
+                        actually_updated = True
+                    elif not orig_version and verified_version:
+                        actually_updated = True
+
+                if actually_updated:
+                    item.installed_version = verified_version
+                    item.action = UpdateAction.UP_TO_DATE
+                    item.outcome = UpdateOutcome.UPDATED
+                    item.notes = f"Verified update: {item.name} successfully updated to {verified_version}"
+                    self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                    summary.updated_count += 1
+                    if item_complete_callback:
+                        item_complete_callback(item, True, item.notes)
+                elif verified_version and orig_version and verified_version == orig_version:
+                    # THE INSTALLER EXITED BUT THE VERSION NEVER CHANGED!
+                    # Do NOT falsely report "Updated"!
+                    item.installed_version = orig_version
+                    item.outcome = UpdateOutcome.FAILED
+                    err_msg = (
+                        f"Update failed to apply: {item.name} is still on version {orig_version} "
+                        f"(target was {target_version}). The installer exited without upgrading installed files. "
+                        f"An active process or missing administrator rights may have blocked file replacement."
+                    )
+                    item.notes = err_msg
+                    logger.error(err_msg)
+                    self.state_mgr.record_package_end(pkg_id, "failed", err_msg)
+                    summary.failed_count += 1
+                    if item_complete_callback:
+                        item_complete_callback(item, False, err_msg)
+                else:
+                    # Verified version couldn't be queried directly; check reboot status
+                    is_reb = False
+                    try:
+                        from winget_updater.engine.windows_update import WindowsUpdateManager
+                        is_reb, _ = WindowsUpdateManager.is_reboot_pending()
+                    except Exception:
+                        pass
+
+                    if is_reb:
+                        item.installed_version = target_version or item.installed_version
+                        item.action = UpdateAction.UP_TO_DATE
+                        item.outcome = UpdateOutcome.UPDATED
+                        item.notes = f"Update completed; system restart required to finalize {item.name}."
+                        self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        summary.updated_count += 1
+                        if item_complete_callback:
+                            item_complete_callback(item, True, item.notes)
+                    else:
+                        item.installed_version = target_version or item.installed_version
+                        item.action = UpdateAction.UP_TO_DATE
+                        item.outcome = UpdateOutcome.UPDATED
+                        item.notes = f"Update command finished for {item.name} ({target_version})."
+                        self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        summary.updated_count += 1
+                        if item_complete_callback:
+                            item_complete_callback(item, True, item.notes)
             else:
                 item.outcome = UpdateOutcome.FAILED
                 item.notes = f"Update failed: {message}"

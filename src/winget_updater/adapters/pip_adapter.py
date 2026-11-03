@@ -163,6 +163,21 @@ class PipAdapter(BaseSourceAdapter):
             return True, "Verified trusted PyPI repository"
         return False, "Not a pip package"
 
+    def get_package_version(self, pkg_name: str) -> Optional[str]:
+        """Queries the current installed version of a specific Python package."""
+        clean_name = pkg_name.replace("pip:", "").strip()
+        paths_to_query = self.all_python_paths or [self.python_path]
+        for py in paths_to_query:
+            try:
+                res = silent_run([py, "-m", "pip", "show", clean_name], timeout=15)
+                if res.returncode == 0 and res.stdout:
+                    for line in res.stdout.splitlines():
+                        if line.lower().startswith("version:"):
+                            return line.split(":", 1)[1].strip()
+            except Exception:
+                pass
+        return None
+
     def install_package(self, pkg_id: str, dry_run: bool = False) -> Tuple[bool, str]:
         """Installs a new package using pip install."""
         clean_name = pkg_id.replace("pip:", "")
