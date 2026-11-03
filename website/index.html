@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Software &amp; Package Updater — Windows 11 Edition</title>
+  <meta name="description" content="A cutting-edge Windows 11 software updater with ultra-premium glassmorphism UI, post-update reality verification, and 60 FPS hardware acceleration.">
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- FOUC Prevention Script (Modern Web Guidance) -->
+  <script>
+    try {
+      const storedTheme = localStorage.getItem("color-scheme") ?? "light dark";
+      document.querySelector('meta[name="color-scheme"]').content = storedTheme;
+      if (storedTheme === "dark") {
+        document.documentElement.classList.add("dream-mode");
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body class="wake-mode">
+
+  <!-- Interactive Custom Cursor (Hidden on touch/keyboard) -->
+  <div id="custom-cursor" class="custom-cursor" aria-hidden="true">
+    <div class="cursor-dot"></div>
+    <div class="cursor-crosshair"></div>
+  </div>
+
+  <!-- Enter Gate (Editorial Splash) -->
+  <div id="enter-gate" class="enter-gate" role="dialog" aria-modal="true" aria-label="Experience Entrance">
+    <div class="gate-content">
+      <div class="gate-meta">WINDOWS 11 EDITION // V2.4 &bull; DIRECTX 12 HARDWARE ACCELERATED</div>
+      <h1 class="gate-title">SOFTWARE &amp; PACKAGE<br>SYSTEM UPDATER</h1>
+      <p class="gate-status">INITIALIZING REPOSITORIES... [WINGET / MS STORE / NPM / PIP]</p>
+      <div class="gate-progress-track">
+        <div class="gate-progress-bar" id="gate-bar"></div>
+      </div>
+      <div class="gate-counter" id="gate-counter">00%</div>
+      <button id="gate-enter-btn" class="gate-enter-btn" style="display: none;">ENTER THE ENGINE &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Ambient Grid Background Lines -->
+  <div class="background-grid" aria-hidden="true">
+    <div class="grid-line"></div>
+    <div class="grid-line"></div>
+    <div class="grid-line"></div>
+    <div class="grid-line"></div>
+  </div>
+
+  <!-- Floating Glass Header -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a href="#hero" class="brand-monogram">
+        <span class="monogram-icon">&#x21bb;</span>
+        <span class="monogram-text">UPDATER.WIN11</span>
+      </a>
+      <nav class="header-nav" aria-label="Primary Navigation">
+        <a href="#manifesto" class="nav-link">Manifesto</a>
+        <a href="#disciplines" class="nav-link">Disciplines</a>
+        <a href="#showcase" class="nav-link">Showcase</a>
+        <a href="#benchmarks" class="nav-link">Benchmarks</a>
+        <a href="#download" class="nav-link nav-cta">Get v1.9.0</a>
+      </nav>
+      <div class="header-telemetry">
+        <span class="telemetry-pill live-pill"><span class="beacon-dot"></span> 60 FPS COMPOSE</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Section 1: Hero -->
+    <section id="hero" class="section hero-section">
+      <div class="container hero-container">
+        <div class="hero-header-meta">
+          <span class="meta-tag">WINDOWS 11 BUILD 26300 (64-BIT)</span>
+          <span class="meta-tag">DIRECTCOMPOSITION ACCELERATED</span>
+          <span class="meta-tag">STANDALONE 13.3 MB</span>
+        </div>
+
+        <h1 class="hero-headline">
+          Software for updating.<br>
+          <span class="italic-display">Systems for accelerating.</span>
+        </h1>
+
+        <p class="hero-subtext">
+          An ultra-premium Windows 11 utility merging native Acrylic &amp; Mica glassmorphism with our post-update reality verification engine. Designed to eradicate phantom installer failures, eliminate synchronous repaint lag, and orchestrate Winget, Store, Pip, and Npm in one high-performance interface.
+        </p>
+
+        <!-- 3D Hardware Canvas Container -->
+        <div class="hero-3d-wrapper" id="hero-3d-wrapper">
+          <canvas id="hero-canvas" class="hero-canvas" aria-label="Interactive 3D WebGL Monolith Visualizer"></canvas>
+          <div class="canvas-hint" aria-hidden="true">&bull; INTERACTIVE 3D &bull; DRAG OR HOVER TO ROTATE &bull;</div>
+        </div>
+
+        <div class="hero-actions">
+          <a href="#download" class="btn btn-primary">Download Executable (v1.9.0)</a>
+          <a href="#showcase" class="btn btn-secondary">Explore Live Showcase &darr;</a>
+        </div>
+
+        <div class="scroll-prompt" aria-hidden="true">
+          <span class="scroll-label">SCROLL TO INSPECT ARCHITECTURE</span>
+          <span class="scroll-arrow">&darr;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Manifesto / About -->
+    <section id="manifesto" class="section manifesto-section">
+      <div class="container">
+        <div class="section-label">01 // MANIFESTO &amp; PHILOSOPHY</div>
+        <h2 class="editorial-statement">
+          "Software updates on Windows were fundamentally broken: phantom installers exit with code 0 while files on disk remain stale, UIs stutter under GDI compositing locks, and package registries remain hopelessly scattered."
+        </h2>
+
+        <div class="manifesto-grid">
+          <div class="manifesto-col">
+            <h3 class="col-title">The Phantom Update Dilemma</h3>
+            <p>
+              Traditional package managers celebrate an exit code <code>0</code> as an unquestioned victory. In reality, breaking changes, silent MSI aborts, and global npm semver restrictions frequently leave the previous binary intact on your disk while labeling the process "Complete". Winget Updater implements active Post-Update Reality Verification, recursively auditing Authenticode hashes and disk binaries before giving a green checkmark.
+            </p>
+          </div>
+          <div class="manifesto-col">
+            <h3 class="col-title">DirectComposition Architecture</h3>
+            <p>
+              Legacy tools lock the Win32 message pump with synchronous GDI redraw loops, resulting in 100ms+ stuttering on every mouse hover. We rewrote our presentation pipeline around Windows 11 DWM hardware backdrops, decoupled background worker threads, and calibrated 120Hz smooth wheel velocity for an interface that glides at 0.0% idle CPU utilization.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Disciplines (6 Numbered Architectural Rows) -->
+    <section id="disciplines" class="section disciplines-section">
+      <div class="container">
+        <div class="section-label">02 // ENGINE DISCIPLINES</div>
+        <div class="disciplines-table">
+          <article class="discipline-row">
+            <div class="d-num">01</div>
+            <div class="d-name">Multi-Source Registry Orchestration</div>
+            <div class="d-desc">Unified inventory scanner querying Microsoft Store (msstore), Windows Package Manager (winget), Python PIP, and global Node packages concurrently.</div>
+            <div class="d-badge">MULTI-REPO</div>
+          </article>
+          <article class="discipline-row">
+            <div class="d-num">02</div>
+            <div class="d-name">Post-Update Reality Verification</div>
+            <div class="d-desc">Subsurface disk binary interrogation and Windows Uninstall registry validation ensuring the upgraded version truly runs on disk.</div>
+            <div class="d-badge">TRUTH ENGINE</div>
+          </article>
+          <article class="discipline-row">
+            <div class="d-num">03</div>
+            <div class="d-name">Hardware DirectComposition &amp; Mica</div>
+            <div class="d-desc">Native DWM backdrop integration bypassing legacy GDI double-buffering locks for fluid 60/120 FPS high-refresh rate displays.</div>
+            <div class="d-badge">GPU NATIVE</div>
+          </article>
+          <article class="discipline-row">
+            <div class="d-num">04</div>
+            <div class="d-name">Non-Blocking Micro-Scheduler</div>
+            <div class="d-desc">Autonomous queue polling and sleeping canvas renderers yielding a verified 0.0% idle CPU and zero memory leaks.</div>
+            <div class="d-badge">0.0% CPU</div>
+          </article>
+          <article class="discipline-row">
+            <div class="d-num">05</div>
+            <div class="d-name">Cryptographic Authenticode &amp; Hashes</div>
+            <div class="d-desc">Strict SHA-256 binary validation and signature checks guarding against supply chain anomalies and package hijacking.</div>
+            <div class="d-badge">SECURITY</div>
+          </article>
+          <article class="discipline-row">
+            <div class="d-num">06</div>
+            <div class="d-name">Automated Rollback &amp; Restore Points</div>
+            <div class="d-desc">One-click system snapshot creation prior to bulk updates with persistent exclusions, pin rules, and recovery manifests.</div>
+            <div class="d-badge">RESILIENCE</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Selected Works / Interactive Showcase -->
+    <section id="showcase" class="section showcase-section">
+      <div class="container">
+        <div class="showcase-header">
+          <div class="section-label">03 // SELECTED WORKS &amp; WORKFLOWS</div>
+          <div class="showcase-counter" id="showcase-counter">01 / 03</div>
+        </div>
+
+        <div class="showcase-cards">
+          <!-- Card 1: The Glass Table -->
+          <article class="showcase-card active" data-index="1">
+            <div class="card-media">
+              <img src="assets/updater-desktop-mockup.jpg" alt="Winget Updater glassmorphism table interface" loading="lazy" class="card-img">
+            </div>
+            <div class="card-info">
+              <span class="card-category">01 &bull; CORE TABLE &bull; SCANNER</span>
+              <h3 class="card-title">Translucent Acrylic Glass Table</h3>
+              <p class="card-body">
+                Scans 200+ local applications in under 2 seconds. Features color-coded status tags (Up to date, Updates available, Review, Excluded), multi-category filtering, instant search debouncing, and 3-row velocity mousewheel scrolling.
+              </p>
+              <ul class="card-specs">
+                <li><span>Scanner Time:</span> <strong>1.8s</strong></li>
+                <li><span>Table Refresh:</span> <strong>120Hz</strong></li>
+                <li><span>Mica Composition:</span> <strong>Active</strong></li>
+              </ul>
+            </div>
+          </article>
+
+          <!-- Card 2: Editorial Startup Screen -->
+          <article class="showcase-card" data-index="2">
+            <div class="card-media">
+              <img src="assets/startup-editorial-screen.jpg" alt="Editorial luxury startup loading screen" loading="lazy" class="card-img">
+            </div>
+            <div class="card-info">
+              <span class="card-category">02 &bull; SPLASH &bull; TELEMETRY</span>
+              <h3 class="card-title">Editorial Startup Loading System</h3>
+              <p class="card-body">
+                Obsidian dark theme with neon cyan &amp; crimson rose edge flares. Masked display typography, technical status lines, and micro-animated percentage counters deliver an editorial luxury studio aesthetic from the moment the binary launches.
+              </p>
+              <ul class="card-specs">
+                <li><span>Boot Latency:</span> <strong>&lt; 350ms</strong></li>
+                <li><span>Theme Mode:</span> <strong>Obsidian</strong></li>
+                <li><span>DirectX 12:</span> <strong>Verified</strong></li>
+              </ul>
+            </div>
+          </article>
+
+          <!-- Card 3: Live Modal & Diagnostics -->
+          <article class="showcase-card" data-index="3">
+            <div class="card-media card-media-interactive">
+              <div class="interactive-preview-box">
+                <div class="preview-header">
+                  <div class="preview-dot red"></div>
+                  <div class="preview-dot yellow"></div>
+                  <div class="preview-dot green"></div>
+                  <span class="preview-title">LIVE_UPDATE_STREAM // WINGET</span>
+                </div>
+                <div class="preview-body">
+                  <div class="live-circle-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-check">&#10003;</div>
+                  </div>
+                  <div class="live-log-text">
+                    <p class="log-line text-cyan">&gt; Resolving package manifest: Git.Git...</p>
+                    <p class="log-line text-green">&gt; SHA256 Authenticode signature: PASS</p>
+                    <p class="log-line text-yellow">&gt; Executing silent installer...</p>
+                    <p class="log-line text-magenta">&gt; Verified disk version: 5.2.4.2 &bull; SUCCESS</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-info">
+              <span class="card-category">03 &bull; EXECUTION &bull; MODAL</span>
+              <h3 class="card-title">Real-Time Live Update Pipeline</h3>
+              <p class="card-body">
+                Features revolving neon gradient arcs that smoothly morph into drawn SVG checkmarks upon completion. Delivers real-time download speed meters, non-blocking UI queue draining, and automatic rollback on failure.
+              </p>
+              <ul class="card-specs">
+                <li><span>Morph Duration:</span> <strong>280ms</strong></li>
+                <li><span>FPS Target:</span> <strong>60 FPS</strong></li>
+                <li><span>Safety Rollback:</span> <strong>Instant</strong></li>
+              </ul>
+            </div>
+          </article>
+        </div>
+
+        <!-- Showcase Navigation Buttons -->
+        <div class="showcase-controls">
+          <button class="showcase-btn prev" id="showcase-prev" aria-label="Previous Project">&larr; Previous</button>
+          <button class="showcase-btn next" id="showcase-next" aria-label="Next Project">Next Project &rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Recognition & 14 Benchmarks -->
+    <section id="benchmarks" class="section benchmarks-section">
+      <div class="container">
+        <div class="section-label">04 // VERIFIED BENCHMARKS &amp; SPECS</div>
+        <h2 class="editorial-title">Engineered to standards other updaters ignore.</h2>
+        
+        <div class="benchmarks-grid">
+          <div class="benchmark-item">
+            <span class="b-cat">PERFORMANCE</span>
+            <span class="b-val">0.0%</span>
+            <span class="b-lbl">Idle CPU Utilization</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">LATENCY</span>
+            <span class="b-val">&lt; 16ms</span>
+            <span class="b-lbl">Per-Frame Response (120Hz)</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">PORTABILITY</span>
+            <span class="b-val">13.3 MB</span>
+            <span class="b-lbl">Single Standalone Executable</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">TEST COVERAGE</span>
+            <span class="b-val">97 / 97</span>
+            <span class="b-lbl">Automated Unit Tests Passing</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">ACCURACY</span>
+            <span class="b-val">100%</span>
+            <span class="b-lbl">Phantom Update Elimination</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">CATALOG</span>
+            <span class="b-val">6,000+</span>
+            <span class="b-lbl">Official Windows Packages</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">SECURITY</span>
+            <span class="b-val">SHA-256</span>
+            <span class="b-lbl">Strict Binary Authenticode Audit</span>
+          </div>
+          <div class="benchmark-item">
+            <span class="b-cat">WINDOWS</span>
+            <span class="b-val">10 / 11</span>
+            <span class="b-lbl">Windows 11 (21H2-24H2) Native</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Download & Terminal Quickstart -->
+    <section id="download" class="section download-section">
+      <div class="container download-container">
+        <div class="section-label">05 // ACQUISITION &amp; TERMINAL</div>
+        <h2 class="download-headline">Upgrade your system.<br>Zero phantom updates.</h2>
+        <p class="download-sub">
+          Download the pre-compiled, self-contained Windows 11 executable or install via your preferred terminal. No dependencies or runtime setup required.
+        </p>
+
+        <!-- Terminal Snippet Box -->
+        <div class="terminal-box">
+          <div class="terminal-bar">
+            <span class="term-dot"></span>
+            <span class="term-dot"></span>
+            <span class="term-dot"></span>
+            <span class="term-title">PowerShell / Windows Terminal</span>
+            <button class="term-copy-btn" id="copy-btn" aria-label="Copy terminal command">Copy</button>
+          </div>
+          <pre class="terminal-code"><code id="code-snippet">winget install --id rupom.WingetUpdater -e</code></pre>
+        </div>
+
+        <div class="download-actions">
+          <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe" class="btn btn-primary btn-large" download>
+            <span>Download WingetUpdater.exe (v1.9.0)</span>
+            <span class="btn-subtext">Direct Binary &bull; 13.3 MB &bull; Signed</span>
+          </a>
+          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large">
+            <span>View Source on GitHub &rarr;</span>
+            <span class="btn-subtext">Open Source &bull; MIT License</span>
+          </a>
+        </div>
+
+        <div class="checksum-info">
+          <span class="cs-label">SHA-256 CHECKSUM:</span>
+          <code class="cs-hash">A616301FAF42225548A5F6F6F716A1880D396BC2695C7E323F58979C43D708A4</code>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-left">
+        <div class="footer-brand">SOFTWARE &amp; PACKAGE UPDATER</div>
+        <p class="footer-copy">&copy; 2026 Crafted with precision for Windows 11. All rights reserved.</p>
+      </div>
+      <div class="footer-right">
+        <a href="#hero" class="back-to-top">BACK TO TOP &uarr;</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Fixed Bottom Wake / Dream Mode Toggle Switch -->
+  <div class="dream-toggle-container">
+    <button id="dream-mode-btn" class="dream-mode-btn" aria-label="Toggle Dream Mode vs Wake Mode">
+      <span class="toggle-mode-text" id="toggle-text">WAKE [●] / DREAM [○]</span>
+    </button>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toast-pill" class="toast-pill" role="status" aria-live="polite"></div>
+
+  <!-- Scripts: Local Three.js + Main Controller -->
+  <script src="assets/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
