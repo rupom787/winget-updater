@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.29_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.30_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
 </p>
 
@@ -25,7 +25,7 @@
 
 **Software & Package Updater** is a universal multi-package manager and system updater desktop application engineered specifically for **Windows 11**. It audits installed software across all PC subsystems, discovers and orchestrates packages across **WinGet, Scoop, Chocolatey, Python (Pip), Node.js (Npm), and Microsoft Store**, evaluates hardware and OS compatibility before each update, and installs verified software securely with Administrator privileges.
 
-Featuring a **Clean White and Velvet Burgundy** aesthetic with anti-aliased rounded canvas controls, native Windows 11 rounded window corners, and **direct GPU hardware acceleration** (NVIDIA GeForce, AMD Radeon, Intel Arc), the application delivers instant responsiveness with zero UI freezing across 300+ item inventories.
+Featuring a cutting-edge **3-Column Acrylic Glassmorphism & Velvet Burgundy** UI with iOS-style animated capsule toggle switches, anti-aliased rounded canvas controls, native Windows 11 rounded window corners, and **direct GPU hardware acceleration** (NVIDIA GeForce, AMD Radeon, Intel Arc), the application delivers instant responsiveness with zero UI freezing across 300+ item inventories.
 
 ---
 
@@ -35,10 +35,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.29 MB | `86594B2E88C3759065CAA73DDDB51C446CFBC01A25FBCE5A902D71D038BC2E15` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.30 MB | `B3F54FF4D6FE45A6F399CB73B46BEC534F041C99A1C246CA68D68923F796B687` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.8.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.
@@ -46,6 +46,15 @@ No Python installation, compilers, or complex setup required. Simply download th
 ---
 
 ## ✨ Key Features
+
+### 🪟 1. Cutting-Edge 3-Column Glassmorphism Architecture
+- **Dedicated Left Sidebar:** Translucent dark navigation pane titled *"Software Updater / Windows 11 Edition"*, pill navigation tabs with active crimson glow and active red dot indicator (`●`), rounded search bar, category dropdown, and bottom-left telemetry specs in mint green (`#10b981`) and cyan (`#38bdf8`).
+- **Expansive Center Canvas:** Title bar displaying total programs scanned and verified updates ready, translucent table view with colourful app icons and emerald green pill highlighted row for up-to-date/selected software, and bottom blurred glass panel reading *"Select an application to view details"*.
+- **Dedicated Right Action Sidebar:**
+  - **iOS-Style Animated Capsule Switches:** `Auto-close running`, `Create restore point`, and `Dry run (simulate only)` switches with smooth 60 FPS thumb slide animation.
+  - **Action Deck Stack:** Stacked glowing action buttons: `Update selected`, burgundy `Update all eligible` (`#881337`), glowing deep crimson `⚡ Complete system update` (`#9f1239`), and `Check for updates` (`#be123c`).
+  - **Selected Application Action Pills:** Compact rounded pill grid for instant actions: `[ Exclude ] [ Folder ]`, `[ Copy ID ] [ Pin ] [ Skip ]`, `[ Uninstall ] [ Update application ]`.
+- **Top Utility Bar:** System metrics badges (`CPU: 23%`, `RAM: 9.2/15.8 GB`, `GPU: GeForce RTX 2050 🟢`), rounded utility pills (`Restore Stack`, `Backup Stack`, `Refresh sources`, `Exclusions`, `Schedule`, `Settings`), and animated iOS-style `Light / Dark` mode toggle switch.
 
 ### 🎬 1. Animated Live Update Progress Popup (60 FPS Micro-Motion)
 - **Revolving Neon Gradient Arc Spinner:** High-performance Tkinter canvas rotating with inertia and ambient energy rings, automatically morphing into an animated drawn emerald checkmark with cubic ease-out upon batch completion.

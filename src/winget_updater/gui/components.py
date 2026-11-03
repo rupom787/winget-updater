@@ -24,12 +24,12 @@ class SidebarNavigation(tk.Frame):
 
     # Human-readable filter view definitions
     FILTERS = [
-        ("All Software", "All applications"),
-        ("Updates Available", "Updates available"),
-        ("Cannot Update", "Review & cannot update"),
-        ("Up to Date", "Installed & current"),
-        ("Ignored Updates", "Excluded applications"),
-        ("Software Catalog", "Discover & install"),
+        ("All Software", "⊞ All applications"),
+        ("Updates Available", "🔔 Updates available"),
+        ("Cannot Update", "📄 Review & cannot update"),
+        ("Up to Date", "🕒 Installed & current"),
+        ("Ignored Updates", "⊘ Excluded applications"),
+        ("Software Catalog", "⚙️ Discover & install"),
     ]
 
     def __init__(
@@ -306,31 +306,47 @@ class SidebarNavigation(tk.Frame):
             w = canvas.winfo_width() or 230
             h = 36
 
+            is_dark = getattr(self.theme, "name", "light") == "dark"
             if is_active:
-                # Rounded burgundy pill
-                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#881337")
-                text_color = "#ffffff"
-                badge_bg = "#9f1239"
-                badge_fg = "#ffffff"
-            elif is_hovered:
-                # Tactile rose highlight on hover
-                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#fff1f2", outline="#f43f5e", width=1)
-                text_color = "#881337"
-                badge_bg = "#ffe4e6"
-                badge_fg = "#881337"
-            else:
-                # Clean white rounded card
-                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#ffffff", outline="#f3d5d9", width=1)
-                text_color = "#1e293b"
-                if internal_name == "Updates Available" and count not in ("0", ""):
-                    badge_bg = "#fef2f2"
-                    badge_fg = "#991b1b"
-                elif internal_name == "Cannot Update" and count not in ("0", ""):
-                    badge_bg = "#fef3c7"
-                    badge_fg = "#92400e"
+                if is_dark:
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#2a0814", outline="#be123c", width=1.5)
+                    text_color = "#ffffff"
+                    badge_bg = "#1e293b"
+                    badge_fg = "#f8fafc"
                 else:
-                    badge_bg = "#faf6f6"
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#881337")
+                    text_color = "#ffffff"
+                    badge_bg = "#9f1239"
+                    badge_fg = "#ffffff"
+            elif is_hovered:
+                if is_dark:
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#1e293b", outline="#334155", width=1)
+                    text_color = "#f8fafc"
+                    badge_bg = "#334155"
+                    badge_fg = "#f8fafc"
+                else:
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#fff1f2", outline="#f43f5e", width=1)
+                    text_color = "#881337"
+                    badge_bg = "#ffe4e6"
+                    badge_fg = "#881337"
+            else:
+                if is_dark:
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#111827", outline="#1e293b", width=1)
+                    text_color = "#94a3b8"
+                    badge_bg = "#1e293b"
                     badge_fg = "#64748b"
+                else:
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#ffffff", outline="#f3d5d9", width=1)
+                    text_color = "#1e293b"
+                    if internal_name == "Updates Available" and count not in ("0", ""):
+                        badge_bg = "#fef2f2"
+                        badge_fg = "#991b1b"
+                    elif internal_name == "Cannot Update" and count not in ("0", ""):
+                        badge_bg = "#fef3c7"
+                        badge_fg = "#92400e"
+                    else:
+                        badge_bg = "#faf6f6"
+                        badge_fg = "#64748b"
 
             # Label text
             canvas.create_text(
@@ -342,23 +358,30 @@ class SidebarNavigation(tk.Frame):
                 anchor="w",
             )
 
-            # Badge pill on right
-            badge_text = str(count)
-            badge_w = max(24, len(badge_text) * 7 + 12)
-            bx2 = w - 12
-            bx1 = bx2 - badge_w
-            by1 = (h - 20) / 2
-            by2 = by1 + 20
+            # Badge pill on right or active glowing dot
+            if is_active and count in ("0", "", None):
+                # Active glowing red indicator dot
+                dot_cx = w - 18
+                dot_cy = h / 2
+                canvas.create_oval(dot_cx - 5, dot_cy - 5, dot_cx + 5, dot_cy + 5, fill="#be123c", outline="")
+                canvas.create_oval(dot_cx - 3, dot_cy - 3, dot_cx + 3, dot_cy + 3, fill="#f43f5e", outline="")
+            elif count not in ("0", "", None):
+                badge_text = str(count)
+                badge_w = max(22, len(badge_text) * 7 + 10)
+                bx2 = w - 12
+                bx1 = bx2 - badge_w
+                by1 = (h - 20) / 2
+                by2 = by1 + 20
 
-            draw_rounded_rect(canvas, bx1, by1, bx2, by2, radius=10, fill=badge_bg)
-            canvas.create_text(
-                (bx1 + bx2) / 2,
-                (by1 + by2) / 2,
-                text=badge_text,
-                fill=badge_fg,
-                font=("Segoe UI", 8, "bold"),
-                anchor="center",
-            )
+                draw_rounded_rect(canvas, bx1, by1, bx2, by2, radius=10, fill=badge_bg)
+                canvas.create_text(
+                    (bx1 + bx2) / 2,
+                    (by1 + by2) / 2,
+                    text=badge_text,
+                    fill=badge_fg,
+                    font=("Segoe UI", 8, "bold"),
+                    anchor="center",
+                )
 
     def _on_filter_hover(self, filter_name: str, entering: bool) -> None:
         self.hovered_filter = filter_name if entering else None
@@ -428,12 +451,20 @@ class SidebarNavigation(tk.Frame):
         self.btn_clear_search.config(bg=theme.bg_input, fg=theme.fg_muted)
         self.lbl_cat_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
         self.telemetry_box.config(bg=theme.bg_card, highlightbackground=theme.border)
-        self.lbl_tele_sys.config(bg=theme.bg_card, fg=theme.accent_emerald)
-        if hasattr(self, "lbl_tele_gpu"):
-            self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#38bdf8" if theme.name == "dark" else "#0369a1")
-        self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
-        if hasattr(self, "lbl_tele_managers"):
-            self.lbl_tele_managers.config(bg=theme.bg_card, fg="#c084fc" if theme.name == "dark" else "#7c3aed")
+        if getattr(theme, "name", "light") == "dark":
+            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#38bdf8")
+            if hasattr(self, "lbl_tele_gpu"):
+                self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#10b981")
+            self.lbl_tele_mode.config(bg=theme.bg_card, fg="#64748b")
+            if hasattr(self, "lbl_tele_managers"):
+                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#38bdf8")
+        else:
+            self.lbl_tele_sys.config(bg=theme.bg_card, fg=theme.accent_emerald)
+            if hasattr(self, "lbl_tele_gpu"):
+                self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#0369a1")
+            self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
+            if hasattr(self, "lbl_tele_managers"):
+                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#7c3aed")
         for d in self.filter_buttons.values():
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
@@ -766,12 +797,13 @@ class DetailsDrawer(tk.Frame):
         """Populates the details drawer with program metadata and activates permissible actions."""
         self.current_item = item
         if not item:
-            self.lbl_name.config(text="Select an application to view details", fg="#64748b")
-            self.lbl_pub.config(text="Publisher: —")
-            self.lbl_versions.config(text="Installed: —  •  Latest: —  •  Source: —")
-            self.lbl_id_path.config(text="Package ID: —  •  Location: —")
+            self.lbl_name.config(text="Select an application to view details", fg=self.theme.fg_muted)
+            self.lbl_pub.config(text="")
+            self.lbl_versions.config(text="")
+            self.lbl_id_path.config(text="")
             self.lbl_notes.config(text="")
-            self.status_pill.set_badge("", "#faf6f6", "#faf6f6")
+            self.avatar_canvas.pack_forget()
+            self.status_pill.pack_forget()
             self.btn_update.config(state="disabled", text="Update application")
             self.btn_exclude.config(state="disabled")
             self.btn_open_folder.config(state="disabled")
@@ -783,8 +815,12 @@ class DetailsDrawer(tk.Frame):
             self.btn_website.pack_forget()
             return
 
+        # Restore widgets for selected item
+        self.avatar_canvas.pack(side=tk.LEFT, padx=(0, 10), before=self.lbl_name)
+        self.status_pill.pack(side=tk.LEFT, padx=(12, 0))
+
         # Name & Publisher
-        self.lbl_name.config(text=item.name, fg="#0f172a")
+        self.lbl_name.config(text=item.name, fg=self.theme.fg_primary)
         pub_text = item.publisher or "Standard Publisher"
         self.lbl_pub.config(text=f"Publisher: {pub_text}")
 
@@ -1251,8 +1287,8 @@ class ProgramTableView(tk.Frame):
         )
 
         self.tree.tag_configure("tag_available", background=theme.tag_available_bg, foreground=theme.tag_available_fg)
-        self.tree.tag_configure("tag_uptodate", background=theme.bg_table, foreground=theme.tag_uptodate_fg)
-        self.tree.tag_configure("tag_uptodate_alt", background=theme.bg_table_alt, foreground=theme.tag_uptodate_alt_fg)
+        self.tree.tag_configure("tag_uptodate", background=theme.tag_uptodate_bg, foreground=theme.tag_uptodate_fg)
+        self.tree.tag_configure("tag_uptodate_alt", background=theme.tag_uptodate_alt_bg, foreground=theme.tag_uptodate_alt_fg)
         self.tree.tag_configure("tag_downgrade", background=theme.tag_downgrade_bg, foreground=theme.tag_downgrade_fg)
         self.tree.tag_configure("tag_fallback", background=theme.tag_fallback_bg, foreground=theme.tag_fallback_fg)
         self.tree.tag_configure("tag_unverified", background=theme.tag_unverified_bg, foreground=theme.tag_unverified_fg)

@@ -241,6 +241,25 @@ def test_rounded_button_and_badge():
     badge.set_badge("Pending", bg_color="#fef3c7", fg_color="#92400e")
     assert badge.text == "Pending"
 
+    # IOSStyleToggleSwitch
+    from winget_updater.gui.rounded_widgets import IOSStyleToggleSwitch
+    var = tk.BooleanVar(value=False)
+    sw_events = []
+    sw = IOSStyleToggleSwitch(root, variable=var, command=lambda v: sw_events.append(v))
+    assert sw.is_on is False
+
+    sw._on_click(None)
+    assert sw.is_on is True
+    assert var.get() is True
+    assert sw_events == [True]
+
+    var.set(False)
+    assert sw.is_on is False
+
+    sw.set_colors(on_color="#be123c", off_color="#1e293b", parent_bg="#0c1222")
+    assert sw.on_color == "#be123c"
+    assert sw.off_color == "#1e293b"
+
     root.destroy()
 
 

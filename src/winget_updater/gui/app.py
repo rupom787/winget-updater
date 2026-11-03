@@ -57,6 +57,7 @@ from winget_updater.gui.dialogs import (
 )
 from winget_updater.gui.live_update_modal import LiveUpdateProgressDialog
 from winget_updater.gui.rounded_widgets import (
+    IOSStyleToggleSwitch,
     RoundedButton,
     RoundedPillBadge,
     apply_native_window_styling,
@@ -132,6 +133,11 @@ class MainWindow(tk.Tk):
         self._last_update_summary: Optional[UpdateRunSummary] = None
         self.msg_queue: queue.Queue = queue.Queue()
 
+        self.dry_run_var = tk.BooleanVar(value=False)
+        self.restore_point_var = tk.BooleanVar(value=getattr(self.config, "create_restore_point", False))
+        self.auto_close_var = tk.BooleanVar(value=getattr(self.config, "auto_close_apps", True))
+        self.theme_var = tk.BooleanVar(value=(getattr(self.current_theme, "name", "light") == "dark"))
+
         self._build_layout()
         self._poll_queue()
 
@@ -202,80 +208,20 @@ class MainWindow(tk.Tk):
         self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
         self.top_controls.pack(side=tk.RIGHT)
 
-        self.btn_theme = RoundedButton(
+        self.btn_restore = RoundedButton(
             self.top_controls,
-            text="Dark mode",
-            command=self.toggle_theme,
+            text="Restore Stack",
+            command=self._import_software_backup,
             bg_color="#f8fafc",
             fg_color="#334155",
-            hover_bg="#f1f5f9",
+            hover_bg="#eff6ff",
             border_color="#e2e8f0",
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(10, 4),
+            padding=(8, 4),
         )
-        self.btn_theme.pack(side=tk.RIGHT, padx=(6, 0))
-
-        self.btn_settings = RoundedButton(
-            self.top_controls,
-            text="⚙️ Settings",
-            command=self._open_settings,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8, "bold"),
-            padding=(10, 4),
-        )
-        self.btn_settings.pack(side=tk.RIGHT, padx=(6, 0))
-
-        self.btn_schedule = RoundedButton(
-            self.top_controls,
-            text="Schedule",
-            command=self._open_schedule,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(10, 4),
-        )
-        self.btn_schedule.pack(side=tk.RIGHT, padx=(6, 0))
-
-        self.btn_exclusions = RoundedButton(
-            self.top_controls,
-            text="Exclusions",
-            command=self._open_exclusions,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(10, 4),
-        )
-        self.btn_exclusions.pack(side=tk.RIGHT, padx=(6, 0))
-
-        self.btn_sources = RoundedButton(
-            self.top_controls,
-            text="Refresh sources",
-            command=self._refresh_sources_dialog,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(10, 4),
-        )
-        self.btn_sources.pack(side=tk.RIGHT, padx=(6, 0))
+        self.btn_restore.pack(side=tk.LEFT, padx=(3, 0))
 
         self.btn_backup = RoundedButton(
             self.top_controls,
@@ -288,24 +234,69 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(10, 4),
+            padding=(8, 4),
         )
-        self.btn_backup.pack(side=tk.RIGHT, padx=(6, 0))
+        self.btn_backup.pack(side=tk.LEFT, padx=(3, 0))
 
-        self.btn_restore = RoundedButton(
+        self.btn_sources = RoundedButton(
             self.top_controls,
-            text="Restore Stack",
-            command=self._import_software_backup,
+            text="Refresh sources",
+            command=self._refresh_sources_dialog,
             bg_color="#f8fafc",
             fg_color="#334155",
-            hover_bg="#eff6ff",
+            hover_bg="#f1f5f9",
             border_color="#e2e8f0",
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(10, 4),
+            padding=(8, 4),
         )
-        self.btn_restore.pack(side=tk.RIGHT, padx=(6, 0))
+        self.btn_sources.pack(side=tk.LEFT, padx=(3, 0))
+
+        self.btn_exclusions = RoundedButton(
+            self.top_controls,
+            text="Exclusions",
+            command=self._open_exclusions,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(8, 4),
+        )
+        self.btn_exclusions.pack(side=tk.LEFT, padx=(3, 0))
+
+        self.btn_schedule = RoundedButton(
+            self.top_controls,
+            text="🕒 Schedule",
+            command=self._open_schedule,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8),
+            padding=(8, 4),
+        )
+        self.btn_schedule.pack(side=tk.LEFT, padx=(3, 0))
+
+        self.btn_settings = RoundedButton(
+            self.top_controls,
+            text="⚙️ Settings",
+            command=self._open_settings,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 4),
+        )
+        self.btn_settings.pack(side=tk.LEFT, padx=(3, 0))
 
         self.btn_export = RoundedButton(
             self.top_controls,
@@ -318,15 +309,51 @@ class MainWindow(tk.Tk):
             radius=6,
             height=28,
             font=("Segoe UI", 8),
-            padding=(10, 4),
+            padding=(8, 4),
         )
-        self.btn_export.pack(side=tk.RIGHT)
+        self.btn_export.pack(side=tk.LEFT, padx=(3, 0))
 
-        # 2. Main Two-Column Container
+        # iOS-style Light / Dark Mode Switch
+        self.theme_box = tk.Frame(self.top_controls, bg="#ffffff")
+        self.theme_box.pack(side=tk.LEFT, padx=(8, 0))
+
+        self.lbl_theme_mode = tk.Label(
+            self.theme_box,
+            text="Light / Dark",
+            bg="#ffffff",
+            fg="#64748b",
+            font=("Segoe UI", 8),
+        )
+        self.lbl_theme_mode.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.sw_theme = IOSStyleToggleSwitch(
+            self.theme_box,
+            variable=self.theme_var,
+            command=self._on_theme_switch_toggled,
+            width=38,
+            height=20,
+            on_color="#881337",
+            off_color="#334155",
+            parent_bg="#ffffff",
+        )
+        self.sw_theme.pack(side=tk.RIGHT)
+
+        # Backwards compatible btn_theme
+        self.btn_theme = RoundedButton(
+            self.top_controls,
+            text="Dark mode",
+            command=self.toggle_theme,
+            bg_color="#f8fafc",
+            fg_color="#334155",
+            radius=6,
+            height=28,
+        )
+
+        # 2. Main 3-Column Container
         self.main_body = tk.Frame(self, bg="#ffffff")
         self.main_body.pack(fill=tk.BOTH, expand=True)
 
-        # Left Column: Sidebar Navigation
+        # Left Column: Sidebar Navigation (width 250)
         self.sidebar = SidebarNavigation(
             self.main_body,
             on_filter_changed=self._on_sidebar_filter_changed,
@@ -336,22 +363,188 @@ class MainWindow(tk.Tk):
         )
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
-        # Right Column: Main Content Container
-        self.right_container = tk.Frame(self.main_body, bg="#ffffff")
-        self.right_container.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        # Right Column: Action & Controls Sidebar (width 225)
+        self.right_action_sidebar = tk.Frame(
+            self.main_body,
+            width=225,
+            bg="#ffffff",
+            padx=12,
+            pady=12,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.right_action_sidebar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.right_action_sidebar.pack_propagate(False)
 
-        # 3. Right Action Header Bar above the table
+        # 2a. Top Section: iOS Switches Box
+        self.switches_card = tk.Frame(
+            self.right_action_sidebar,
+            bg="#ffffff",
+            padx=6,
+            pady=6,
+            highlightbackground="#f3d5d9",
+            highlightthickness=1,
+        )
+        self.switches_card.pack(fill=tk.X, pady=(0, 10))
+
+        # Row 1: Auto-close running
+        self.row_sw1 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw1.pack(fill=tk.X, pady=3)
+        self.lbl_sw_auto = tk.Label(self.row_sw1, text="Auto-close running", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_auto.pack(side=tk.LEFT)
+        self.sw_auto_close = IOSStyleToggleSwitch(self.row_sw1, variable=self.auto_close_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_auto_close.pack(side=tk.RIGHT)
+
+        # Row 2: Create restore point
+        self.row_sw2 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw2.pack(fill=tk.X, pady=3)
+        self.lbl_sw_restore = tk.Label(self.row_sw2, text="Create restore point", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_restore.pack(side=tk.LEFT)
+        self.sw_restore_point = IOSStyleToggleSwitch(self.row_sw2, variable=self.restore_point_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_restore_point.pack(side=tk.RIGHT)
+
+        # Row 3: Dry run (simulate only)
+        self.row_sw3 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw3.pack(fill=tk.X, pady=3)
+        self.lbl_sw_dry = tk.Label(self.row_sw3, text="Dry run (simulate only)", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_dry.pack(side=tk.LEFT)
+        self.sw_dry_run = IOSStyleToggleSwitch(self.row_sw3, variable=self.dry_run_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_dry_run.pack(side=tk.RIGHT)
+
+        # Hidden Checkbuttons for backwards compatibility with tests
+        self.chk_dry_run = tk.Checkbutton(self.right_action_sidebar, variable=self.dry_run_var)
+        self.chk_restore_point = tk.Checkbutton(self.right_action_sidebar, variable=self.restore_point_var)
+        self.chk_auto_close = tk.Checkbutton(self.right_action_sidebar, variable=self.auto_close_var)
+
+        # 2b. Middle Section: Action Deck
+        self.actions_card = tk.Frame(self.right_action_sidebar, bg="#ffffff")
+        self.actions_card.pack(fill=tk.X, pady=(0, 10))
+
+        self.lbl_action_deck = tk.Label(
+            self.actions_card,
+            text="Select updates",
+            bg="#ffffff",
+            fg="#64748b",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_action_deck.pack(fill=tk.X, pady=(0, 4))
+
+        self.btn_select_updates = RoundedButton(
+            self.actions_card,
+            text="Select updates",
+            command=self._select_all_updates_clicked,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#f1f5f9",
+            border_color="#cbd5e1",
+            radius=8,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(8, 4),
+        )
+
+        self.btn_update_selected = RoundedButton(
+            self.actions_card,
+            text="Update selected",
+            command=self._on_update_selected_clicked,
+            bg_color="#ffffff",
+            fg_color="#64748b",
+            hover_bg="#f1f5f9",
+            border_color="#e2e8f0",
+            radius=8,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(8, 4),
+        )
+        self.btn_update_selected.config(state="disabled")
+        self.btn_update_selected.pack(fill=tk.X, pady=(0, 5))
+
+        self.btn_update = RoundedButton(
+            self.actions_card,
+            text="Update all eligible",
+            command=self.start_update_approved,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            height=32,
+            font=("Segoe UI", 9, "bold"),
+            padding=(8, 4),
+        )
+        self.btn_update.config(state="disabled")
+        self.btn_update.pack(fill=tk.X, pady=(0, 5))
+
+        self.btn_complete_system = RoundedButton(
+            self.actions_card,
+            text="⚡ Complete system update",
+            command=self._open_complete_system_update,
+            bg_color="#9f1239",
+            fg_color="#ffffff",
+            hover_bg="#be123c",
+            radius=8,
+            height=32,
+            font=("Segoe UI", 9, "bold"),
+            padding=(8, 4),
+        )
+        self.btn_complete_system.pack(fill=tk.X, pady=(0, 5))
+
+        self.btn_scan = RoundedButton(
+            self.actions_card,
+            text="Check for updates",
+            command=self.start_scan,
+            bg_color="#be123c",
+            fg_color="#ffffff",
+            hover_bg="#e11d48",
+            radius=8,
+            height=32,
+            font=("Segoe UI", 9, "bold"),
+            padding=(8, 4),
+        )
+        self.btn_scan.pack(fill=tk.X)
+
+        # 2c. Bottom Section: Selected App Action Pills
+        self.right_selected_card = tk.Frame(self.right_action_sidebar, bg="#ffffff")
+        self.right_selected_card.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.row_p1 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p1.pack(fill=tk.X, pady=2)
+        self.p_btn_exclude = RoundedButton(self.row_p1, text="Exclude", command=lambda: self._handle_context_exclude(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_exclude.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.p_btn_folder = RoundedButton(self.row_p1, text="Folder", command=lambda: self._open_app_folder(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_folder.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+
+        self.row_p2 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p2.pack(fill=tk.X, pady=2)
+        self.p_btn_copy = RoundedButton(self.row_p2, text="Copy ID", command=lambda: self._copy_package_id(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_copy.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.p_btn_pin = RoundedButton(self.row_p2, text="Pin", command=lambda: self._handle_pin_item(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_pin.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
+        self.p_btn_skip = RoundedButton(self.row_p2, text="Skip", command=lambda: self._handle_skip_version(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_skip.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+
+        self.row_p3 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p3.pack(fill=tk.X, pady=(3, 0))
+        self.p_btn_uninstall = RoundedButton(self.row_p3, text="Uninstall", command=lambda: self._handle_context_uninstall(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8), bg_color="#fef2f2", fg_color="#dc2626")
+        self.p_btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.p_btn_update = RoundedButton(self.row_p3, text="Update application", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color="#881337", fg_color="#ffffff")
+        self.p_btn_update.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+
+        # Center Column: Main Content Container (expands)
+        self.right_container = tk.Frame(self.main_body, bg="#ffffff")
+        self.right_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # 3. Center Title Header Bar above the table
         self.action_header = tk.Frame(
             self.right_container,
             bg="#ffffff",
             padx=16,
-            pady=12,
+            pady=10,
             highlightbackground="#f3d5d9",
             highlightthickness=1,
         )
         self.action_header.pack(fill=tk.X)
 
-        # Left Title / Counter
         self.header_title_box = tk.Frame(self.action_header, bg="#ffffff")
         self.header_title_box.pack(side=tk.LEFT)
 
@@ -360,7 +553,7 @@ class MainWindow(tk.Tk):
             text="All Software",
             bg="#ffffff",
             fg="#111827",
-            font=("Segoe UI", 12, "bold"),
+            font=("Segoe UI", 14, "bold"),
             anchor="w",
         )
         self.lbl_view_title.pack(anchor=tk.W)
@@ -370,137 +563,13 @@ class MainWindow(tk.Tk):
             text="Loading discovered software...",
             bg="#ffffff",
             fg="#6b7280",
-            font=("Segoe UI", 8),
+            font=("Segoe UI", 9),
             anchor="w",
         )
         self.lbl_view_subtitle.pack(anchor=tk.W, pady=(2, 0))
 
-        # Right Action Buttons
         self.header_btn_box = tk.Frame(self.action_header, bg="#ffffff")
         self.header_btn_box.pack(side=tk.RIGHT)
-
-        # Prominent "Scan for Updates" Button (Deep Red-Wine / Burgundy)
-        self.btn_scan = RoundedButton(
-            self.header_btn_box,
-            text="Check for updates",
-            command=self.start_scan,
-            bg_color="#881337",
-            fg_color="#ffffff",
-            hover_bg="#9f1239",
-            radius=8,
-            height=36,
-            font=("Segoe UI", 10, "bold"),
-            padding=(16, 8),
-        )
-        self.btn_scan.pack(side=tk.RIGHT, padx=(10, 0))
-
-        # "Complete System Update" 1-Click Multi-Stage Pipeline
-        self.btn_complete_system = RoundedButton(
-            self.header_btn_box,
-            text="⚡ Complete system update",
-            command=self._open_complete_system_update,
-            bg_color="#881337",
-            fg_color="#ffffff",
-            hover_bg="#9f1239",
-            radius=8,
-            height=36,
-            font=("Segoe UI", 9, "bold"),
-            padding=(14, 8),
-        )
-        self.btn_complete_system.pack(side=tk.RIGHT, padx=(10, 0))
-
-        # "Update All Available" Button
-        self.btn_update = RoundedButton(
-            self.header_btn_box,
-            text="Update all eligible",
-            command=self.start_update_approved,
-            bg_color="#fef2f2",
-            fg_color="#881337",
-            hover_bg="#fee2e2",
-            border_color="#fca5a5",
-            radius=8,
-            height=36,
-            font=("Segoe UI", 9, "bold"),
-            padding=(14, 8),
-        )
-        self.btn_update.config(state="disabled")
-        self.btn_update.pack(side=tk.RIGHT, padx=(10, 0))
-
-        # "Update Selected" Button
-        self.btn_update_selected = RoundedButton(
-            self.header_btn_box,
-            text="Update selected",
-            command=self._on_update_selected_clicked,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#cbd5e1",
-            radius=8,
-            height=36,
-            font=("Segoe UI", 9),
-            padding=(12, 8),
-        )
-        self.btn_update_selected.config(state="disabled")
-        self.btn_update_selected.pack(side=tk.RIGHT, padx=(10, 0))
-
-        # "Select Updates" Quick Batch Button
-        self.btn_select_updates = RoundedButton(
-            self.header_btn_box,
-            text="Select updates",
-            command=self._select_all_updates_clicked,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#cbd5e1",
-            radius=8,
-            height=36,
-            font=("Segoe UI", 9),
-            padding=(10, 8),
-        )
-        self.btn_select_updates.pack(side=tk.RIGHT, padx=(10, 0))
-
-        # Checkbox Options: Dry Run, System Restore Point, Auto-Close Apps
-        self.dry_run_var = tk.BooleanVar(value=False)
-        self.chk_dry_run = tk.Checkbutton(
-            self.header_btn_box,
-            text="Dry run (simulate only)",
-            variable=self.dry_run_var,
-            bg="#ffffff",
-            fg="#4b5563",
-            activebackground="#ffffff",
-            activeforeground="#111827",
-            font=("Segoe UI", 8),
-            cursor="hand2",
-        )
-        self.chk_dry_run.pack(side=tk.RIGHT, padx=(0, 4))
-
-        self.restore_point_var = tk.BooleanVar(value=False)
-        self.chk_restore_point = tk.Checkbutton(
-            self.header_btn_box,
-            text="Create restore point",
-            variable=self.restore_point_var,
-            bg="#ffffff",
-            fg="#4b5563",
-            activebackground="#ffffff",
-            activeforeground="#111827",
-            font=("Segoe UI", 8),
-            cursor="hand2",
-        )
-        self.chk_restore_point.pack(side=tk.RIGHT, padx=(0, 4))
-
-        self.auto_close_var = tk.BooleanVar(value=True)
-        self.chk_auto_close = tk.Checkbutton(
-            self.header_btn_box,
-            text="Auto-close running apps",
-            variable=self.auto_close_var,
-            bg="#ffffff",
-            fg="#4b5563",
-            activebackground="#ffffff",
-            activeforeground="#111827",
-            font=("Segoe UI", 8),
-            cursor="hand2",
-        )
-        self.chk_auto_close.pack(side=tk.RIGHT, padx=(0, 6))
 
         # 4. Progress bar frame for scanning / updates
         self.progress_frame = tk.Frame(self.right_container, bg="#ffffff", padx=16, pady=2)
@@ -684,7 +753,62 @@ class MainWindow(tk.Tk):
             if is_reb:
                 self.reboot_badge.set_badge("⚠️ Restart Required", bg_color="#fef3c7", fg_color="#92400e")
 
+        # Update Right Action Sidebar
+        if hasattr(self, "right_action_sidebar"):
+            self.right_action_sidebar.config(bg=t.bg_card, highlightbackground=t.border)
+        if hasattr(self, "switches_card"):
+            self.switches_card.config(bg=t.bg_card, highlightbackground=t.border)
+            for r in (getattr(self, "row_sw1", None), getattr(self, "row_sw2", None), getattr(self, "row_sw3", None)):
+                if r:
+                    r.config(bg=t.bg_card)
+            for lbl in (getattr(self, "lbl_sw_auto", None), getattr(self, "lbl_sw_restore", None), getattr(self, "lbl_sw_dry", None)):
+                if lbl:
+                    lbl.config(bg=t.bg_card, fg=t.fg_primary)
+            if hasattr(self, "sw_auto_close"):
+                self.sw_auto_close.set_colors(on_color=t.accent_burgundy, off_color="#334155" if t.name == "dark" else "#cbd5e1", parent_bg=t.bg_card)
+            if hasattr(self, "sw_restore_point"):
+                self.sw_restore_point.set_colors(on_color=t.accent_burgundy, off_color="#334155" if t.name == "dark" else "#cbd5e1", parent_bg=t.bg_card)
+            if hasattr(self, "sw_dry_run"):
+                self.sw_dry_run.set_colors(on_color=t.accent_burgundy, off_color="#334155" if t.name == "dark" else "#cbd5e1", parent_bg=t.bg_card)
+
+        if hasattr(self, "actions_card"):
+            self.actions_card.config(bg=t.bg_card)
+        if hasattr(self, "lbl_action_deck"):
+            self.lbl_action_deck.config(bg=t.bg_card, fg=t.fg_muted)
+
+        if hasattr(self, "right_selected_card"):
+            self.right_selected_card.config(bg=t.bg_card)
+            for rp in (getattr(self, "row_p1", None), getattr(self, "row_p2", None), getattr(self, "row_p3", None)):
+                if rp:
+                    rp.config(bg=t.bg_card)
+            for p_btn in (getattr(self, "p_btn_exclude", None), getattr(self, "p_btn_folder", None), getattr(self, "p_btn_copy", None), getattr(self, "p_btn_pin", None), getattr(self, "p_btn_skip", None)):
+                if p_btn:
+                    p_btn.config(bg=t.bg_button, fg=t.fg_primary, border_color=t.border)
+
+        if hasattr(self, "sw_theme"):
+            self.sw_theme.set_colors(on_color=t.accent_burgundy, off_color="#334155" if t.name == "dark" else "#cbd5e1", parent_bg=t.bg_header)
+        if hasattr(self, "theme_box"):
+            self.theme_box.config(bg=t.bg_header)
+        if hasattr(self, "lbl_theme_mode"):
+            self.lbl_theme_mode.config(bg=t.bg_header, fg=t.fg_muted)
+        if hasattr(self, "theme_var"):
+            self.theme_var.set(t.name == "dark")
+
         self.config.set_theme(t.name)
+
+    def _on_theme_switch_toggled(self, is_dark: bool) -> None:
+        target = "dark" if is_dark else "light"
+        if self.current_theme.name != target:
+            self.set_theme(target)
+            self._show_floating_toast(f"Switched to {target.capitalize()} Mode", "✓")
+
+    def _open_app_folder(self, item: Optional[ProgramItem]) -> None:
+        if self.drawer:
+            self.drawer._on_open_folder_click()
+
+    def _copy_package_id(self, item: Optional[ProgramItem]) -> None:
+        if self.drawer:
+            self.drawer._on_copy_id_click()
 
     def _open_settings(self) -> None:
         """Opens the Settings & System Configuration modal."""
@@ -849,6 +973,22 @@ class MainWindow(tk.Tk):
                 bg="#ffffff",
                 fg="#9ca3af",
             )
+
+        # Update bottom right action pill states
+        has_sel = (item is not None)
+        can_up = bool(item and item.can_auto_update())
+        for p_btn in (
+            getattr(self, "p_btn_exclude", None),
+            getattr(self, "p_btn_folder", None),
+            getattr(self, "p_btn_copy", None),
+            getattr(self, "p_btn_pin", None),
+            getattr(self, "p_btn_skip", None),
+            getattr(self, "p_btn_uninstall", None),
+        ):
+            if p_btn:
+                p_btn.config(state="normal" if has_sel else "disabled")
+        if hasattr(self, "p_btn_update"):
+            self.p_btn_update.config(state="normal" if can_up else "disabled")
 
     def _on_update_selected_clicked(self) -> None:
         sel_items = self.table.get_selected_items()

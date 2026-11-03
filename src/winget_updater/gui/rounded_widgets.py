@@ -349,3 +349,116 @@ class RoundedPillBadge(tk.Canvas):
         if fg_color:
             self.fg_color = fg_color
         self._redraw()
+
+
+class IOSStyleToggleSwitch(tk.Canvas):
+    """Modern iOS / macOS styled animated pill toggle switch."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        variable: Optional[tk.BooleanVar] = None,
+        command: Optional[Callable[[bool], None]] = None,
+        width: int = 40,
+        height: int = 22,
+        on_color: str = "#881337",
+        off_color: str = "#334155",
+        thumb_color: str = "#ffffff",
+        parent_bg: str = "#111827",
+    ):
+        self.variable = variable
+        self.command = command
+        self.sw_width = width
+        self.sw_height = height
+        self.on_color = on_color
+        self.off_color = off_color
+        self.thumb_color = thumb_color
+        self.parent_bg = parent_bg
+
+        self.is_on = bool(self.variable.get()) if self.variable else False
+        self.current_x = float(self.sw_width - self.sw_height + 2) if self.is_on else 2.0
+        self.target_x = self.current_x
+        self._animating = False
+
+        super().__init__(
+            parent,
+            width=self.sw_width,
+            height=self.sw_height,
+            bg=parent_bg,
+            highlightthickness=0,
+            cursor="hand2",
+        )
+
+        self.bind("<Button-1>", self._on_click)
+        if self.variable:
+            self.variable.trace_add("write", self._on_var_changed)
+
+        self._draw_switch()
+
+    def _on_click(self, event=None) -> None:
+        self.is_on = not self.is_on
+        if self.variable:
+            self.variable.set(self.is_on)
+        self.target_x = float(self.sw_width - self.sw_height + 2) if self.is_on else 2.0
+        self._start_animation()
+        if self.command:
+            try:
+                self.command(self.is_on)
+            except Exception:
+                pass
+
+    def _on_var_changed(self, *args) -> None:
+        if self.variable:
+            val = bool(self.variable.get())
+            if val != self.is_on:
+                self.is_on = val
+                self.target_x = float(self.sw_width - self.sw_height + 2) if self.is_on else 2.0
+                self._start_animation()
+
+    def _start_animation(self) -> None:
+        if not self._animating:
+            self._animating = True
+            self._animate_step()
+
+    def _animate_step(self) -> None:
+        diff = self.target_x - self.current_x
+        if abs(diff) < 0.8:
+            self.current_x = self.target_x
+            self._animating = False
+            self._draw_switch()
+            return
+
+        self.current_x += diff * 0.35
+        self._draw_switch()
+        self.after(16, self._animate_step)
+
+    def _draw_switch(self) -> None:
+        self.delete("all")
+        w = self.sw_width
+        h = self.sw_height
+        rad = h / 2.0
+
+        bg_col = self.on_color if self.is_on else self.off_color
+        draw_rounded_rect(self, 1, 1, w - 1, h - 1, radius=rad, fill=bg_col)
+
+        # Thumb circle
+        r = (h - 6) / 2.0
+        thumb_x = self.current_x + r + 1
+        thumb_y = h / 2.0
+
+        self.create_oval(
+            thumb_x - r,
+            thumb_y - r,
+            thumb_x + r,
+            thumb_y + r,
+            fill=self.thumb_color,
+            outline="",
+        )
+
+    def set_colors(self, on_color: str, off_color: str, parent_bg: str) -> None:
+        self.on_color = on_color
+        self.off_color = off_color
+        self.parent_bg = parent_bg
+        self.config(bg=parent_bg)
+        self._draw_switch()
+
