@@ -294,6 +294,7 @@ class RoundedPillBadge(tk.Canvas):
         bg_color: str = "#f1f5f9",
         fg_color: str = "#475569",
         border_color: Optional[str] = None,
+        radius: Optional[int] = None,
         font: Tuple[str, int, str] = ("Segoe UI", 8, "bold"),
         height: int = 24,
         parent_bg: str = "#ffffff",
@@ -302,6 +303,7 @@ class RoundedPillBadge(tk.Canvas):
         self.bg_color = bg_color
         self.fg_color = fg_color
         self.border_color = border_color
+        self.radius = radius
         self.font = font
         self.fixed_height = height
         self.parent_bg = parent_bg
@@ -329,7 +331,8 @@ class RoundedPillBadge(tk.Canvas):
             draw_kwargs["outline"] = self.border_color
             draw_kwargs["width"] = 1
 
-        draw_rounded_rect(self, 1, 1, w - 2, h - 2, radius=h / 2, **draw_kwargs)
+        rad = self.radius if self.radius is not None else h / 2
+        draw_rounded_rect(self, 1, 1, w - 2, h - 2, radius=rad, **draw_kwargs)
         self.create_text(
             w / 2,
             h / 2,

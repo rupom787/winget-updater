@@ -26,6 +26,7 @@ class SidebarNavigation(tk.Frame):
     FILTERS = [
         ("All Software", "All applications"),
         ("Updates Available", "Updates available"),
+        ("Cannot Update", "Review & cannot update"),
         ("Up to Date", "Installed & current"),
         ("Ignored Updates", "Excluded applications"),
         ("Software Catalog", "Discover & install"),
@@ -56,6 +57,7 @@ class SidebarNavigation(tk.Frame):
         self.theme: ThemeColors = LIGHT_THEME
 
         self.current_filter = "All Software"
+        self.hovered_filter: Optional[str] = None
         self._debounce_timer: Optional[str] = None
 
         # 1. App Title / Brand
@@ -117,6 +119,8 @@ class SidebarNavigation(tk.Frame):
             }
 
             btn_canvas.bind("<Button-1>", lambda e, f=internal_name: self._on_filter_click(f))
+            btn_canvas.bind("<Enter>", lambda e, f=internal_name: self._on_filter_hover(f, True))
+            btn_canvas.bind("<Leave>", lambda e, f=internal_name: self._on_filter_hover(f, False))
 
         # Separator line
         self.sep1 = tk.Frame(self, bg="#f3d5d9", height=1)
@@ -266,12 +270,13 @@ class SidebarNavigation(tk.Frame):
         self._render_navigation_items()
 
     def _render_navigation_items(self) -> None:
-        """Draws rounded pill tabs for each sidebar navigation item."""
+        """Draws rounded pill tabs for each sidebar navigation item with smooth hover & active styling."""
         for internal_name, data in self.filter_buttons.items():
             canvas = data["canvas"]
             display_label = data["display_label"]
             count = data["count"]
             is_active = (internal_name == self.current_filter)
+            is_hovered = (internal_name == self.hovered_filter) and not is_active
 
             canvas.delete("all")
             w = canvas.winfo_width() or 230
@@ -283,6 +288,12 @@ class SidebarNavigation(tk.Frame):
                 text_color = "#ffffff"
                 badge_bg = "#9f1239"
                 badge_fg = "#ffffff"
+            elif is_hovered:
+                # Tactile rose highlight on hover
+                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#fff1f2", outline="#f43f5e", width=1)
+                text_color = "#881337"
+                badge_bg = "#ffe4e6"
+                badge_fg = "#881337"
             else:
                 # Clean white rounded card
                 draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#ffffff", outline="#f3d5d9", width=1)
@@ -290,6 +301,9 @@ class SidebarNavigation(tk.Frame):
                 if internal_name == "Updates Available" and count not in ("0", ""):
                     badge_bg = "#fef2f2"
                     badge_fg = "#991b1b"
+                elif internal_name == "Cannot Update" and count not in ("0", ""):
+                    badge_bg = "#fef3c7"
+                    badge_fg = "#92400e"
                 else:
                     badge_bg = "#faf6f6"
                     badge_fg = "#64748b"
@@ -322,6 +336,10 @@ class SidebarNavigation(tk.Frame):
                 anchor="center",
             )
 
+    def _on_filter_hover(self, filter_name: str, entering: bool) -> None:
+        self.hovered_filter = filter_name if entering else None
+        self._render_navigation_items()
+
     def _on_filter_click(self, filter_name: str) -> None:
         self.current_filter = filter_name
         self._render_navigation_items()
@@ -347,18 +365,28 @@ class SidebarNavigation(tk.Frame):
         if self.on_category_changed:
             self.on_category_changed(self.cat_var.get())
 
-    def update_counts(self, total: int, updates: int, uptodate: int, ignored: int) -> None:
+    def update_counts(
+        self,
+        total: int,
+        updates: int,
+        uptodate: int,
+        ignored: int,
+        unverified: int = 0,
+    ) -> None:
         """Updates live numeric badges on sidebar navigation items."""
         if "All Software" in self.filter_buttons:
             self.filter_buttons["All Software"]["count"] = str(total)
         if "Updates Available" in self.filter_buttons:
             self.filter_buttons["Updates Available"]["count"] = str(updates)
+        if "Cannot Update" in self.filter_buttons:
+            self.filter_buttons["Cannot Update"]["count"] = str(unverified)
         if "Up to Date" in self.filter_buttons:
             self.filter_buttons["Up to Date"]["count"] = str(uptodate)
         if "Ignored Updates" in self.filter_buttons:
             self.filter_buttons["Ignored Updates"]["count"] = str(ignored)
         if "Software Catalog" in self.filter_buttons:
             self.filter_buttons["Software Catalog"]["count"] = "6k+"
+        self._render_navigation_items()
         self._render_navigation_items()
 
     def apply_theme(self, theme: ThemeColors) -> None:
@@ -896,6 +924,133 @@ class DetailsDrawer(tk.Frame):
             self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
 
 
+class DiagnosticsResolutionBanner(tk.Frame):
+    """Frosted amber banner surfaced above table when filtering software that cannot auto-update.
+    Provides clear context on missing manifests or publisher variance, plus 1-click batch auto-resolution.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_auto_resolve_all: Optional[Callable[[], None]] = None,
+        on_open_help: Optional[Callable[[], None]] = None,
+    ):
+        super().__init__(
+            parent,
+            bg="#fffbeb",
+            highlightbackground="#fde68a",
+            highlightthickness=1,
+            padx=14,
+            pady=8,
+        )
+        self.on_auto_resolve_all = on_auto_resolve_all
+        self.on_open_help = on_open_help
+
+        # Left: Icon & Explanatory text
+        self.left_col = tk.Frame(self, bg="#fffbeb")
+        self.left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.title_row = tk.Frame(self.left_col, bg="#fffbeb")
+        self.title_row.pack(anchor="w")
+
+        self.lbl_badge = RoundedPillBadge(
+            self.title_row,
+            text="DIAGNOSTIC INSPECTOR",
+            bg_color="#fef3c7",
+            fg_color="#92400e",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            height=20,
+            parent_bg="#fffbeb",
+        )
+        self.lbl_badge.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.lbl_headline = tk.Label(
+            self.title_row,
+            text="Software Requiring Review or Lacking Public Manifests",
+            bg="#fffbeb",
+            fg="#78350f",
+            font=("Segoe UI", 9, "bold"),
+        )
+        self.lbl_headline.pack(side=tk.LEFT)
+
+        self.lbl_desc = tk.Label(
+            self.left_col,
+            text="These applications cannot update automatically due to publisher name differences, ambiguous matches, or missing repository IDs. Review reasons below or use 1-click unlock tools.",
+            bg="#fffbeb",
+            fg="#92400e",
+            font=("Segoe UI", 8),
+            anchor="w",
+            justify=tk.LEFT,
+        )
+        self.lbl_desc.pack(anchor="w", pady=(2, 0))
+
+        # Right: Quick action buttons
+        self.right_actions = tk.Frame(self, bg="#fffbeb")
+        self.right_actions.pack(side=tk.RIGHT, padx=(12, 0))
+
+        self.btn_auto_resolve = RoundedButton(
+            self.right_actions,
+            text="⚡ Auto-Approve Closest Matches",
+            command=self._on_auto_resolve_click,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            width=200,
+            height=28,
+            parent_bg="#fffbeb",
+        )
+        self.btn_auto_resolve.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_help = RoundedButton(
+            self.right_actions,
+            text="❓ Why Can't These Update?",
+            command=self._on_help_click,
+            bg_color="#ffffff",
+            fg_color="#78350f",
+            border_color="#fcd34d",
+            hover_bg="#fef3c7",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=165,
+            height=28,
+            parent_bg="#fffbeb",
+        )
+        self.btn_help.pack(side=tk.LEFT)
+
+    def _on_auto_resolve_click(self) -> None:
+        if self.on_auto_resolve_all:
+            self.on_auto_resolve_all()
+
+    def _on_help_click(self) -> None:
+        if self.on_open_help:
+            self.on_open_help()
+
+    def set_stats(self, count: int, unverified: int, no_source: int) -> None:
+        """Updates banner summary text with live counts."""
+        txt = (
+            f"Showing {count} items: {unverified} awaiting confirmation (publisher/name difference), "
+            f"{no_source} with no public winget manifest. Select any item to view diagnosis & bind package."
+        )
+        self.lbl_desc.config(text=txt)
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        is_dark = (theme.name == "dark")
+        bg_col = "#261908" if is_dark else "#fffbeb"
+        border_col = "#78350f" if is_dark else "#fde68a"
+        fg_col = "#fef3c7" if is_dark else "#78350f"
+        desc_col = "#fef08a" if is_dark else "#92400e"
+
+        self.config(bg=bg_col, highlightbackground=border_col)
+        self.left_col.config(bg=bg_col)
+        self.title_row.config(bg=bg_col)
+        self.lbl_headline.config(bg=bg_col, fg=fg_col)
+        self.lbl_desc.config(bg=bg_col, fg=desc_col)
+        self.right_actions.config(bg=bg_col)
+
+
 class ProgramTableView(tk.Frame):
     """4-Column Installed Software Table view with clear status pills, virtualized rendering,
     and extended multi-selection batch capabilities.
@@ -1149,6 +1304,59 @@ class ProgramTableView(tk.Frame):
                     self.on_select_item(None)
 
         _insert_chunk(0)
+
+    def update_item(self, item: ProgramItem) -> None:
+        """Updates the tree row values and status badge for a single program item in-place."""
+        for iid, existing in self.items_by_iid.items():
+            if existing is item or (existing.name == item.name and existing.id == item.id):
+                if item.outcome == UpdateOutcome.UPDATED:
+                    status_str = "Updated"
+                    tag = "tag_uptodate"
+                elif item.outcome == UpdateOutcome.SIMULATED:
+                    status_str = "Simulated"
+                    tag = "tag_uptodate"
+                elif item.outcome == UpdateOutcome.FAILED:
+                    status_str = "Failed"
+                    tag = "tag_incompat"
+                elif item.action == UpdateAction.AVAILABLE:
+                    status_str = "Update available"
+                    tag = "tag_available"
+                elif item.action == UpdateAction.UP_TO_DATE:
+                    status_str = "Up to date"
+                    tag = "tag_uptodate"
+                elif item.action == UpdateAction.UNVERIFIED:
+                    status_str = "Could not verify"
+                    tag = "tag_unverified"
+                elif item.action == UpdateAction.SCAN_FAILED:
+                    status_str = "Scan failed"
+                    tag = "tag_incompat"
+                elif item.action == UpdateAction.EXCLUDED:
+                    status_str = "Excluded"
+                    tag = "tag_ignored"
+                elif item.action == UpdateAction.NEWER_THAN_SOURCE:
+                    status_str = "Newer than source"
+                    tag = "tag_downgrade"
+                elif item.action == UpdateAction.VENDOR_FALLBACK:
+                    status_str = "Vendor fallback"
+                    tag = "tag_fallback"
+                elif item.action == UpdateAction.NO_SOURCE:
+                    status_str = "No update source"
+                    tag = "tag_nosource"
+                else:
+                    status_str = item.action.value
+                    tag = "tag_nosource"
+
+                values = (
+                    item.name,
+                    item.installed_version or "Unknown",
+                    item.latest_version or "—",
+                    status_str,
+                )
+                try:
+                    self.tree.item(iid, values=values, tags=(tag,))
+                except Exception:
+                    pass
+                break
 
     def get_selected_items(self) -> List[ProgramItem]:
         """Returns all currently selected ProgramItem models."""

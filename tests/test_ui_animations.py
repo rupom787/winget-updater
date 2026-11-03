@@ -448,6 +448,74 @@ def test_complete_system_update_dialog_init():
     root.destroy()
 
 
+def test_diagnostics_resolution_banner_and_help_dialog():
+    root = tk.Tk()
+    root.withdraw()
+
+    from winget_updater.gui.components import DiagnosticsResolutionBanner
+    from winget_updater.gui.dialogs import CannotUpdateHelpDialog
+
+    resolved_called = []
+    help_called = []
+
+    banner = DiagnosticsResolutionBanner(
+        root,
+        on_auto_resolve_all=lambda: resolved_called.append(True),
+        on_open_help=lambda: help_called.append(True),
+    )
+    banner.set_stats(count=5, unverified=3, no_source=2)
+    assert "Showing 5 items" in banner.lbl_desc.cget("text")
+    assert "3 awaiting confirmation" in banner.lbl_desc.cget("text")
+
+    banner._on_auto_resolve_click()
+    assert resolved_called == [True]
+
+    banner._on_help_click()
+    assert help_called == [True]
+
+    help_dlg = CannotUpdateHelpDialog(root)
+    assert help_dlg.winfo_exists()
+    assert "Software Verification" in help_dlg.title()
+
+    help_dlg.destroy()
+    root.destroy()
+
+
+def test_cannot_update_filter_and_batch_auto_resolve():
+    import tempfile
+    from pathlib import Path
+    from winget_updater.gui.app import MainWindow
+    from winget_updater.config import ConfigManager
+    from winget_updater.models import ProgramItem, UpdateAction
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        cfg = ConfigManager(base_dir=Path(tmp_dir))
+        app = MainWindow(config_manager=cfg)
+        app.withdraw()
+
+        item_avail = ProgramItem(name="App One", action=UpdateAction.AVAILABLE, is_verified_winget=True)
+        item_unver = ProgramItem(name="App Two", action=UpdateAction.UNVERIFIED)
+        item_nosrc = ProgramItem(name="App Three", action=UpdateAction.NO_SOURCE)
+        item_uptodate = ProgramItem(name="App Four", action=UpdateAction.UP_TO_DATE)
+
+        app.all_programs = [item_avail, item_unver, item_nosrc, item_uptodate]
+
+        # Switch to "Cannot Update"
+        app._on_sidebar_filter_changed("Cannot Update")
+        assert app.active_filter == "Cannot Update"
+        assert len(app.filtered_programs) == 2
+        assert {p.name for p in app.filtered_programs} == {"App Two", "App Three"}
+
+        # Run Auto-Resolve All
+        app._handle_batch_auto_resolve()
+        assert item_unver.is_verified_winget is True
+        assert item_unver.action == UpdateAction.AVAILABLE
+        assert "Auto-approved" in item_unver.notes
+
+        app.destroy()
+
+
+
 
 
 

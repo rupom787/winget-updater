@@ -34,6 +34,7 @@ from winget_updater.gui.animations import (
 )
 from winget_updater.gui.components import (
     DetailsDrawer,
+    DiagnosticsResolutionBanner,
     ElevationBanner,
     FloatingGlassBatchDock,
     InspectorPane,
@@ -45,6 +46,7 @@ from winget_updater.gui.components import (
 )
 from winget_updater.gui.dialogs import (
     BindWingetSourceDialog,
+    CannotUpdateHelpDialog,
     ExclusionManagerDialog,
     ScheduleConfigDialog,
     prompt_downgrade_confirmation,
@@ -509,6 +511,14 @@ class MainWindow(tk.Tk):
         self.table_container = tk.Frame(self.right_container, bg="#ffffff", padx=16, pady=4)
         self.table_container.pack(fill=tk.BOTH, expand=True)
 
+        # Frosted glass banner for review & unverified software
+        self.diag_banner = DiagnosticsResolutionBanner(
+            self.table_container,
+            on_auto_resolve_all=self._handle_batch_auto_resolve,
+            on_open_help=self._open_cannot_update_help,
+        )
+        self.diag_banner.pack_forget()
+
         self.table = ProgramTableView(
             self.table_container,
             on_double_click=self._handle_row_double_click,
@@ -636,6 +646,8 @@ class MainWindow(tk.Tk):
             self.hud.apply_theme(t)
         if hasattr(self, "batch_dock"):
             self.batch_dock.apply_theme(t)
+        if hasattr(self, "diag_banner"):
+            self.diag_banner.apply_theme(t)
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
         if hasattr(self, "btn_complete_system"):
@@ -709,20 +721,36 @@ class MainWindow(tk.Tk):
         self.active_filter = filter_name
         self.lbl_view_title.config(text=filter_name)
         if filter_name == "Software Catalog":
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Search and install from over 6,000 official Windows packages")
             self.btn_update.config(state="disabled")
             self.btn_update_selected.config(state="disabled")
             self._search_catalog(self.search_query.strip() or "popular")
+        elif filter_name in ("Cannot Update", "Review & cannot update"):
+            self.lbl_view_title.config(text="Review & Cannot Update")
+            self.lbl_view_subtitle.config(text="Applications requiring review, publisher variance verification, or repository linking")
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack(fill=tk.X, pady=(0, 8), before=self.table)
+            self.apply_filter()
         elif filter_name == "Updates Available":
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Compatible updates verified against official package repositories")
             self.apply_filter()
         elif filter_name == "Up to Date":
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Applications currently running their latest available release")
             self.apply_filter()
         elif filter_name == "Ignored Updates":
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Applications excluded from automated update checks")
             self.apply_filter()
         else:
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="All discovered software applications across this computer")
             self.apply_filter()
 
@@ -961,9 +989,19 @@ class MainWindow(tk.Tk):
         updates = sum(1 for it in items if it.can_auto_update())
         uptodate = sum(1 for it in items if it.action == UpdateAction.UP_TO_DATE)
         ignored = sum(1 for it in items if it.action == UpdateAction.EXCLUDED)
+        unverified = sum(
+            1 for it in items
+            if it.action in (UpdateAction.UNVERIFIED, UpdateAction.NO_SOURCE, UpdateAction.NEWER_THAN_SOURCE)
+        )
 
         # Update sidebar live counts
-        self.sidebar.update_counts(total=total, updates=updates, uptodate=uptodate, ignored=ignored)
+        self.sidebar.update_counts(
+            total=total,
+            updates=updates,
+            uptodate=uptodate,
+            ignored=ignored,
+            unverified=unverified,
+        )
 
         self.apply_filter()
 
@@ -998,6 +1036,14 @@ class MainWindow(tk.Tk):
             if filter_mode == "Updates Available":
                 if item.action != UpdateAction.AVAILABLE:
                     continue
+            elif filter_mode in ("Cannot Update", "Review & cannot update"):
+                if item.action not in (
+                    UpdateAction.UNVERIFIED,
+                    UpdateAction.NO_SOURCE,
+                    UpdateAction.NEWER_THAN_SOURCE,
+                    UpdateAction.SCAN_FAILED,
+                ) and not (item.is_ambiguous or (item.action == UpdateAction.PINNED and not item.can_auto_update())):
+                    continue
             elif filter_mode == "Up to Date":
                 if item.action != UpdateAction.UP_TO_DATE:
                     continue
@@ -1024,7 +1070,15 @@ class MainWindow(tk.Tk):
         self.filtered_programs = filtered
         self.table.populate(filtered)
         count = len(filtered)
-        if self.active_filter == "Updates Available":
+        if self.active_filter in ("Cannot Update", "Review & cannot update"):
+            unverified_cnt = sum(1 for it in filtered if it.action == UpdateAction.UNVERIFIED)
+            no_source_cnt = sum(1 for it in filtered if it.action == UpdateAction.NO_SOURCE)
+            self.lbl_view_subtitle.config(
+                text=f"{count} applications cannot update automatically. Inspect diagnostic reasons below or use 1-click unlock actions."
+            )
+            if hasattr(self, "diag_banner"):
+                self.diag_banner.set_stats(count, unverified_cnt, no_source_cnt)
+        elif self.active_filter == "Updates Available":
             self.lbl_view_subtitle.config(text=f"{count} verified updates ready for installation")
         elif self.active_filter == "Up to Date":
             self.lbl_view_subtitle.config(text=f"{count} applications verified up to date")
@@ -1131,11 +1185,7 @@ class MainWindow(tk.Tk):
         if self.selected_item:
             self.drawer.set_item(self.selected_item)
 
-        total = len(self.all_programs)
-        updates = sum(1 for it in self.all_programs if it.can_auto_update())
-        uptodate = sum(1 for it in self.all_programs if it.action == UpdateAction.UP_TO_DATE)
-        ignored = sum(1 for it in self.all_programs if it.action == UpdateAction.EXCLUDED)
-        self.sidebar.update_counts(total, updates, uptodate, ignored)
+        self._refresh_counts()
 
         res_msg = (
             f"Update Process Completed\n\n"
@@ -1389,6 +1439,52 @@ class MainWindow(tk.Tk):
         url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
         webbrowser.open(url)
         self._show_floating_toast(f"Opening official download page for {item.name}", "🌐")
+
+    def _refresh_counts(self) -> None:
+        """Recalculates summary counts across current inventory and refreshes sidebar badges."""
+        total = len(self.all_programs)
+        updates = sum(1 for it in self.all_programs if it.can_auto_update())
+        uptodate = sum(1 for it in self.all_programs if it.action == UpdateAction.UP_TO_DATE)
+        ignored = sum(1 for it in self.all_programs if it.action == UpdateAction.EXCLUDED)
+        unverified = sum(
+            1 for it in self.all_programs
+            if it.action in (UpdateAction.UNVERIFIED, UpdateAction.NO_SOURCE, UpdateAction.NEWER_THAN_SOURCE)
+        )
+        self.sidebar.update_counts(
+            total=total,
+            updates=updates,
+            uptodate=uptodate,
+            ignored=ignored,
+            unverified=unverified,
+        )
+
+    def _handle_batch_auto_resolve(self) -> None:
+        """Auto-approves all unverified or ambiguous packages in the inventory."""
+        unverified_items = [
+            it for it in self.all_programs
+            if it.action == UpdateAction.UNVERIFIED
+        ]
+        if not unverified_items:
+            self._show_floating_toast("No unverified packages awaiting resolution.", "i")
+            return
+
+        resolved_count = 0
+        for it in unverified_items:
+            it.is_verified_winget = True
+            it.action = UpdateAction.AVAILABLE
+            it.unavailability_reason = None
+            it.notes = "Auto-approved closest matching package"
+            self.table.update_item(it)
+            resolved_count += 1
+
+        self._refresh_counts()
+        self.apply_filter()
+        self._show_floating_toast(f"Auto-approved {resolved_count} applications for updates!", "✓")
+
+    def _open_cannot_update_help(self) -> None:
+        """Opens the diagnostic educational guide dialog."""
+        dlg = CannotUpdateHelpDialog(self, theme=self.current_theme)
+        self.wait_window(dlg)
 
     def _export_report_dialog(self) -> None:
         if not self.all_programs:

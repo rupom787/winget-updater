@@ -7,7 +7,7 @@ from tkinter import messagebox, ttk
 from typing import Callable, List, Optional
 from winget_updater.config import ConfigManager, ExclusionRule, VendorSourceEntry
 from winget_updater.engine.scheduler import SchedulerManager
-from winget_updater.gui.rounded_widgets import RoundedButton
+from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge
 from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
 from winget_updater.models import ProgramItem
 
@@ -754,3 +754,154 @@ class BindWingetSourceDialog(tk.Toplevel):
             parent=self,
         )
         self.destroy()
+
+
+class CannotUpdateHelpDialog(tk.Toplevel):
+    """Educational modal explaining why applications cannot update automatically
+    and providing actionable solutions for verification and repository linking.
+    """
+
+    def __init__(self, parent: tk.Widget, theme: ThemeColors = LIGHT_THEME):
+        super().__init__(parent)
+        self.theme = theme
+        self.title("Software Verification & Diagnostic Resolution Guide")
+        self.geometry("720x600")
+        self.minsize(640, 500)
+        self.transient(parent)
+        self.grab_set()
+
+        t = self.theme
+        self.configure(bg=t.bg_root)
+
+        # Header Frame
+        header = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=16, highlightbackground=t.border, highlightthickness=1)
+        header.pack(fill=tk.X)
+
+        lbl_badge = RoundedPillBadge(
+            header,
+            text="SAFETY & VERIFICATION GUIDE",
+            bg_color="#fef3c7" if t.name != "dark" else "#78350f",
+            fg_color="#92400e" if t.name != "dark" else "#fef3c7",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            height=20,
+            parent_bg=t.bg_sidebar,
+        )
+        lbl_badge.pack(anchor="w", pady=(0, 4))
+
+        lbl_title = tk.Label(
+            header,
+            text="Why Cannot Some Software Update Automatically?",
+            bg=t.bg_sidebar,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor="w")
+
+        lbl_sub = tk.Label(
+            header,
+            text="Winget Updater enforces enterprise-grade safety checks to ensure your PC is never broken by incorrect installers.",
+            bg=t.bg_sidebar,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_sub.pack(anchor="w", pady=(2, 0))
+
+        # Main Content Scrollable Canvas
+        content_frame = tk.Frame(self, bg=t.bg_root, padx=20, pady=14)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(content_frame, bg=t.bg_root, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(content_frame, orient=tk.VERTICAL, command=canvas.yview)
+        inner = tk.Frame(canvas, bg=t.bg_root)
+
+        inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas_window = canvas.create_window((0, 0), window=inner, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_window, width=e.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # 4 Topic Cards
+        topics = [
+            (
+                "1. Publisher Name Variance (\"Could not verify\")",
+                "⚠️ Status: Could not verify",
+                "#fef3c7",
+                "#92400e",
+                "Why it happens: The Windows Registry often records a formal legal corporation name (e.g. 'Google LLC', 'Valve Corp.', 'Oracle America, Inc.'), whereas the Winget package manifest uses a shorter brand name (e.g. 'Google', 'Valve', 'Oracle'). To protect you from impersonation attacks, the updater marks this for review.\n\n"
+                "How to update it:\n"
+                "• Click '⚡ Allow Update' in the bottom drawer to approve the package and start updating immediately.\n"
+                "• Or select multiple items and click '⚡ Approve Selected' in the floating dock.\n"
+                "• Once approved, it is permanently verified for future update checks.",
+            ),
+            (
+                "2. Ambiguous Package Matches",
+                "🔍 Status: Ambiguous candidates",
+                "#eff6ff",
+                "#1e40af",
+                "Why it happens: A software name matches multiple packages in the official repository (for example: Visual Studio Code vs Visual Studio Code Insiders, or 32-bit vs 64-bit builds).\n\n"
+                "How to update it:\n"
+                "• Click '🔗 Bind Winget ID' in the bottom drawer.\n"
+                "• Search the repository by keyword and select the exact package you want linked.\n"
+                "• The updater remembers your choice permanently in custom_mappings.json.",
+            ),
+            (
+                "3. Missing Public Repository Manifest (\"No update source\")",
+                "🌐 Status: No update source",
+                "#f1f5f9",
+                "#475569",
+                "Why it happens: The application was installed via direct download or proprietary media, and the vendor has not submitted a manifest to Microsoft Winget or Microsoft Store.\n\n"
+                "How to update it:\n"
+                "• Click '🌐 Visit Site' in the bottom drawer to open the vendor's official website directly in your browser.\n"
+                "• If the software does have a Winget package under another name, click '🔗 Bind Winget ID' to link it manually.",
+            ),
+            (
+                "4. Pinned Versions or Excluded Applications",
+                "📌 Status: Pinned / Excluded",
+                "#f3e8ff",
+                "#6b21a8",
+                "Why it happens: You or an administrator previously locked this software to prevent unexpected updates from breaking workflows.\n\n"
+                "How to update it:\n"
+                "• Click 'Unpin' or 'Un-exclude' in the bottom drawer to restore automated update checks.\n"
+                "• Manage all rules in '⚙️ Manage Excluded Applications' under the action bar.",
+            ),
+        ]
+
+        for title, badge, bbg, bfg, body in topics:
+            card = tk.Frame(inner, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+            card.pack(fill=tk.X, pady=(0, 10))
+
+            top_row = tk.Frame(card, bg=t.bg_card)
+            top_row.pack(fill=tk.X)
+
+            lbl_ctitle = tk.Label(top_row, text=title, bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+            lbl_ctitle.pack(side=tk.LEFT)
+
+            pill = RoundedPillBadge(top_row, text=badge, bg_color=bbg, fg_color=bfg, radius=6, font=("Segoe UI", 8, "bold"), height=20, parent_bg=t.bg_card)
+            pill.pack(side=tk.RIGHT)
+
+            lbl_cbody = tk.Label(card, text=body, bg=t.bg_card, fg=t.fg_secondary, font=("Segoe UI", 9), justify=tk.LEFT, anchor="w", wraplength=640)
+            lbl_cbody.pack(fill=tk.X, pady=(8, 0))
+
+        # Bottom Bar
+        bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
+        bottom.pack(fill=tk.X, side=tk.BOTTOM)
+
+        btn_close = RoundedButton(
+            bottom,
+            text="Got it, close guide",
+            command=self.destroy,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            hover_bg=t.accent_burgundy_hover,
+            radius=6,
+            font=("Segoe UI", 9, "bold"),
+            width=160,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        btn_close.pack(side=tk.RIGHT)
