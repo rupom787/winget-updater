@@ -111,6 +111,7 @@ class MainWindow(tk.Tk):
             winget_client=self.winget,
             compatibility_checker=self.checker,
             state_manager=self.state_mgr,
+            source_manager=self.source_manager,
         )
 
         # State data
@@ -899,24 +900,36 @@ class MainWindow(tk.Tk):
 
     def _search_catalog(self, query: str) -> None:
         q = query.strip() or "popular"
-        self.status_lbl.config(text=f"Searching repository catalog for '{q}'...")
+        self.status_lbl.config(text=f"Searching repository catalogs for '{q}'...")
         self.table.show_skeleton()
 
         def worker():
-            entries = self.winget.search_packages(q, count=30)
             items = []
-            for entry in entries:
-                it = ProgramItem(
-                    name=entry.name,
-                    id=entry.id,
-                    installed_version="Not Installed",
-                    latest_version=entry.version or "Latest",
-                    package_type=PackageType.WIN32_EXE,
-                    source=entry.source or "winget",
-                    action=UpdateAction.AVAILABLE,
-                    notes="Official winget package ready to install",
-                )
-                items.append(it)
+            # 1. Search secondary package managers (Pip, Npm, Scoop, Chocolatey)
+            try:
+                secondary_matches = self.source_manager.search_all(q)
+                items.extend(secondary_matches)
+            except Exception as e:
+                logger.error(f"Catalog search error in source manager: {e}")
+
+            # 2. Search official Winget catalog
+            try:
+                entries = self.winget.search_packages(q, count=25)
+                for entry in entries:
+                    it = ProgramItem(
+                        name=entry.name,
+                        id=entry.id,
+                        installed_version="Not Installed",
+                        latest_version=entry.version or "Latest",
+                        package_type=PackageType.WIN32_EXE,
+                        source=entry.source or "winget",
+                        action=UpdateAction.AVAILABLE,
+                        notes="Official winget package ready to install",
+                    )
+                    items.append(it)
+            except Exception as e:
+                logger.error(f"Catalog search error in winget: {e}")
+
             self.msg_queue.put(("CATALOG_RESULTS", items))
 
         threading.Thread(target=worker, daemon=True).start()
@@ -962,6 +975,22 @@ class MainWindow(tk.Tk):
             self.msg_queue.put(("STATUS", "Correlating software against verified sources and fallbacks..."))
             matcher = PackageMatcher(self.config)
             matched_items = matcher.match_all(items, upgrades, installed)
+
+            # Check pending updates from secondary package managers (Pip, Npm, Scoop, Chocolatey)
+            try:
+                secondary_updates = self.source_manager.query_all_updates(matched_items)
+                for item in matched_items:
+                    src = (item.source or "").lower()
+                    if src in secondary_updates:
+                        pkg_clean = item.name.replace(f"{src}:", "").strip().lower()
+                        if pkg_clean in secondary_updates[src]:
+                            info = secondary_updates[src][pkg_clean]
+                            item.latest_version = info.get("latest_version") or item.latest_version
+                            item.action = UpdateAction.AVAILABLE
+                            item.is_verified_winget = True
+                            item.notes = f"Update available via {src.upper()}"
+            except Exception as e:
+                logger.error(f"Error checking secondary package updates: {e}")
 
             # Pre-evaluate compatibility
             for item in matched_items:
@@ -1057,6 +1086,21 @@ class MainWindow(tk.Tk):
                     continue
             elif cat_mode == "Microsoft Store / MSIX":
                 if item.package_type != PackageType.STORE_MSIX:
+                    continue
+            elif cat_mode == "WinGet Packages":
+                if (item.source or "").lower() != "winget" and not item.is_verified_winget:
+                    continue
+            elif cat_mode == "Scoop Packages":
+                if item.package_type != PackageType.SCOOP and (item.source or "").lower() != "scoop":
+                    continue
+            elif cat_mode == "Chocolatey Packages":
+                if item.package_type != PackageType.CHOCOLATEY and (item.source or "").lower() != "chocolatey":
+                    continue
+            elif cat_mode == "Python (Pip)":
+                if item.package_type != PackageType.PIP and (item.source or "").lower() != "pip":
+                    continue
+            elif cat_mode == "Node.js (Npm)":
+                if item.package_type != PackageType.NPM and (item.source or "").lower() != "npm":
                     continue
             elif cat_mode == "Portable Applications":
                 if item.package_type != PackageType.PORTABLE:
@@ -1263,21 +1307,26 @@ class MainWindow(tk.Tk):
             self._run_isolated_single_update(item)
 
     def _install_catalog_package(self, item: ProgramItem) -> None:
-        if not item or not item.id:
+        if not item or not (item.id or item.name):
             return
+        pkg_id = item.id or item.name
+        source_name = (item.source or "winget").lower()
         if messagebox.askyesno(
             "Confirm Installation",
-            f"Install '{item.name}' ({item.id}) from the official winget repository?\n\n"
-            f"This will download and install the package using Administrator privileges.",
+            f"Install '{item.name}' ({pkg_id}) from source '{source_name.upper()}'?\n\n"
+            f"This will download and install the package using the appropriate package manager.",
             parent=self,
         ):
-            self.status_lbl.config(text=f"Installing {item.name}...")
+            self.status_lbl.config(text=f"Installing {item.name} via {source_name.upper()}...")
             self._show_floating_toast(f"Installing {item.name}...", "i")
             self.drawer.btn_update.config(state="disabled", text="Installing...")
 
             def worker():
                 dry_run = self.dry_run_var.get()
-                success, msg = self.winget.install_package(item.id, dry_run=dry_run)
+                if dry_run:
+                    success, msg = True, f"[Dry Run] Simulated installation of {item.name} from {source_name.upper()}"
+                else:
+                    success, msg = self.source_manager.install_package(source_name, pkg_id)
                 if success:
                     self._show_floating_toast(f"Successfully installed {item.name}!", "✓")
                     self.start_scan()
@@ -1291,11 +1340,13 @@ class MainWindow(tk.Tk):
         if not item:
             return
         pkg_id = item.id or item.name
+        source_label = (item.source or "winget").upper()
         if messagebox.askyesno(
             "Confirm Uninstallation",
             f"Are you sure you want to uninstall '{item.name}'?\n\n"
-            f"Package Identifier: {pkg_id}\n\n"
-            f"This will remove the application from your computer using Administrator rights.",
+            f"Package Identifier: {pkg_id}\n"
+            f"Package Manager: {source_label}\n\n"
+            f"This will remove the application from your computer.",
             parent=self,
             icon="warning",
         ):
@@ -1304,13 +1355,13 @@ class MainWindow(tk.Tk):
             self.drawer.btn_uninstall.config(state="disabled", text="Uninstalling...")
 
             def worker():
-                success, msg = self.winget.uninstall_package(pkg_id)
+                success, msg = self.source_manager.uninstall_package(item)
                 if success:
                     self._show_floating_toast(f"Successfully uninstalled {item.name}", "✓")
                     self.all_programs = [it for it in self.all_programs if it != item]
                     self.msg_queue.put(("STATUS", f"Uninstalled {item.name}"))
                 else:
-                    self._show_floating_toast(f"Uninstall failed: {msg}", "✕")
+                    self._show_floating_toast(f"Uninstall notice: {msg}", "✕")
                     self.msg_queue.put(("STATUS", f"Uninstall error for {item.name}: {msg}"))
                 self.apply_filter()
                 self.drawer.set_item(None)
@@ -1332,7 +1383,7 @@ class MainWindow(tk.Tk):
 
         def worker():
             dry_run = self.dry_run_var.get()
-            success, msg = self.winget.upgrade_package(item.id, dry_run=dry_run)
+            success, msg = self.source_manager.install_update(item, dry_run=dry_run)
             self.updating_package_ids.discard(pkg_id)
 
             if success:

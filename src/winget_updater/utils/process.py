@@ -26,8 +26,14 @@ def silent_run(cmd: List[str], **kwargs) -> subprocess.CompletedProcess:
     Guarantees:
     - Sets subprocess.CREATE_NO_WINDOW (0x08000000) on Windows.
     - Sets STARTF_USESHOWWINDOW / SW_HIDE in STARTUPINFO.
+    - Captures output and decodes text by default if not otherwise specified.
     - Preserves all standard subprocess arguments (timeout, capture_output, text, etc.).
     """
+    if "capture_output" not in kwargs and "stdout" not in kwargs and "stderr" not in kwargs:
+        kwargs["capture_output"] = True
+    if "text" not in kwargs and "universal_newlines" not in kwargs:
+        kwargs["text"] = True
+
     if sys.platform == "win32":
         # Ensure CREATE_NO_WINDOW flag is combined
         flags = kwargs.get("creationflags", 0)

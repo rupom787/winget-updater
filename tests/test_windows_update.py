@@ -57,3 +57,4 @@ def test_windows_update_item_model():
     assert item.kb_id == "KB5044284"
     assert item.size_mb == 684.2
     assert item.is_mandatory is True
+

@@ -2,6 +2,7 @@
 
 import concurrent.futures
 from typing import Callable, List, Optional
+from winget_updater.adapters.manager import SourceManager
 from winget_updater.discovery.driver_scanner import DriverScanner
 from winget_updater.discovery.extension_scanner import BrowserExtensionScanner
 from winget_updater.discovery.portable_scanner import PortableScanner
@@ -16,12 +17,17 @@ logger = get_logger()
 class CompositeScanner:
     """Coordinates all discovery scanners and produces a deduplicated inventory."""
 
-    def __init__(self, portable_directories: Optional[List[str]] = None):
+    def __init__(
+        self,
+        portable_directories: Optional[List[str]] = None,
+        source_manager: Optional[SourceManager] = None,
+    ):
         self.registry_scanner = RegistryScanner()
         self.store_scanner = StoreScanner()
         self.portable_scanner = PortableScanner(target_directories=portable_directories)
         self.extension_scanner = BrowserExtensionScanner()
         self.driver_scanner = DriverScanner()
+        self.source_manager = source_manager or SourceManager()
 
     def scan_all(self, progress_callback: Optional[Callable[[str, int], None]] = None) -> List[ProgramItem]:
         """Runs all scanners concurrently and returns the full aggregated list."""
@@ -34,11 +40,25 @@ class CompositeScanner:
             ("Device Drivers", self.driver_scanner.scan),
         ]
 
+        if self.source_manager:
+            pip = self.source_manager.get_adapter("pip")
+            if pip and pip.is_available():
+                scanners.append(("Python (Pip)", pip.get_installed_packages))
+            npm = self.source_manager.get_adapter("npm")
+            if npm and npm.is_available():
+                scanners.append(("Node.js (Npm)", npm.get_installed_packages))
+            scoop = self.source_manager.get_adapter("scoop")
+            if scoop and scoop.is_available():
+                scanners.append(("Scoop Apps", scoop.get_installed_packages))
+            choco = self.source_manager.get_adapter("chocolatey")
+            if choco and choco.is_available():
+                scanners.append(("Chocolatey Packages", choco.get_installed_packages))
+
         logger.info("Starting comprehensive software inventory discovery across all subsystems...")
         completed_count = 0
         total_scanners = len(scanners)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             future_to_name = {executor.submit(scan_fn): name for name, scan_fn in scanners}
             for future in concurrent.futures.as_completed(future_to_name):
                 name = future_to_name[future]
@@ -68,9 +88,10 @@ class CompositeScanner:
             norm_name = item.name.strip().lower()
             norm_id = (item.id or "").strip().lower()
             pkg_type = item.package_type.value
+            source = (item.source or "").strip().lower()
 
-            # Primary key
-            key = (norm_name, norm_id, pkg_type)
+            # Primary key: include source so pip:requests and winget:requests don't collide
+            key = (norm_name, norm_id, pkg_type, source)
             if key in seen_keys:
                 continue
             seen_keys.add(key)

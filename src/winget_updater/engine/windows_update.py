@@ -254,3 +254,4 @@ class WindowsUpdateManager:
         except Exception as e:
             logger.error(f"Failed to open OEM companion '{uri}': {e}")
             return False
+

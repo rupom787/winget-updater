@@ -13,6 +13,10 @@ class PackageType(str, Enum):
     PORTABLE = "Portable App"
     BROWSER_EXTENSION = "Browser Extension"
     DRIVER = "Device Driver"
+    SCOOP = "Scoop Package"
+    CHOCOLATEY = "Chocolatey Package"
+    PIP = "Python (Pip)"
+    NPM = "Node.js (Npm)"
     OTHER = "Other"
 
 

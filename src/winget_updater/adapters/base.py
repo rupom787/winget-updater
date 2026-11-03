@@ -33,3 +33,19 @@ class BaseSourceAdapter(ABC):
         """Executes the package update using the adapter's verified installation mechanism."""
         pass
 
+    def get_installed_packages(self) -> List[ProgramItem]:
+        """Discovers and returns all installed packages tracked by this package manager."""
+        return []
+
+    def install_package(self, pkg_id: str, dry_run: bool = False) -> Tuple[bool, str]:
+        """Installs a new package from this source repository."""
+        return False, f"Installation not supported by adapter '{self.name}'"
+
+    def uninstall_package(self, pkg_id: str) -> Tuple[bool, str]:
+        """Uninstalls an existing package managed by this adapter."""
+        return False, f"Uninstallation not supported by adapter '{self.name}'"
+
+    def search_packages(self, query: str) -> List[ProgramItem]:
+        """Discovers and searches packages matching query in this repository."""
+        return []
+

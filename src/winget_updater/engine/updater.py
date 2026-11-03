@@ -7,6 +7,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
+from winget_updater.adapters.manager import SourceManager
 from winget_updater.compatibility.checker import CompatibilityChecker
 from winget_updater.engine.cleanup import DiskCleanupManager
 from winget_updater.engine.process_lock import ProcessLockDetector
@@ -41,10 +42,12 @@ class UpdateEngine:
         winget_client: Optional[WingetClient] = None,
         compatibility_checker: Optional[CompatibilityChecker] = None,
         state_manager: Optional[StateManager] = None,
+        source_manager: Optional[SourceManager] = None,
     ):
         self.client = winget_client or WingetClient()
         self.checker = compatibility_checker or CompatibilityChecker()
         self.state_mgr = state_manager or StateManager()
+        self.source_mgr = source_manager or SourceManager()
 
     def execute_batch_update(
         self,
@@ -198,9 +201,13 @@ class UpdateEngine:
             summary.simulated_count += 1
             return
 
-        # 6. Execute upgrade via winget
+        # 6. Execute upgrade via source manager or fallback winget
         try:
-            success, message = self.client.upgrade_package(pkg_id, dry_run=False)
+            source = (item.source or "").lower()
+            if source in ("pip", "npm", "scoop", "chocolatey") and self.source_mgr:
+                success, message = self.source_mgr.install_update(item, dry_run=False)
+            else:
+                success, message = self.client.upgrade_package(pkg_id, dry_run=False)
             if success:
                 # Re-verify installed status post-installation
                 if item.latest_version:

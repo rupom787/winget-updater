@@ -213,8 +213,26 @@ def run_live_tests():
     assert safe, "Safety guards should pass on AC power"
     print("  --> PASS: Scheduler safety checks validated.")
 
+    # 13. Universal Multi-Package Manager Orchestration
+    print("\n[TEST 13] Universal Multi-Package Manager (Pip, Npm, Scoop, Choco, Winget):")
+    from winget_updater.adapters.manager import SourceManager
+    src_mgr = SourceManager(config=config)
+    avail_sources = src_mgr.get_available_sources()
+    print(f"  • Active Package Managers on this PC: {', '.join(avail_sources).upper()}")
+    assert "winget" in avail_sources, "Winget source manager must be active"
+    
+    # Live Pip query if available
+    pip_adapter = src_mgr.get_adapter("pip")
+    if pip_adapter and pip_adapter.is_available():
+        pip_ver = pip_adapter.get_version()
+        pip_items = pip_adapter.get_installed_packages()
+        print(f"  • Pip Active ({pip_ver}): Found {len(pip_items)} python packages")
+        assert len(pip_items) > 0, "Host python should have packages installed"
+
+    print("  --> PASS: Multi-package manager orchestration verified live.")
+
     print("\n" + "=" * 70)
-    print("  ALL 12 LIVE SYSTEM INTEGRATION TESTS PASSED SUCCESSFULLY!")
+    print("  ALL 13 LIVE SYSTEM INTEGRATION TESTS PASSED SUCCESSFULLY!")
     print("=" * 70)
 
 

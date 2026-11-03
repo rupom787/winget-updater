@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-75%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="75 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-82%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="82 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.5.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.22_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.25_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
 </p>
 
@@ -23,7 +23,7 @@
 
 ## 🚀 Overview
 
-**Software & Package Updater** is a desktop application engineered specifically for **Windows 11**. It audits installed software across all PC subsystems, verifies available updates against official package repositories via the **Windows Package Manager (`winget`)**, evaluates hardware and OS compatibility before each update, and installs verified software securely with Administrator privileges.
+**Software & Package Updater** is a universal multi-package manager and system updater desktop application engineered specifically for **Windows 11**. It audits installed software across all PC subsystems, discovers and orchestrates packages across **WinGet, Scoop, Chocolatey, Python (Pip), Node.js (Npm), and Microsoft Store**, evaluates hardware and OS compatibility before each update, and installs verified software securely with Administrator privileges.
 
 Featuring a **Clean White and Velvet Burgundy** aesthetic with anti-aliased rounded canvas controls, native Windows 11 rounded window corners, and **direct GPU hardware acceleration** (NVIDIA GeForce, AMD Radeon, Intel Arc), the application delivers instant responsiveness with zero UI freezing across 300+ item inventories.
 
@@ -35,10 +35,10 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.5.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.22 MB | `8E093465818EC0218CBBE9E07C206816F034663E9D8A44B8F487D0FA0CFE43DD` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.25 MB | `AEE7533945CED47A82D52A21AED481FCF9BF3588F91D3DAC4EBB2C3F7FB16210` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.5.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.6.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.
@@ -128,7 +128,17 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Version Pinning (`📌 Pin`):** Pin critical software (e.g. specialized IDEs, 3D suites) to their current version to freeze them from all automatic or batch updates (`pinned_packages.json`).
 - **Skip Specific Releases (`⏭️ Skip`):** Temporarily skip an undesirable release (e.g. skip `v3.2.0` if buggy) while keeping future update notifications intact (`skipped_versions.json`).
 
-### ⌨️ 11. Power-User Keyboard Shortcuts
+### 🌐 12. Universal Multi-Package Manager Engine (WinGet, Scoop, Chocolatey, Pip, Npm)
+- **Unified Multi-Source Orchestration:** Discovers, installs, updates, and uninstalls packages across all major package ecosystems simultaneously:
+  - **WinGet:** Official Windows Package Manager (MSIX, MSI, InnoSetup, Nullsoft).
+  - **Scoop:** Developer command-line package manager and buckets (`main`, `extras`, etc.).
+  - **Chocolatey (`choco`):** Windows community package manager.
+  - **Python (Pip):** Installed Python packages and PyPI updates (`pip list --outdated`).
+  - **Node.js (Npm):** Global Node.js CLI tools and modules (`npm outdated -g`).
+- **Unified Search & Catalog Discovery:** Search across all package manager repositories concurrently from the **"Software Catalog"** tab.
+- **1-Click Modular Uninstaller:** Cleanly uninstalls packages via their native package manager CLI (`pip uninstall`, `npm uninstall -g`, `scoop uninstall`, `choco uninstall`, `winget uninstall`) with full safety confirmations.
+
+### ⌨️ 13. Power-User Keyboard Shortcuts
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl + F` or `/` | Focus search bar with animated glow |
@@ -154,12 +164,12 @@ The application utilizes an intuitive **two-column layout with an interactive bo
 │ • Up to Date │ ──────────────────────────────────────────────────────────── │
 │ • Excluded   │ Git                  2.56.0.4      2.56.0.4      Up to date  │
 │ • Catalog    │ VLC media player     3.0.21        3.0.24        Update ready│
-│              │ Node.js              26.13.0       26.13.0       Up to date  │
+│              │ pip:requests         2.31.0        2.32.3        Update ready│
 │  CATEGORIES  ├──────────────────────────────────────────────────────────────┤
-│ [Dropdown  ] │ [Avatar] VLC media player            [ Update available pill ]│
-│              │ Publisher: VideoLAN  •  Package ID: VideoLAN.VLC             │
-│  TELEMETRY   │ Installed: 3.0.21  →  Available: 3.0.24  (Source: winget)    │
-│ Win 11 (x64) │ [ Update Application ]  [ Exclude ]  [ Open Folder ] [ Copy ]│
+│ [Dropdown  ] │ [Avatar] pip:requests                [ Update available pill ]│
+│              │ Publisher: Python Software Foundation • Source: pip          │
+│  TELEMETRY   │ Installed: 2.31.0  →  Available: 2.32.3                      │
+│ Win 11 (x64) │ [ Update Application ]  [ Uninstall ]  [ Exclude ]  [ Copy ] │
 └──────────────┴──────────────────────────────────────────────────────────────┘
 ```
 
@@ -169,6 +179,7 @@ The application utilizes an intuitive **two-column layout with an interactive bo
 
 - **Operating System:** Windows 11 (64-bit, Build 22000 or newer)
 - **Package Manager:** Windows Package Manager CLI (`winget`), included natively with Windows 11
+- **Optional Managers:** Scoop, Chocolatey, Python (pip), Node.js (npm) are automatically detected if installed
 - **Privileges:** Administrator privileges (the executable self-elevates via Windows UAC upon launch)
 - **Graphics:** DirectX 11 / 12 capable GPU (NVIDIA, AMD, Intel, or Qualcomm Adreno)
 
@@ -184,7 +195,7 @@ Get-FileHash -Path "WingetUpdater.exe" -Algorithm SHA256
 
 Confirm that the output hash exactly matches:
 ```
-A7B60FAEA361EDA1911561EB40875F57B7F1F38D4C9DA1509DB9A6D937AC68BB
+AEE7533945CED47A82D52A21AED481FCF9BF3588F91D3DAC4EBB2C3F7FB16210
 ```
 
 ---

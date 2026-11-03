@@ -355,3 +355,4 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
             if not messagebox.askyesno("Update in Progress", "An update task is currently running. Stop and close?", parent=self):
                 return
         self.destroy()
+

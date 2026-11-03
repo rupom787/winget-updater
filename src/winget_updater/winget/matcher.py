@@ -283,6 +283,20 @@ class PackageMatcher:
             item.unavailability_reason = "Browser Extension: Handled automatically by your web browser store."
             return
 
+        # 2b. Check if item is managed by an integrated secondary package manager
+        if item.package_type in (PackageType.PIP, PackageType.NPM, PackageType.SCOOP, PackageType.CHOCOLATEY):
+            if item.latest_version and item.latest_version != item.installed_version and item.latest_version != "Latest":
+                item.action = UpdateAction.AVAILABLE
+                item.outcome = UpdateOutcome.PENDING
+                item.is_verified_winget = True
+                item.notes = f"Update available via {item.source}"
+            else:
+                item.action = UpdateAction.UP_TO_DATE
+                item.outcome = UpdateOutcome.PENDING
+                item.is_verified_winget = True
+                item.notes = f"Installed & managed via {item.source}"
+            return
+
         norm_name = normalize_app_name(item.name)
         base_name = strip_version_from_name(item.name)
         norm_id = (item.id or "").strip().lower()

@@ -198,6 +198,11 @@ class SidebarNavigation(tk.Frame):
                 "All Categories",
                 "Win32 Applications",
                 "Microsoft Store / MSIX",
+                "WinGet Packages",
+                "Scoop Packages",
+                "Chocolatey Packages",
+                "Python (Pip)",
+                "Node.js (Npm)",
                 "Portable Applications",
                 "Drivers & Extensions",
             ],
@@ -265,6 +270,25 @@ class SidebarNavigation(tk.Frame):
             anchor="w",
         )
         self.lbl_tele_mode.pack(anchor=tk.W, pady=(2, 0))
+
+        try:
+            from winget_updater.adapters.manager import SourceManager
+            sm = SourceManager()
+            avail_sources = [s.upper() for s in sm.get_available_sources() if s not in ("vendor", "store")]
+            src_str = " • ".join(avail_sources) if avail_sources else "WINGET"
+            src_text = f"Managers: {src_str}"
+        except Exception:
+            src_text = "Managers: WINGET"
+
+        self.lbl_tele_managers = tk.Label(
+            self.telemetry_box,
+            text=src_text,
+            bg="#ffffff",
+            fg="#7c3aed",
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        )
+        self.lbl_tele_managers.pack(anchor=tk.W, pady=(2, 0))
 
         # Initial render
         self._render_navigation_items()
@@ -408,6 +432,8 @@ class SidebarNavigation(tk.Frame):
         if hasattr(self, "lbl_tele_gpu"):
             self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#38bdf8" if theme.name == "dark" else "#0369a1")
         self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
+        if hasattr(self, "lbl_tele_managers"):
+            self.lbl_tele_managers.config(bg=theme.bg_card, fg="#c084fc" if theme.name == "dark" else "#7c3aed")
         for d in self.filter_buttons.values():
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
@@ -660,6 +686,23 @@ class DetailsDrawer(tk.Frame):
         self.btn_skip.pack(side=tk.LEFT)
         self.btn_skip.config(state="disabled")
 
+        self.btn_uninstall = RoundedButton(
+            self.secondary_actions,
+            text="🗑️ Uninstall",
+            command=self._on_uninstall_click,
+            bg_color="#ffffff",
+            fg_color="#b91c1c",
+            hover_bg="#fef2f2",
+            border_color="#fecaca",
+            radius=6,
+            font=("Segoe UI", 8),
+            width=76,
+            height=26,
+            parent_bg="#faf6f6",
+        )
+        self.btn_uninstall.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_uninstall.config(state="disabled")
+
         # Row 3: Extended Package Resolution & Fallback Actions
         self.resolution_actions = tk.Frame(self.actions_container, bg="#faf6f6")
         self.resolution_actions.pack(fill=tk.X)
@@ -725,6 +768,7 @@ class DetailsDrawer(tk.Frame):
             self.btn_open_folder.config(state="disabled")
             self.btn_copy_id.config(state="disabled")
             self.btn_bind.config(state="disabled")
+            self.btn_uninstall.config(state="disabled")
             self.diagnostic_box.pack_forget()
             self.btn_allow_unverified.pack_forget()
             self.btn_website.pack_forget()
@@ -785,6 +829,7 @@ class DetailsDrawer(tk.Frame):
         self.btn_open_folder.config(state="normal" if item.install_location else "disabled")
         self.btn_copy_id.config(state="normal")
         self.btn_bind.config(state="normal")
+        self.btn_uninstall.config(state="normal")
 
         # Pin / Unpin Button state
         self.btn_pin.config(
