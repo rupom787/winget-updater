@@ -629,37 +629,187 @@
   }
 
   // ==========================================
-  // 13. MAGNETIC CUSTOM CURSOR
+  // 13. AERODYNAMIC BLUE WIND MOUSE TRAIL STREAM
   // ==========================================
-  const cursor = document.getElementById("custom-cursor");
-  let mouseX = window.innerWidth / 2;
-  let mouseY = window.innerHeight / 2;
-  let curX = mouseX, curY = mouseY;
-  let isMoving = false;
+  function initWindCursor() {
+    const canvas = document.getElementById("wind-stream-canvas");
+    if (!canvas || !window.matchMedia("(pointer: fine)").matches) return;
 
-  if (window.matchMedia("(pointer: fine)").matches && cursor) {
-    window.addEventListener("mousemove", (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      isMoving = true;
-    });
+    const ctx = canvas.getContext("2d");
+    let width = 0, height = 0, dpr = 1;
 
-    const hoverSelectors = "a, button, .discipline-item, .bm-row, .work-slide, #canvas-frame";
-    document.querySelectorAll(hoverSelectors).forEach((el) => {
-      el.addEventListener("mouseenter", () => cursor.classList.add("hovering"));
-      el.addEventListener("mouseleave", () => cursor.classList.remove("hovering"));
-    });
-
-    function renderCursor() {
-      if (isMoving) {
-        curX += (mouseX - curX) * 0.22;
-        curY += (mouseY - curY) * 0.22;
-        cursor.style.transform = `translate3d(${curX}px, ${curY}px, 0)`;
-      }
-      requestAnimationFrame(renderCursor);
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
     }
-    requestAnimationFrame(renderCursor);
+    resize();
+    window.addEventListener("resize", resize);
+
+    const points = [];
+    const particles = [];
+    const MAX_POINTS = 38;
+    let lastX = 0, lastY = 0, lastTime = performance.now();
+    let hasMoved = false;
+
+    window.addEventListener("mousemove", (e) => {
+      const now = performance.now();
+      const dt = Math.max((now - lastTime) / 1000, 0.001);
+      const vx = (e.clientX - lastX) / dt;
+      const vy = (e.clientY - lastY) / dt;
+      const speed = Math.hypot(vx, vy);
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastTime = now;
+
+      if (!hasMoved) {
+        hasMoved = true;
+        return;
+      }
+
+      // Emit aerodynamic wind flow when moving
+      if (speed > 18) {
+        const len = speed || 1;
+        const nx = -vy / len;
+        const ny = vx / len;
+
+        points.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: vx * 0.08,
+          vy: vy * 0.08,
+          nx: nx,
+          ny: ny,
+          speed: speed,
+          age: 0,
+          maxAge: Math.min(0.40 + speed * 0.00035, 0.68),
+          width: Math.min(2.0 + speed * 0.0045, 5.2),
+        });
+
+        if (points.length > MAX_POINTS) points.shift();
+
+        // Release delicate glowing wind motes in the aerodynamic wake
+        if (speed > 160 && Math.random() < 0.7) {
+          const side = (Math.random() - 0.5) * 14;
+          particles.push({
+            x: e.clientX + nx * side,
+            y: e.clientY + ny * side,
+            vx: vx * 0.03 + (Math.random() - 0.5) * 20,
+            vy: vy * 0.03 - 12 - Math.random() * 18, // buoyant upward air drift
+            size: 1.2 + Math.random() * 2.0,
+            age: 0,
+            maxAge: 0.35 + Math.random() * 0.35,
+          });
+        }
+      }
+    });
+
+    let lastFrame = performance.now();
+
+    function renderWind(now) {
+      requestAnimationFrame(renderWind);
+      const dt = Math.min((now - lastFrame) / 1000, 0.05);
+      lastFrame = now;
+
+      if (points.length === 0 && particles.length === 0) {
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      const isDream = document.documentElement.classList.contains("dream-mode");
+      ctx.globalCompositeOperation = isDream ? "lighter" : "source-over";
+
+      // Age points and apply atmospheric drag + buoyant breeze drift
+      for (let i = points.length - 1; i >= 0; i--) {
+        const p = points[i];
+        p.age += dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt - 10 * dt; // gentle rising breeze
+        p.vx *= Math.exp(-dt * 3.2);
+        p.vy *= Math.exp(-dt * 3.2);
+        if (p.age >= p.maxAge) {
+          points.splice(i, 1);
+        }
+      }
+
+      // Draw 3 interlaced aerodynamic blue wind filaments
+      if (points.length > 2) {
+        const strands = [
+          { offsetMul: 0,    alphaMul: 1.0,  widthMul: 1.0,  hue: isDream ? "#38bdf8" : "#0284c7" },
+          { offsetMul: 6.5,  alphaMul: 0.65, widthMul: 0.65, hue: isDream ? "#60a5fa" : "#38bdf8" },
+          { offsetMul: -6.0, alphaMul: 0.55, widthMul: 0.55, hue: isDream ? "#93c5fd" : "#0ea5e9" },
+        ];
+
+        for (const strand of strands) {
+          for (let i = 0; i < points.length - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i + 1];
+
+            const t = now * 0.007 + i * 0.38;
+            const curl = Math.sin(t) * strand.offsetMul;
+
+            const x1 = p1.x + p1.nx * curl;
+            const y1 = p1.y + p1.ny * curl;
+            const x2 = p2.x + p2.nx * curl;
+            const y2 = p2.y + p2.ny * curl;
+
+            const life = 1.0 - (p2.age / p2.maxAge);
+            const alpha = Math.max(life, 0) * (isDream ? 0.80 : 0.85) * strand.alphaMul;
+            const strokeW = Math.max(p2.width * life * strand.widthMul, 0.5);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            const mx = (x1 + x2) * 0.5;
+            const my = (y1 + y2) * 0.5;
+            ctx.quadraticCurveTo(x1, y1, mx, my);
+
+            ctx.strokeStyle = strand.hue;
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = strokeW;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Render micro luminous blue air dust particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.age += dt;
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.vx *= Math.exp(-dt * 2.8);
+        pt.vy *= Math.exp(-dt * 2.8);
+
+        const life = 1.0 - (pt.age / pt.maxAge);
+        if (life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        const pAlpha = life * (isDream ? 0.85 : 0.75);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size * life, 0, Math.PI * 2);
+        ctx.fillStyle = isDream ? "#e0f2fe" : "#0284c7";
+        ctx.globalAlpha = pAlpha;
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1.0;
+    }
+
+    requestAnimationFrame(renderWind);
   }
+  initWindCursor();
 
   // ==========================================
   // 14. THREE.JS DAIKI FUJITA ORGANIC CRYSTAL ROCK WITH COSMIC DREAM PORTAL

@@ -152,6 +152,16 @@ html.dream-mode .analog-noise-overlay {
   border-left: 1px solid var(--border);
 }
 
+/* Aerodynamic Blue Wind Cursor Stream */
+.wind-stream-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+}
+
 /* Custom Magnetic Cursor (Disabled per user request for pure clean native interaction) */
 .custom-cursor {
   display: none !important;
