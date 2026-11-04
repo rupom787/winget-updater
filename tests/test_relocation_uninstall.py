@@ -58,3 +58,4 @@ def test_relocation_uninstall():
 
 if __name__ == "__main__":
     test_relocation_uninstall()
+    sys.exit(0 if ok else 1)

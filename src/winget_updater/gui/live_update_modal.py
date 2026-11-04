@@ -632,9 +632,15 @@ class LiveUpdateProgressDialog(tk.Toplevel):
                 fg=self.c_success,
             )
 
-        # Switch action buttons
+        # Switch action buttons and update button label to accurately reflect final outcome
         self.btn_cancel.pack_forget()
         self.btn_background.pack_forget()
+        if self.failed_count > 0 and self.succeeded_count == 0:
+            self.btn_complete_view.config(text="✕ Close", bg="#ef4444", fg="#ffffff")
+        elif self.failed_count > 0:
+            self.btn_complete_view.config(text="Close (with warnings)", bg="#f59e0b", fg="#ffffff")
+        else:
+            self.btn_complete_view.config(text="✓ Done", bg="#10b981", fg="#ffffff")
         self.btn_complete_view.pack(side=tk.RIGHT)
 
         # If window was minimized to background, restore it cleanly

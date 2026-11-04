@@ -177,7 +177,7 @@ class MainWindow(tk.Tk):
 
         self.btn_restore = RoundedButton(
             self.top_controls,
-            text="Restore",
+            text="Restore Backup",
             command=self._import_software_backup,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -192,7 +192,7 @@ class MainWindow(tk.Tk):
 
         self.btn_backup = RoundedButton(
             self.top_controls,
-            text="Backup",
+            text="Backup Apps",
             command=self._export_software_backup,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -207,7 +207,7 @@ class MainWindow(tk.Tk):
 
         self.btn_sources = RoundedButton(
             self.top_controls,
-            text="Refresh",
+            text="Refresh Sources",
             command=self._refresh_sources_dialog,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -267,7 +267,7 @@ class MainWindow(tk.Tk):
 
         self.btn_export = RoundedButton(
             self.top_controls,
-            text="Export",
+            text="Export Inventory",
             command=self._export_report_dialog,
             bg_color="#f8fafc",
             fg_color="#334155",
@@ -427,7 +427,7 @@ class MainWindow(tk.Tk):
 
         self.lbl_action_deck = tk.Label(
             self.actions_card,
-            text="Select updates",
+            text="ACTIONS",
             bg="#ffffff",
             fg="#64748b",
             font=("Segoe UI", 8, "bold"),
@@ -905,36 +905,40 @@ class MainWindow(tk.Tk):
 
     def _on_sidebar_filter_changed(self, filter_name: str) -> None:
         self.active_filter = filter_name
-        self.lbl_view_title.config(text=filter_name)
         if filter_name == "Software Catalog":
+            self.lbl_view_title.config(text="Discover & Install Packages")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
-            self.lbl_view_subtitle.config(text="Search and install from over 6,000 official Windows packages")
+            self.lbl_view_subtitle.config(text="Search and install from official Windows package repositories")
             self.btn_update.config(state="disabled")
             self.btn_update_selected.config(state="disabled")
             self._search_catalog(self.search_query.strip() or "popular")
         elif filter_name in ("Cannot Update", "Review & cannot update", "Review & issues"):
-            self.lbl_view_title.config(text="Review & Cannot Update")
+            self.lbl_view_title.config(text="Review & Issues")
             self.lbl_view_subtitle.config(text="Applications requiring review, publisher variance verification, or repository linking")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack(fill=tk.X, pady=(0, 8), before=self.table)
             self.apply_filter()
         elif filter_name == "Updates Available":
+            self.lbl_view_title.config(text="Updates Available")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Compatible updates verified against official package repositories")
             self.apply_filter()
         elif filter_name == "Up to Date":
+            self.lbl_view_title.config(text="Installed & Current Applications")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Applications currently running their latest available release")
             self.apply_filter()
         elif filter_name == "Ignored Updates":
+            self.lbl_view_title.config(text="Excluded Applications")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="Applications excluded from automated update checks")
             self.apply_filter()
         else:
+            self.lbl_view_title.config(text="All Applications")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
             self.lbl_view_subtitle.config(text="All discovered software applications across this computer")
@@ -978,28 +982,56 @@ class MainWindow(tk.Tk):
                 fg="#ffffff",
             )
         else:
+            if item and item.action == UpdateAction.UP_TO_DATE:
+                txt = "Up to date"
+            elif item and item.is_pinned:
+                txt = "Pinned to version"
+            elif item and item.action == UpdateAction.EXCLUDED:
+                txt = "Excluded"
+            elif item and item.action == UpdateAction.SKIPPED_VERSION:
+                txt = "Version skipped"
+            elif item and item.action == UpdateAction.UNVERIFIED:
+                txt = "Verification required"
+            else:
+                txt = "Update selected"
             self.btn_update_selected.config(
                 state="disabled",
-                text="Update selected",
+                text=txt,
                 bg="#ffffff",
                 fg="#9ca3af",
             )
 
-        # Update bottom right action pill states
+        # Update bottom right action pill states with exact matching dynamic labels
         has_sel = (item is not None)
         can_up = bool(item and item.can_auto_update())
-        for p_btn in (
-            getattr(self, "p_btn_exclude", None),
-            getattr(self, "p_btn_folder", None),
-            getattr(self, "p_btn_copy", None),
-            getattr(self, "p_btn_pin", None),
-            getattr(self, "p_btn_skip", None),
-            getattr(self, "p_btn_uninstall", None),
-        ):
-            if p_btn:
-                p_btn.config(state="normal" if has_sel else "disabled")
-        if hasattr(self, "p_btn_update"):
-            self.p_btn_update.config(state="normal" if can_up else "disabled")
+        if hasattr(self, "p_btn_exclude") and self.p_btn_exclude:
+            is_excl = bool(item and item.action == UpdateAction.EXCLUDED)
+            self.p_btn_exclude.config(
+                state="normal" if has_sel else "disabled",
+                text="Un-exclude" if is_excl else "Exclude",
+            )
+        if hasattr(self, "p_btn_folder") and self.p_btn_folder:
+            has_folder = bool(item and item.install_location and os.path.exists(item.install_location))
+            self.p_btn_folder.config(state="normal" if has_folder else "disabled")
+        if hasattr(self, "p_btn_copy") and self.p_btn_copy:
+            self.p_btn_copy.config(state="normal" if has_sel else "disabled")
+        if hasattr(self, "p_btn_pin") and self.p_btn_pin:
+            is_pinned = bool(item and item.is_pinned)
+            self.p_btn_pin.config(
+                state="normal" if has_sel else "disabled",
+                text="Unpin" if is_pinned else "Pin",
+            )
+        if hasattr(self, "p_btn_skip") and self.p_btn_skip:
+            is_skipped = bool(item and item.action == UpdateAction.SKIPPED_VERSION)
+            self.p_btn_skip.config(
+                state="normal" if has_sel else "disabled",
+                text="Unskip" if is_skipped else "Skip",
+            )
+        if hasattr(self, "p_btn_uninstall") and self.p_btn_uninstall:
+            self.p_btn_uninstall.config(state="normal" if has_sel else "disabled")
+        if hasattr(self, "p_btn_update") and self.p_btn_update:
+            up_text = "Update App" if can_up else ("Up to Date" if item and item.action == UpdateAction.UP_TO_DATE else "Update App")
+            self.p_btn_update.config(state="normal" if can_up else "disabled", text=up_text)
 
     def _on_update_selected_clicked(self) -> None:
         sel_items = self.table.get_selected_items()
@@ -1245,12 +1277,12 @@ class MainWindow(tk.Tk):
         self.apply_filter()
 
         if updates > 0:
-            self.btn_update.config(state="normal", bg="#881337", fg="#ffffff")
+            self.btn_update.config(state="normal", text=f"Update all eligible ({updates})", bg="#881337", fg="#ffffff")
             self.lbl_view_subtitle.config(text=f"{total} programs scanned • {updates} verified updates ready")
             self.status_lbl.config(text=f"Scan complete: {updates} updates available.")
             self._show_floating_toast(f"Scan complete: {updates} updates ready", "✓")
         else:
-            self.btn_update.config(state="disabled", bg="#fef2f2", fg="#9ca3af")
+            self.btn_update.config(state="disabled", text="Update all eligible", bg="#fef2f2", fg="#9ca3af")
             self.lbl_view_subtitle.config(text=f"{total} programs scanned • All software up to date")
             self.status_lbl.config(text="Scan complete: All software is up to date.")
             self._show_floating_toast(f"Scan complete: {total} items analyzed", "✓")
@@ -1559,6 +1591,7 @@ class MainWindow(tk.Tk):
 
         self.apply_filter()
         self.drawer.set_item(item)
+        self._on_row_selected(item)
 
     def _handle_context_update(self, item: ProgramItem) -> None:
         if self.active_filter == "Software Catalog":
@@ -1884,6 +1917,7 @@ class MainWindow(tk.Tk):
 
         self.table.update_item(item)
         self.drawer.set_item(item)
+        self._on_row_selected(item)
         self._refresh_counts()
 
     def _handle_skip_version(self, item: ProgramItem) -> None:
@@ -1910,6 +1944,7 @@ class MainWindow(tk.Tk):
 
         self.table.update_item(item)
         self.drawer.set_item(item)
+        self._on_row_selected(item)
         self._refresh_counts()
 
     def _export_software_backup(self) -> None:

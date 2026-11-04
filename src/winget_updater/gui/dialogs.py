@@ -375,12 +375,14 @@ class ScheduleConfigDialog(tk.Toplevel):
                 text=f"Active Schedule: Configured\n{info}",
                 fg="#059669",
             )
+            self.btn_save.config(text="Update Schedule Time")
             self.btn_delete.config(state="normal")
         else:
             self.lbl_status.config(
                 text="Active Schedule: None\nAutomatic background updates are not currently active.",
                 fg=self.theme.fg_muted,
             )
+            self.btn_save.config(text="Enable Daily Schedule")
             self.btn_delete.config(state="disabled")
 
     def _save_task(self) -> None:

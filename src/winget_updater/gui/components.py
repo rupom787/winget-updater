@@ -884,7 +884,20 @@ class DetailsDrawer(tk.Frame):
         if can_update:
             self.btn_update.config(state="normal", text="Update application", bg="#881337", fg="#ffffff")
         else:
-            txt = "Up to date" if item.action == UpdateAction.UP_TO_DATE else "Update unavailable"
+            if item.action == UpdateAction.UP_TO_DATE:
+                txt = "Up to date"
+            elif item.is_pinned:
+                txt = "Pinned to version"
+            elif item.action == UpdateAction.EXCLUDED:
+                txt = "Excluded from updates"
+            elif item.action == UpdateAction.SKIPPED_VERSION:
+                txt = "Version skipped"
+            elif item.action == UpdateAction.UNVERIFIED:
+                txt = "Verification required"
+            elif item.action == UpdateAction.NO_SOURCE:
+                txt = "No repository source"
+            else:
+                txt = "Update unavailable"
             self.btn_update.config(state="disabled", text=txt)
 
         is_ignored = item.action == UpdateAction.EXCLUDED
@@ -1888,6 +1901,9 @@ class FloatingGlassBatchDock(tk.Frame):
             self.btn_allow.config(state="normal", text=f"⚡ Approve ({len(unver_items)})")
         else:
             self.btn_allow.pack_forget()
+
+        all_pinned = all(it.is_pinned for it in items)
+        self.btn_pin.config(text=f"Unpin ({total})" if all_pinned else f"📌 Pin ({total})")
 
     def _on_update_clicked(self) -> None:
         if self.on_batch_update and self.selected_items:
