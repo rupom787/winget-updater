@@ -142,7 +142,7 @@ class ChocolateyAdapter(BaseSourceAdapter):
         """Uninstalls a Chocolatey package."""
         clean_name = pkg_id.replace("choco:", "")
         try:
-            res = silent_run([self.choco_path, "uninstall", clean_name, "-y"], timeout=60)
+            res = silent_run([self.choco_path, "uninstall", clean_name, "-y", "--no-progress"], timeout=60)
             if res.returncode == 0:
                 return True, f"Successfully uninstalled chocolatey package '{clean_name}'"
             return False, f"choco uninstall failed: {res.stderr.strip() or res.stdout.strip()}"

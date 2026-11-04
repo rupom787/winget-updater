@@ -38,9 +38,17 @@ class WingetAdapter(BaseSourceAdapter):
         return False, f"Unverified source repository: {item.source}"
 
     def install_update(self, item: ProgramItem, dry_run: bool = False) -> Tuple[bool, str]:
-        """Executes winget upgrade for the package."""
+        """Executes winget upgrade for the package with speed optimization."""
         pkg_id = item.id or item.name
         return self.client.upgrade_package(pkg_id, dry_run=dry_run)
+
+    def install_package(self, pkg_id: str, dry_run: bool = False) -> Tuple[bool, str]:
+        """Installs a package directly via winget with fast silent execution."""
+        return self.client.install_package(pkg_id, dry_run=dry_run)
+
+    def uninstall_package(self, pkg_id: str) -> Tuple[bool, str]:
+        """Uninstalls a package cleanly and rapidly via silent winget."""
+        return self.client.uninstall_package(pkg_id, dry_run=False)
 
     def update_sources(self) -> Tuple[bool, str]:
         """Synchronizes and updates the winget package index."""

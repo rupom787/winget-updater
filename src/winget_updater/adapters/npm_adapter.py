@@ -220,7 +220,7 @@ class NpmAdapter(BaseSourceAdapter):
             return True, f"[Dry Run] Simulated npm install -g for '{clean_name}'"
 
         try:
-            res = silent_run([self.npm_path, "install", "-g", clean_name], timeout=180)
+            res = silent_run([self.npm_path, "install", "-g", "--no-audit", "--no-fund", "--loglevel=error", clean_name], timeout=180)
             if res.returncode == 0:
                 return True, f"Successfully installed npm global package '{clean_name}'"
             return False, f"npm install failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"
@@ -292,7 +292,7 @@ class NpmAdapter(BaseSourceAdapter):
             return True, f"[Dry Run] Simulated npm install -g for '{clean_name}@latest'"
 
         # Use npm install -g <pkg>@latest to ensure major and breaking updates apply correctly
-        cmd = [self.npm_path, "install", "-g", f"{clean_name}@latest"]
+        cmd = [self.npm_path, "install", "-g", "--no-audit", "--no-fund", "--loglevel=error", f"{clean_name}@latest"]
         try:
             if log_callback:
                 ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=240)
@@ -311,7 +311,7 @@ class NpmAdapter(BaseSourceAdapter):
         """Uninstalls a global npm package using npm uninstall -g."""
         clean_name = pkg_id.replace("npm:", "")
         try:
-            res = silent_run([self.npm_path, "uninstall", "-g", clean_name], timeout=60)
+            res = silent_run([self.npm_path, "uninstall", "-g", "--no-audit", "--no-fund", "--loglevel=error", clean_name], timeout=60)
             if res.returncode == 0:
                 return True, f"Successfully uninstalled npm package '{clean_name}'"
             return False, f"npm uninstall failed: {res.stderr.strip() or res.stdout.strip()}"

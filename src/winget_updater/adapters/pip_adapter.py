@@ -185,7 +185,7 @@ class PipAdapter(BaseSourceAdapter):
             return True, f"[Dry Run] Simulated pip install for '{clean_name}'"
 
         try:
-            res = silent_run([self.python_path, "-m", "pip", "install", clean_name], timeout=180)
+            res = silent_run([self.python_path, "-m", "pip", "install", "--no-warn-script-location", "--disable-pip-version-check", "--no-color", clean_name], timeout=180)
             if res.returncode == 0:
                 return True, f"Successfully installed pip package '{clean_name}'"
             return False, f"pip install failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"
@@ -203,7 +203,7 @@ class PipAdapter(BaseSourceAdapter):
         if dry_run:
             return True, f"[Dry Run] Simulated pip upgrade for '{clean_name}'"
 
-        cmd = [self.python_path, "-m", "pip", "install", "--upgrade", clean_name]
+        cmd = [self.python_path, "-m", "pip", "install", "--upgrade", "--no-warn-script-location", "--disable-pip-version-check", "--no-color", clean_name]
         try:
             if log_callback:
                 ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=180)
@@ -222,7 +222,7 @@ class PipAdapter(BaseSourceAdapter):
         """Uninstalls a Python package using pip uninstall -y."""
         clean_name = pkg_id.replace("pip:", "")
         try:
-            res = silent_run([self.python_path, "-m", "pip", "uninstall", "-y", clean_name], timeout=60)
+            res = silent_run([self.python_path, "-m", "pip", "uninstall", "-y", "--disable-pip-version-check", "--no-color", clean_name], timeout=60)
             if res.returncode == 0:
                 return True, f"Successfully uninstalled pip package '{clean_name}'"
             return False, f"pip uninstall failed: {res.stderr.strip() or res.stdout.strip()}"

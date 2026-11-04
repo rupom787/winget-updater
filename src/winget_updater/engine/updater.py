@@ -196,7 +196,7 @@ class UpdateEngine:
 
         # 4. Registry check for Win32 applications
         try:
-            from winget_updater.discovery.registry import RegistryScanner
+            from winget_updater.discovery.registry_scanner import RegistryScanner
             reg = RegistryScanner()
             items = reg.scan_all()
             for it in items:

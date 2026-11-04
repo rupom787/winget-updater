@@ -297,8 +297,10 @@ class WingetClient:
     ) -> Tuple[bool, str]:
         """Upgrades a single verified package via winget upgrade --id <id>."""
         clean_id = package_id
+        source_hint: Optional[str] = None
         for pfx in ("winget:", "msstore:"):
             if clean_id.lower().startswith(pfx):
+                source_hint = pfx[:-1]
                 clean_id = clean_id[len(pfx):].strip()
 
         if dry_run:
@@ -313,7 +315,14 @@ class WingetClient:
             "--accept-source-agreements",
             "--accept-package-agreements",
             "--disable-interactivity",
+            "--silent",
         ]
+        if source_hint:
+            cmd.extend(["--source", source_hint])
+        elif clean_id.lower().startswith("9n") or (len(clean_id) == 12 and clean_id.isalnum()):
+            cmd.extend(["--source", "msstore"])
+        elif "." in clean_id:
+            cmd.extend(["--source", "winget"])
         logger.info(f"Executing winget upgrade for package: {clean_id}")
 
         FAILURE_PATTERNS = (
@@ -381,21 +390,36 @@ class WingetClient:
             logger.error(f"Exception during winget upgrade of {clean_id}: {e}")
             return False, str(e)
 
-    def uninstall_package(self, package_id: str, dry_run: bool = False) -> Tuple[bool, str]:
-        """Uninstalls a package cleanly via winget uninstall --id <id>."""
+    def uninstall_package(self, package_id: str, dry_run: bool = False, source: Optional[str] = None) -> Tuple[bool, str]:
+        """Uninstalls a package cleanly and rapidly via winget uninstall --id <id> with silent execution."""
+        clean_id = package_id
+        source_hint: Optional[str] = source
+        for pfx in ("winget:", "msstore:"):
+            if clean_id.lower().startswith(pfx):
+                source_hint = pfx[:-1]
+                clean_id = clean_id[len(pfx):].strip()
+
         if dry_run:
-            logger.info(f"[DRY-RUN] Would execute: winget uninstall --id '{package_id}'")
+            logger.info(f"[DRY-RUN] Would execute: winget uninstall --id '{clean_id}'")
             return True, "Simulated successful uninstallation (dry run)"
 
         cmd = [
             self.winget_path,
             "uninstall",
-            "--id", package_id,
+            "--id", clean_id,
             "--exact",
             "--accept-source-agreements",
             "--disable-interactivity",
+            "--silent",
         ]
-        logger.info(f"Executing winget uninstall for package: {package_id}")
+        if source_hint:
+            cmd.extend(["--source", source_hint])
+        elif clean_id.lower().startswith("9n") or (len(clean_id) == 12 and clean_id.isalnum()):
+            cmd.extend(["--source", "msstore"])
+        elif "." in clean_id:
+            cmd.extend(["--source", "winget"])
+
+        logger.info(f"Executing fast silent winget uninstall for package: {clean_id}")
 
         try:
             res = silent_run(
@@ -417,22 +441,38 @@ class WingetClient:
             logger.error(f"Exception during uninstallation of {package_id}: {e}")
             return False, str(e)
 
-    def install_package(self, package_id: str, dry_run: bool = False) -> Tuple[bool, str]:
-        """Installs a new package from the winget repository."""
+    def install_package(self, package_id: str, dry_run: bool = False, source: Optional[str] = None) -> Tuple[bool, str]:
+        """Installs a new package from the winget repository with speed optimization and silent mode."""
+        clean_id = package_id
+        source_hint: Optional[str] = source
+        for pfx in ("winget:", "msstore:"):
+            if clean_id.lower().startswith(pfx):
+                source_hint = pfx[:-1]
+                clean_id = clean_id[len(pfx):].strip()
+
         if dry_run:
-            logger.info(f"[DRY-RUN] Would execute: winget install --id '{package_id}'")
+            logger.info(f"[DRY-RUN] Would execute: winget install --id '{clean_id}'")
             return True, "Simulated successful installation (dry run)"
 
         cmd = [
             self.winget_path,
             "install",
-            "--id", package_id,
+            "--id", clean_id,
             "--exact",
             "--accept-package-agreements",
             "--accept-source-agreements",
             "--disable-interactivity",
+            "--silent",
+            "--no-upgrade",
         ]
-        logger.info(f"Executing winget install for package: {package_id}")
+        if source_hint:
+            cmd.extend(["--source", source_hint])
+        elif clean_id.lower().startswith("9n") or (len(clean_id) == 12 and clean_id.isalnum()):
+            cmd.extend(["--source", "msstore"])
+        elif "." in clean_id:
+            cmd.extend(["--source", "winget"])
+
+        logger.info(f"Executing fast silent winget install for package: {clean_id}")
 
         try:
             res = silent_run(
