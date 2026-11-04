@@ -1042,16 +1042,20 @@
           vec3 H3 = normalize(light3 + V);
           float spec3 = pow(max(dot(N, H3), 0.0), 32.0) * 0.95;
 
-          // Pure optical quartz tint: pristine icy-white / silver, zero muddy colors
-          vec3 quartzTint = mix(vec3(0.95, 0.97, 1.0), vec3(1.0, 1.0, 1.0), fresnel);
+          // Mode-aware crystal facet contrast:
+          // In Light/Wake mode (uNight = 0): chiseled graphite facet edges & ambient refraction outline the 3D rock
+          // In Dark/Dream mode (uNight = 1): brilliant silver/white specular rim reflection against deep space
+          vec3 edgeColor = mix(vec3(0.18, 0.22, 0.28), vec3(0.96, 0.98, 1.0), uNight);
+          vec3 coreTint = mix(vec3(0.88, 0.90, 0.93), vec3(0.96, 0.98, 1.0), uNight);
+          vec3 quartzTint = mix(coreTint, edgeColor, fresnel);
 
-          // Composite: pristine high-transmittance crystal volume
-          vec3 col = mix(refractedColor, quartzTint, 0.18);
-          col += internalCleavage.rgb * 0.045; // Delicate internal mineral inclusions
-          col += vec3(1.0) * (spec1 + spec2 + spec3); // Triple studio specular glints
-          col += quartzTint * fresnel * 0.52; // Brilliant grazing rim reflection
+          // Composite: pristine high-transmittance crystal volume with razor facet definition
+          vec3 col = mix(refractedColor, quartzTint, mix(0.35, 0.18, uNight));
+          col += internalCleavage.rgb * (0.045 + (1.0 - uNight) * 0.035);
+          col += vec3(1.0) * (spec1 + spec2 + spec3); // Diamond specular glints gleam brilliantly in all modes
+          col += edgeColor * fresnel * mix(0.38, 0.52, uNight);
 
-          float alpha = clamp(0.91 + fresnel * 0.09, 0.0, 1.0);
+          float alpha = clamp(0.92 + fresnel * 0.08, 0.0, 1.0);
 
           gl_FragColor = vec4(col, alpha);
         }
@@ -1376,15 +1380,7 @@
           rockGroup.rotation.x += dragVelocityY + 0.002;
         }
 
-        // Orbiting typography ring rotation
-        if (ringMesh) {
-          ringMesh.rotation.y = -elapsed * 0.14;
-        }
-
-        // Floating pixel badge bobbing
-        if (pixelBadgeMesh) {
-          pixelBadgeMesh.position.y = 1.30 + Math.sin(elapsed * 2.2) * 0.04;
-        }
+// Orbiting typography ring & floating pixel badge removed
 
         // Portal scale lerp
         const targetPScale = isShatteredState ? 1.05 : 0.0;
