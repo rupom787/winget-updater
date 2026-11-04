@@ -907,140 +907,46 @@
         return new THREE.CanvasTexture(cCanvas);
       }
 
-      // D. Floating Retro Pixel-Art Crystal Badge Texture Generator
-      function createPixelBadgeTexture(type = "quartz") {
+      // D. Floating Retro Pixel-Art Crystal Badge Texture
+      function createPixelBadgeTexture() {
         const bCanvas = document.createElement("canvas");
         bCanvas.width = 64;
         bCanvas.height = 64;
         const ctx = bCanvas.getContext("2d");
         ctx.imageSmoothingEnabled = false;
 
+        // Draw cute 16-bit faceted crystal icon
         const px = (x, y, w, h, col) => {
           ctx.fillStyle = col;
           ctx.fillRect(x * 2, y * 2, w * 2, h * 2);
         };
 
-        if (type === "cloud") {
-          // Retro 16-bit cloud badge
-          px(11, 4, 10, 2, "#000");
-          px(8, 6, 3, 3, "#000");
-          px(21, 6, 3, 3, "#000");
-          px(4, 9, 4, 3, "#000");
-          px(24, 9, 4, 3, "#000");
-          px(2, 12, 3, 8, "#000");
-          px(28, 12, 3, 8, "#000");
-          px(4, 20, 24, 3, "#000");
-          px(11, 6, 10, 3, "#ffffff");
-          px(8, 9, 16, 4, "#ffffff");
-          px(5, 12, 23, 4, "#f0f9ff");
-          px(5, 16, 23, 4, "#bae6fd");
-          // Golden lightning spark
-          px(15, 19, 3, 3, "#facc15");
-          px(13, 22, 3, 3, "#facc15");
-          px(16, 22, 2, 2, "#eab308");
-          px(15, 24, 2, 3, "#facc15");
-        } else if (type === "npm") {
-          // Retro 16-bit NPM red hexagon badge
-          px(10, 3, 12, 2, "#000");
-          px(5, 5, 5, 2, "#000");
-          px(22, 5, 5, 2, "#000");
-          px(3, 7, 2, 16, "#000");
-          px(27, 7, 2, 16, "#000");
-          px(5, 23, 5, 2, "#000");
-          px(22, 23, 5, 2, "#000");
-          px(10, 25, 12, 2, "#000");
-          px(10, 5, 12, 2, "#ef4444");
-          px(5, 7, 22, 16, "#cb3837");
-          px(10, 23, 12, 2, "#991b1b");
-          // 'npm' lettering
-          px(6, 11, 2, 8, "#ffffff"); px(8, 11, 3, 2, "#ffffff"); px(10, 13, 2, 6, "#ffffff");
-          px(13, 11, 2, 8, "#ffffff"); px(15, 11, 3, 2, "#ffffff"); px(17, 13, 2, 4, "#ffffff"); px(15, 16, 3, 2, "#ffffff");
-          px(20, 11, 2, 8, "#ffffff"); px(22, 11, 2, 2, "#ffffff"); px(23, 13, 2, 6, "#ffffff"); px(24, 11, 2, 2, "#ffffff"); px(25, 11, 2, 8, "#ffffff");
-        } else if (type === "php") {
-          // Retro 16-bit PHP royal sapphire badge
-          px(8, 5, 16, 2, "#000");
-          px(4, 7, 4, 3, "#000");
-          px(24, 7, 4, 3, "#000");
-          px(2, 10, 2, 10, "#000");
-          px(28, 10, 2, 10, "#000");
-          px(4, 20, 4, 3, "#000");
-          px(24, 20, 4, 3, "#000");
-          px(8, 23, 16, 2, "#000");
-          px(8, 7, 16, 3, "#818cf8");
-          px(4, 10, 24, 10, "#4f46e5");
-          px(8, 20, 16, 3, "#3730a3");
-          // 'php' lettering
-          px(6, 12, 2, 7, "#ffffff"); px(8, 12, 2, 2, "#ffffff"); px(9, 13, 2, 3, "#ffffff"); px(8, 15, 2, 2, "#ffffff");
-          px(13, 10, 2, 9, "#ffffff"); px(15, 13, 2, 2, "#ffffff"); px(17, 14, 2, 5, "#ffffff");
-          px(21, 12, 2, 7, "#ffffff"); px(23, 12, 2, 2, "#ffffff"); px(24, 13, 2, 3, "#ffffff"); px(23, 15, 2, 2, "#ffffff");
-        } else if (type === "facebook") {
-          // Retro 16-bit Meta / Facebook infinity badge
-          px(9, 4, 14, 2, "#000");
-          px(5, 6, 4, 3, "#000");
-          px(23, 6, 4, 3, "#000");
-          px(2, 9, 3, 14, "#000");
-          px(27, 9, 3, 14, "#000");
-          px(5, 23, 4, 3, "#000");
-          px(23, 23, 4, 3, "#000");
-          px(9, 26, 14, 2, "#000");
-          px(9, 6, 14, 3, "#38bdf8");
-          px(5, 9, 22, 7, "#0084ff");
-          px(5, 16, 22, 7, "#7c3aed");
-          px(9, 23, 14, 3, "#4c1d95");
-          // Infinity loop in white / cyan
-          px(6, 14, 3, 4, "#ffffff"); px(8, 12, 4, 2, "#ffffff"); px(8, 18, 4, 2, "#ffffff");
-          px(12, 13, 3, 2, "#cffafe"); px(14, 15, 4, 2, "#ffffff"); px(17, 17, 3, 2, "#cffafe");
-          px(20, 12, 4, 2, "#ffffff"); px(20, 18, 4, 2, "#ffffff"); px(23, 14, 3, 4, "#ffffff");
-        } else {
-          // Default: 16-bit Daiki Fujita style cyan diamond crystal
-          px(10, 2, 12, 2, "#000");
-          px(6, 4, 4, 4, "#000");
-          px(22, 4, 4, 4, "#000");
-          px(3, 8, 3, 6, "#000");
-          px(26, 8, 3, 6, "#000");
-          px(3, 14, 2, 2, "#000");
-          px(27, 14, 2, 2, "#000");
-          px(5, 16, 3, 3, "#000");
-          px(24, 16, 3, 3, "#000");
-          px(8, 19, 4, 4, "#000");
-          px(20, 19, 4, 4, "#000");
-          px(12, 23, 8, 3, "#000");
+        // Black outline diamond
+        px(10, 2, 12, 2, "#000");
+        px(6, 4, 4, 4, "#000");
+        px(22, 4, 4, 4, "#000");
+        px(3, 8, 3, 6, "#000");
+        px(26, 8, 3, 6, "#000");
+        px(3, 14, 2, 2, "#000");
+        px(27, 14, 2, 2, "#000");
+        px(5, 16, 3, 3, "#000");
+        px(24, 16, 3, 3, "#000");
+        px(8, 19, 4, 4, "#000");
+        px(20, 19, 4, 4, "#000");
+        px(12, 23, 8, 3, "#000");
 
-          px(10, 4, 12, 4, "#ffffff");
-          px(6, 8, 8, 6, "#cffafe");
-          px(14, 8, 8, 6, "#67e8f9");
-          px(22, 8, 4, 6, "#06b6d4");
-          px(5, 14, 6, 2, "#38bdf8");
-          px(11, 14, 10, 5, "#0284c7");
-          px(21, 14, 6, 2, "#0369a1");
-          px(12, 19, 8, 4, "#0f172a");
-        }
+        // Ice blue & white gemstone facets
+        px(10, 4, 12, 4, "#ffffff");
+        px(6, 8, 8, 6, "#cffafe");
+        px(14, 8, 8, 6, "#67e8f9");
+        px(22, 8, 4, 6, "#06b6d4");
+        px(5, 14, 6, 2, "#38bdf8");
+        px(11, 14, 10, 5, "#0284c7");
+        px(21, 14, 6, 2, "#0369a1");
+        px(12, 19, 8, 4, "#0f172a");
 
         return new THREE.CanvasTexture(bCanvas);
       }
-
-      const badgeTextures = {
-        quartz: createPixelBadgeTexture("quartz"),
-        cloud: createPixelBadgeTexture("cloud"),
-        npm: createPixelBadgeTexture("npm"),
-        php: createPixelBadgeTexture("php"),
-        facebook: createPixelBadgeTexture("facebook"),
-      };
-
-      // Load high-resolution PNG textures asynchronously
-      const texLoader = new THREE.TextureLoader();
-      ["quartz", "cloud", "npm", "php", "meta"].forEach((bKey) => {
-        const key = bKey === "meta" ? "facebook" : bKey;
-        texLoader.load(`assets/badge_${bKey}.png`, (loadedTex) => {
-          loadedTex.magFilter = THREE.NearestFilter;
-          loadedTex.minFilter = THREE.NearestFilter;
-          badgeTextures[key] = loadedTex;
-          if (pixelBadgeMesh && typeof CRYSTAL_FORMS !== "undefined" && CRYSTAL_FORMS[currentFormIndex] && CRYSTAL_FORMS[currentFormIndex].badge === key) {
-            pixelBadgeMesh.material.map = loadedTex;
-            pixelBadgeMesh.material.map.needsUpdate = true;
-          }
-        });
-      });
 
       // --- 2. LIGHTING & ENVIRONMENT ---
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
@@ -1057,10 +963,6 @@
       dirLight3 = new THREE.DirectionalLight(0x7dd3fc, 2.8); // Cool cyan chromatic edge
       dirLight3.position.set(3, -5, -4);
       scene.add(dirLight3);
-
-      const dirLightBack = new THREE.DirectionalLight(0xffffff, 2.5); // Rim back light to define 3D shard thickness
-      dirLightBack.position.set(-2, 4, -5);
-      scene.add(dirLightBack);
 
       // --- 3. FLOOR CAUSTIC LIGHT POOL ---
       const causticGeo = new THREE.PlaneGeometry(4.0, 3.0);
@@ -1090,104 +992,15 @@
       scene.add(ringMesh);
 
       // --- 5. FLOATING PIXEL CRYSTAL BADGE ---
-      const badgeGeo = new THREE.PlaneGeometry(0.50, 0.50);
+      const badgeGeo = new THREE.PlaneGeometry(0.48, 0.48);
       const badgeMat = new THREE.MeshBasicMaterial({
-        map: badgeTextures.quartz,
+        map: createPixelBadgeTexture(),
         transparent: true,
         depthWrite: false,
       });
       pixelBadgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
       pixelBadgeMesh.position.set(0.12, 1.30, 0.25);
       rockGroup.add(pixelBadgeMesh);
-
-      // --- 5.5 INNER 3D CORE EMBLEMS (Visible inside refractive crystal) ---
-      const emblemGroup = new THREE.Group();
-      emblemGroup.position.set(0, 0, 0);
-      rockGroup.add(emblemGroup);
-
-      const emblemMeshes = {};
-
-      // A. Quartz Crest Emblem (Nested Octahedron)
-      const crestGeo = new THREE.OctahedronGeometry(0.38, 0);
-      const crestMat = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        metalness: 0.85,
-        roughness: 0.15,
-        transmission: 0.3,
-        transparent: true,
-        opacity: 0.9,
-      });
-      emblemMeshes.crest = new THREE.Mesh(crestGeo, crestMat);
-      emblemGroup.add(emblemMeshes.crest);
-
-      // B. Cloud Emblem (Stylized 3D puffy cloud lobes)
-      const cloudEmblemGroup = new THREE.Group();
-      const cloudMat = new THREE.MeshStandardMaterial({
-        color: 0x7dd3fc,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.65,
-        roughness: 0.25,
-      });
-      const c1 = new THREE.Mesh(new THREE.SphereGeometry(0.20, 16, 16), cloudMat);
-      c1.position.set(-0.20, -0.05, 0);
-      const c2 = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), cloudMat);
-      c2.position.set(0.04, 0.10, 0);
-      const c3 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), cloudMat);
-      c3.position.set(0.26, -0.02, 0);
-      const cBase = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.12, 16), cloudMat);
-      cBase.position.set(0.04, -0.12, 0);
-      cBase.rotation.z = Math.PI / 2;
-      cloudEmblemGroup.add(c1, c2, c3, cBase);
-      cloudEmblemGroup.scale.set(0, 0, 0);
-      emblemMeshes.cloud = cloudEmblemGroup;
-      emblemGroup.add(cloudEmblemGroup);
-
-      // C. NPM Hexagonal Cube Emblem
-      const npmEmblemGroup = new THREE.Group();
-      const npmMat = new THREE.MeshStandardMaterial({
-        color: 0xef4444,
-        emissive: 0x991b1b,
-        emissiveIntensity: 0.7,
-        metalness: 0.5,
-        roughness: 0.2,
-      });
-      const npmCube = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), npmMat);
-      npmCube.rotation.set(0.6, 0.78, 0);
-      npmEmblemGroup.add(npmCube);
-      npmEmblemGroup.scale.set(0, 0, 0);
-      emblemMeshes.npm = npmEmblemGroup;
-      emblemGroup.add(npmEmblemGroup);
-
-      // D. PHP Oval Sapphire Emblem
-      const phpEmblemGroup = new THREE.Group();
-      const phpMat = new THREE.MeshStandardMaterial({
-        color: 0x6366f1,
-        emissive: 0x3730a3,
-        emissiveIntensity: 0.65,
-        metalness: 0.6,
-        roughness: 0.15,
-      });
-      const phpSphere = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 16), phpMat);
-      phpSphere.scale.set(1.35, 0.85, 0.65);
-      phpEmblemGroup.add(phpSphere);
-      phpEmblemGroup.scale.set(0, 0, 0);
-      emblemMeshes.php = phpEmblemGroup;
-      emblemGroup.add(phpEmblemGroup);
-
-      // E. Meta Infinity Loop Emblem
-      const metaEmblemGroup = new THREE.Group();
-      const metaMat = new THREE.MeshStandardMaterial({
-        color: 0x0084ff,
-        emissive: 0x7c3aed,
-        emissiveIntensity: 0.75,
-        metalness: 0.7,
-        roughness: 0.2,
-      });
-      const metaTorus = new THREE.Mesh(new THREE.TorusKnotGeometry(0.24, 0.065, 64, 16, 2, 3), metaMat);
-      metaEmblemGroup.add(metaTorus);
-      metaEmblemGroup.scale.set(0, 0, 0);
-      emblemMeshes.meta = metaEmblemGroup;
-      emblemGroup.add(metaEmblemGroup);
 
       updateRockPlacement();
 
@@ -1273,16 +1086,6 @@
         varying vec3 vWorldPosition;
         varying vec4 vScreenPos;
 
-        uniform sampler2D tBack;
-        uniform sampler2D tNormal;
-        uniform sampler2D tMatcap;
-        uniform float uDisp;
-        uniform float uRefract;
-        uniform float uNight;
-        uniform float uTime;
-        uniform vec3 uFormColor;
-        uniform float uFormIntensity;
-
         void main() {
           vec2 screenUv = (vScreenPos.xy / vScreenPos.w) * 0.5 + 0.5;
 
@@ -1324,10 +1127,6 @@
             crystalTint = mix(vec3(0.88, 0.90, 0.92), vec3(1.0, 1.0, 1.0), fresnel);
           }
 
-          // Dynamic form tint injection (Ruby NPM, Opalescent Cloud, Sapphire PHP, Cyberpunk Meta)
-          crystalTint = mix(crystalTint, uFormColor, uFormIntensity);
-          refractedColor = mix(refractedColor, uFormColor, uFormIntensity * 0.45);
-
           vec3 col = mix(refractedColor, crystalTint, 0.24);
           col += iceVein.rgb * 0.06 * (1.0 - uNight * 0.5);
           col += vec3(1.0) * (spec1 + spec2);
@@ -1351,94 +1150,10 @@
           uRefract: { value: 0.08 },
           uNight: { value: 0.0 },
           uTime: { value: 0.0 },
-          uFormColor: { value: new THREE.Color(1.0, 1.0, 1.0) },
-          uFormIntensity: { value: 0.0 },
         },
         transparent: true,
         side: THREE.DoubleSide,
       });
-
-      // --- 7. MULTI-FORM REASSEMBLY ARTIFACT ARCHITECTURE ---
-      const CRYSTAL_FORMS = [
-        {
-          id: "quartz",
-          name: "QUARTZ CRYSTAL ROCK [SOLID] • DIRECTX 12",
-          hint: "MOVE CURSOR OVER ROCK TO SHATTER",
-          color: new THREE.Color(1.0, 1.0, 1.0),
-          intensity: 0.0,
-          disp: 0.055,
-          badge: "quartz",
-          emblem: "crest",
-          offsets: [
-            [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-            [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-            [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-          ],
-        },
-        {
-          id: "cloud",
-          name: "CLOUD ARTIFACT [REFORMED] • AWS & AZURE SYNC",
-          hint: "MOVE CURSOR OVER CLOUD TO SHATTER",
-          color: new THREE.Color(0.55, 0.85, 1.0),
-          intensity: 0.65,
-          disp: 0.035,
-          badge: "cloud",
-          emblem: "cloud",
-          offsets: [
-            [-0.65, 0.15, 0.12], [-0.45, 0.28, -0.08], [-0.22, 0.42, 0.10], [0.12, 0.48, -0.10],
-            [0.42, 0.38, 0.08], [0.68, 0.18, -0.05], [0.62, -0.15, 0.12], [0.25, -0.32, -0.10],
-            [-0.10, -0.36, 0.14], [-0.42, -0.30, -0.08], [-0.15, 0.08, 0.22], [0.18, 0.05, -0.18],
-          ],
-        },
-        {
-          id: "npm",
-          name: "NPM REGISTRY RUBY [SOLID] • NODE 22 LTS",
-          hint: "MOVE CURSOR OVER NPM RUBY TO SHATTER",
-          color: new THREE.Color(0.95, 0.18, 0.18),
-          intensity: 0.75,
-          disp: 0.048,
-          badge: "npm",
-          emblem: "npm",
-          offsets: [
-            [-0.42,  0.42,  0.42], [ 0.42,  0.42,  0.42], [-0.42, -0.42,  0.42], [ 0.42, -0.42,  0.42],
-            [-0.42,  0.42, -0.42], [ 0.42,  0.42, -0.42], [-0.42, -0.42, -0.42], [ 0.42, -0.42, -0.42],
-            [ 0.00,  0.62,  0.00], [ 0.00, -0.62,  0.00], [-0.62,  0.00,  0.00], [ 0.62,  0.00,  0.00],
-          ],
-        },
-        {
-          id: "php",
-          name: "PHP RUNTIME SAPPHIRE [SOLID] • OPCACHE 8.4",
-          hint: "MOVE CURSOR OVER PHP GEM TO SHATTER",
-          color: new THREE.Color(0.38, 0.42, 0.95),
-          intensity: 0.72,
-          disp: 0.062,
-          badge: "php",
-          emblem: "php",
-          offsets: [
-            [-0.82,  0.12,  0.10], [-0.52,  0.38, -0.12], [-0.15,  0.46,  0.12], [ 0.32,  0.40, -0.10],
-            [ 0.72,  0.15,  0.10], [ 0.82, -0.22, -0.05], [ 0.38, -0.46,  0.12], [-0.05, -0.48, -0.10],
-            [-0.48, -0.44,  0.10], [-0.72, -0.18, -0.10], [-0.22, -0.05,  0.26], [ 0.22,  0.02, -0.22],
-          ],
-        },
-        {
-          id: "facebook",
-          name: "META DISTRIBUTED FABRIC [SYNCHRONIZED] • REACT & META",
-          hint: "MOVE CURSOR OVER META FABRIC TO SHATTER",
-          color: new THREE.Color(0.10, 0.52, 1.0),
-          intensity: 0.70,
-          disp: 0.075,
-          badge: "facebook",
-          emblem: "meta",
-          offsets: [
-            [-0.72,  0.32,  0.18], [-0.42,  0.02,  0.00], [-0.72, -0.32, -0.18], [-0.98,  0.00,  0.10],
-            [ 0.00,  0.00,  0.00], [ 0.42,  0.00,  0.00], [ 0.72,  0.32, -0.18], [ 0.98,  0.00,  0.10],
-            [ 0.72, -0.32,  0.18], [-0.22,  0.22, -0.12], [ 0.22, -0.22,  0.12], [ 0.00,  0.28,  0.05],
-          ],
-        },
-      ];
-
-      let currentFormIndex = 0;
-      let reassembleTimer = null;
 
       // 12 wide scatter trajectories that disperse solid shards across the full screen in 3D
       const scatterConfigs = [
@@ -1488,7 +1203,6 @@
             mesh: mesh,
             centroid: centroid.clone(),
             currPos: centroid.clone(),
-            formPos: centroid.clone(),
             velocity: new THREE.Vector3(0, 0, 0),
             homeQuat: new THREE.Quaternion(),
             currQuat: new THREE.Quaternion(),
@@ -1502,9 +1216,6 @@
             driftSpeed: 0.5 + (idx % 4) * 0.15,
           });
         });
-
-        // Initialize with default quartz form
-        applyCurrentForm();
 
         if (window.location.search.includes("shatter")) {
           isShatteredState = true;
@@ -1521,7 +1232,7 @@
         console.warn("Could not load crystal rock binary:", err);
       });
 
-      // --- 8. PHYSICS, MOUSE SHATTER & MULTI-FORM REASSEMBLY CONTROLLER ---
+      // --- 8. PHYSICS, MOUSE SHATTER & REASSEMBLE CONTROLLER ---
       let isShatteredState = false;
       let portalScale = 0.0;
       let targetLeanX = 0, targetLeanY = 0;
@@ -1529,33 +1240,11 @@
       let previousPointerX = 0, previousPointerY = 0;
       let dragVelocityX = 0, dragVelocityY = 0;
 
-      function applyCurrentForm() {
-        const form = CRYSTAL_FORMS[currentFormIndex];
-        if (!form) return;
-
-        // 1. Text Scramble Animation on HUD
-        if (gemStatusEl) scrambleText(gemStatusEl, form.name, 350);
-        if (gemHintEl) scrambleText(gemHintEl, form.hint, 250);
-
-        // 2. Update floating retro 16-bit pixel badge
-        if (pixelBadgeMesh && badgeTextures[form.badge]) {
-          pixelBadgeMesh.material.map = badgeTextures[form.badge];
-          pixelBadgeMesh.material.map.needsUpdate = true;
-        }
-
-        // 3. Update shard form targets (positions & shapes)
-        for (let i = 0; i < shardData.length; i++) {
-          const s = shardData[i];
-          const off = form.offsets[i % form.offsets.length];
-          s.formPos = s.centroid.clone().add(new THREE.Vector3(...off));
-        }
-      }
-
       if (window.location.search.includes("shatter")) {
         isShatteredState = true;
       }
 
-      function triggerShatter(impulseStrength = 1.0, impactDir = null) {
+      function triggerShatter(impulseStrength = 1.0) {
         if (!isShatteredState) {
           isShatteredState = true;
           if (audio) {
@@ -1565,48 +1254,29 @@
               setTimeout(() => audio.playBlip(1600, 0.08, 0.06), 35);
             }
           }
-
           if (gemStatusEl) gemStatusEl.textContent = "COSMIC PURPLE DREAM PORTAL [FRACTURED]";
-          if (gemHintEl) gemHintEl.textContent = "CLICK OR MOVE AWAY TO REASSEMBLE";
+          if (gemHintEl) gemHintEl.textContent = "CLICK PORTAL OR MOVE AWAY TO REASSEMBLE";
 
-          // Natural physics: smooth burst impulse with mass and directional strike
-          const str = Math.min(Math.max(impulseStrength, 0.8), 2.2);
+          // Inject initial kinetic impulse into all solid shards
+          const strength = Math.min(Math.max(impulseStrength, 0.8), 2.5);
           for (let i = 0; i < shardData.length; i++) {
             const s = shardData[i];
-            const burstSpeed = (2.6 + (s.scatterDist * 0.75) * str) / s.mass;
-            s.velocity.copy(s.scatterDir).multiplyScalar(burstSpeed);
-            if (impactDir) {
-              s.velocity.addScaledVector(impactDir, 1.4 * str);
-            }
-            s.angVel.copy(s.tumbleAxis).multiplyScalar(s.tumbleSpeed * 1.8 * str);
+            const impulse = (s.scatterDist * 2.8 * strength) / s.mass;
+            s.velocity.copy(s.scatterDir).multiplyScalar(impulse);
+            s.angVel.copy(s.tumbleAxis).multiplyScalar(s.tumbleSpeed * 2.2 * strength);
           }
-
-          // Auto-reassemble safety timer: automatically reattaches after 2.2 seconds!
-          if (reassembleTimer) clearTimeout(reassembleTimer);
-          reassembleTimer = setTimeout(() => {
-            if (isShatteredState) {
-              triggerReassemble();
-            }
-          }, 2200);
         }
       }
 
       function triggerReassemble() {
         if (isShatteredState) {
           isShatteredState = false;
-          if (reassembleTimer) {
-            clearTimeout(reassembleTimer);
-            reassembleTimer = null;
-          }
-
           if (audio) {
             audio.playCrystalReassemble();
-            if (audio.playBlip) audio.playBlip(1400, 0.04, 0.05);
+            if (audio.playBlip) audio.playBlip(1200, 0.04, 0.05);
           }
-
-          // Cycle to the NEXT form on every reassembly!
-          currentFormIndex = (currentFormIndex + 1) % CRYSTAL_FORMS.length;
-          applyCurrentForm();
+          if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
+          if (gemHintEl) gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
         }
       }
 
@@ -1639,22 +1309,19 @@
           const rockPixelY = (-(rockScreen.y * 0.5) + 0.5) * h;
 
           const distToRock = Math.hypot(e.clientX - rockPixelX, e.clientY - rockPixelY);
-          const rockScreenRadius = Math.min(w, h) * (w > 768 ? 0.20 : 0.28);
+          const rockScreenRadius = Math.min(w, h) * (w > 768 ? 0.22 : 0.32);
 
           // Physical break trigger: cursor strikes or moves into the rock!
           if (distToRock < rockScreenRadius) {
             if (!isInsideRock) {
               isInsideRock = true;
-              const impactDir = new THREE.Vector3(vx * 0.002, -vy * 0.002, 0.7).normalize();
-              const impact = 1.0 + Math.min(cursorSpeed / 800, 1.4);
-              triggerShatter(impact, impactDir);
+              const impact = 1.0 + Math.min(cursorSpeed / 1200, 1.2);
+              triggerShatter(impact);
             }
-          } else if (distToRock > rockScreenRadius * 1.15) {
-            if (isInsideRock) {
+          } else if (distToRock > rockScreenRadius * 1.55) {
+            // Reassemble trigger: cursor moves away from rock zone
+            if (isInsideRock || isShatteredState) {
               isInsideRock = false;
-            }
-            // As soon as cursor leaves the rock radius, start reassembling right away!
-            if (isShatteredState) {
               triggerReassemble();
             }
           }
@@ -1742,30 +1409,8 @@
         }
 
         const elapsed = clock.getElapsedTime();
-        const dt = Math.min(clock.getDelta(), 0.04);
-
         if (crystalMat && crystalMat.uniforms) {
           crystalMat.uniforms.uTime.value = elapsed;
-
-          // Smooth transition of crystal material form color & intensity
-          const curForm = CRYSTAL_FORMS[currentFormIndex];
-          if (curForm) {
-            crystalMat.uniforms.uFormColor.value.lerp(curForm.color, dt * 6.0);
-            const targetIntensity = (curForm.id === "quartz") ? 0.0 : curForm.intensity;
-            crystalMat.uniforms.uFormIntensity.value += (targetIntensity - crystalMat.uniforms.uFormIntensity.value) * (dt * 6.0);
-          }
-        }
-
-        // Scale active 3D emblem up in center, scale others down
-        const curForm = CRYSTAL_FORMS[currentFormIndex];
-        if (curForm) {
-          for (let key in emblemMeshes) {
-            const m = emblemMeshes[key];
-            const isTarget = (key === curForm.emblem && !isShatteredState);
-            const targetS = isTarget ? 1.0 : 0.0;
-            m.scale.lerp(new THREE.Vector3(targetS, targetS, targetS), dt * 9.0);
-            m.rotation.y += dt * 0.8;
-          }
         }
 
         // Inertia drag damping & idle rock rotation
@@ -1786,6 +1431,8 @@
           pixelBadgeMesh.position.y = 1.30 + Math.sin(elapsed * 2.2) * 0.04;
         }
 
+        const dt = Math.min(clock.getDelta(), 0.04);
+
         // Portal scale lerp
         const targetPScale = isShatteredState ? 1.05 : 0.0;
         portalScale += (targetPScale - portalScale) * (isShatteredState ? 0.08 : 0.12);
@@ -1804,32 +1451,31 @@
           if (!s || !s.mesh) continue;
 
           if (!isShatteredState) {
-            // REASSEMBLING: Strong Magnetic Spring with Critical Damping
-            const targetPos = s.formPos || s.centroid;
-            const toTarget = new THREE.Vector3().subVectors(targetPos, s.currPos);
-            const dist = toTarget.length();
+            // REASSEMBLING: Magnetic Damped Harmonic Spring pulling toward centroid
+            const toHome = new THREE.Vector3().subVectors(s.centroid, s.currPos);
+            const dist = toHome.length();
 
-            if (dist > 0.015) {
-              const springF = toTarget.clone().multiplyScalar(52.0); // Fast magnetic pull
+            if (dist > 0.012) {
+              const springF = toHome.clone().multiplyScalar(14.0);
               s.velocity.addScaledVector(springF, dt);
-              s.velocity.multiplyScalar(Math.exp(-dt * 10.5)); // Critical damping
+              s.velocity.multiplyScalar(Math.exp(-dt * 7.5));
               s.currPos.addScaledVector(s.velocity, dt);
 
-              // Smoothly orient back to form alignment
-              s.currQuat.slerp(s.homeQuat, dt * 14.0);
+              // Smoothly orient back to original crystal facet alignment
+              s.currQuat.slerp(s.homeQuat, dt * 8.0);
             } else {
-              s.currPos.copy(targetPos);
+              s.currPos.copy(s.centroid);
               s.currQuat.copy(s.homeQuat);
               s.velocity.set(0, 0, 0);
               s.angVel.set(0, 0, 0);
             }
           } else {
-            // SHATTERED: Space drag + Harmonic orbital drift
+            // SHATTERED: Wide 3D dispersion with space drag + harmonic zero-g bobbing
             const targetPos = s.centroid.clone().addScaledVector(s.scatterDir, s.scatterDist);
             const toTarget = new THREE.Vector3().subVectors(targetPos, s.currPos);
 
             // Guidance acceleration towards scattered zero-g orbit
-            s.velocity.addScaledVector(toTarget, dt * 3.5);
+            s.velocity.addScaledVector(toTarget, dt * 2.8);
             s.velocity.multiplyScalar(Math.exp(-dt * 2.2)); // Space drag
 
             // Micro harmonic orbital drift
