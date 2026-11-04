@@ -21,33 +21,45 @@ class NpmAdapter(BaseSourceAdapter):
     @staticmethod
     def get_node_prefixes() -> List[str]:
         """Discovers all active Node.js / npm installation prefixes on the system.
-        Covers WinGet NodeJS packages, Program Files, AppData roaming npm, and NVM."""
-        prefixes = set()
+        Prioritizes the active global prefix and primary Node runtime location,
+        with WinGet packages as fallback."""
+        prefixes: List[str] = []
+        seen = set()
 
-        # 1. User Roaming npm directory
+        def add_prefix(p: Optional[str]):
+            if p and os.path.isdir(p):
+                norm = os.path.normcase(os.path.abspath(p))
+                if norm not in seen:
+                    seen.add(norm)
+                    prefixes.append(p)
+
+        # 1. User Roaming npm directory (%APPDATA%\npm - active global prefix on Windows)
         roaming = os.path.expandvars(r"%APPDATA%\npm")
-        if os.path.isdir(roaming):
-            prefixes.add(roaming)
+        add_prefix(roaming)
 
-        # 2. WinGet NodeJS Packages (e.g. OpenJS.NodeJS.LTS)
-        winget_pattern = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS*\*")
-        for p in glob.glob(winget_pattern):
-            if os.path.isdir(os.path.join(p, "node_modules")):
-                prefixes.add(p)
+        # 2. Active Node.js runtime location from PATH (e.g. C:\Program Files\nodejs)
+        node_exe = shutil.which("node")
+        if node_exe:
+            add_prefix(os.path.dirname(os.path.abspath(node_exe)))
 
         # 3. Standard Program Files
         for pf in [os.path.expandvars(r"%ProgramFiles%\nodejs"), os.path.expandvars(r"%ProgramFiles(x86)%\nodejs")]:
-            if os.path.isdir(os.path.join(pf, "node_modules")):
-                prefixes.add(pf)
+            add_prefix(pf)
 
         # 4. NVM for Windows / Volta / FNM
         for nvm_dir in [os.path.expandvars(r"%APPDATA%\nvm"), os.path.expandvars(r"%LOCALAPPDATA%\nvm")]:
             if os.path.isdir(nvm_dir):
                 for p in glob.glob(os.path.join(nvm_dir, "v*")):
                     if os.path.isdir(os.path.join(p, "node_modules")):
-                        prefixes.add(p)
+                        add_prefix(p)
 
-        return list(prefixes)
+        # 5. WinGet NodeJS Packages (fallback only)
+        winget_pattern = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS*\*")
+        for p in glob.glob(winget_pattern):
+            if os.path.isdir(os.path.join(p, "node_modules")):
+                add_prefix(p)
+
+        return prefixes
 
     @staticmethod
     def get_npm_executables() -> List[str]:
@@ -128,6 +140,14 @@ class NpmAdapter(BaseSourceAdapter):
                                 clean_name = pkg_name.strip()
                                 k = clean_name.lower()
                                 if k not in items_by_name:
+                                    if k == "npm":
+                                        pkg_ver = self.get_version() or pkg_ver
+                                    elif k == "corepack":
+                                        cp = shutil.which("corepack")
+                                        if cp:
+                                            r = silent_run([cp, "--version"], timeout=10)
+                                            if r.returncode == 0 and r.stdout:
+                                                pkg_ver = r.stdout.strip()
                                     items_by_name[k] = ProgramItem(
                                         name=clean_name,
                                         id=f"npm:{clean_name}",
@@ -153,8 +173,16 @@ class NpmAdapter(BaseSourceAdapter):
                         for pkg_name, info in deps.items():
                             clean_name = pkg_name.strip()
                             k = clean_name.lower()
+                            ver = info.get("version", "1.0.0") if isinstance(info, dict) else "1.0.0"
                             if k not in items_by_name:
-                                ver = info.get("version", "1.0.0") if isinstance(info, dict) else "1.0.0"
+                                if k == "npm":
+                                    ver = self.get_version() or ver
+                                elif k == "corepack":
+                                    cp = shutil.which("corepack")
+                                    if cp:
+                                        r = silent_run([cp, "--version"], timeout=10)
+                                        if r.returncode == 0 and r.stdout:
+                                            ver = r.stdout.strip()
                                 items_by_name[k] = ProgramItem(
                                     name=clean_name,
                                     id=f"npm:{clean_name}",
@@ -195,11 +223,20 @@ class NpmAdapter(BaseSourceAdapter):
                             if isinstance(info, dict):
                                 cur_v = info.get("current", "")
                                 lat_v = info.get("latest", "")
+                                clean_k = pkg_name.strip().lower()
+                                if clean_k == "npm":
+                                    cur_v = self.get_version() or cur_v
+                                elif clean_k == "corepack":
+                                    cp = shutil.which("corepack")
+                                    if cp:
+                                        r = silent_run([cp, "--version"], timeout=10)
+                                        if r.returncode == 0 and r.stdout:
+                                            cur_v = r.stdout.strip()
+
                                 from winget_updater.winget.version_comparator import compare_versions
                                 comp = compare_versions(cur_v, lat_v)
                                 if comp is not None and comp >= 0:
                                     continue
-                                clean_k = pkg_name.strip().lower()
                                 updates[clean_k] = {
                                     "installed_version": cur_v,
                                     "latest_version": lat_v,
@@ -235,7 +272,21 @@ class NpmAdapter(BaseSourceAdapter):
         """Queries the current installed version of a specific global npm package."""
         clean_name = pkg_name.replace("npm:", "").strip()
 
-        # 1. Direct filesystem check in node_modules across prefixes (fastest & most accurate)
+        # 1. Authoritative binary version check for npm CLI and corepack
+        if clean_name.lower() == "npm":
+            v = self.get_version()
+            if v:
+                return v
+        elif clean_name.lower() == "corepack":
+            try:
+                cp_path = shutil.which("corepack") or "corepack"
+                res = silent_run([cp_path, "--version"], timeout=10)
+                if res.returncode == 0 and res.stdout:
+                    return res.stdout.strip()
+            except Exception:
+                pass
+
+        # 2. Direct filesystem check in node_modules across prefixes (prioritizing active prefixes)
         prefixes = self.get_node_prefixes()
         for prefix in prefixes:
             pj = os.path.join(prefix, "node_modules", clean_name, "package.json")
@@ -249,7 +300,7 @@ class NpmAdapter(BaseSourceAdapter):
                 except Exception:
                     pass
 
-        # 2. CLI check via npm list -g --depth=0 <clean_name> --json
+        # 3. CLI check via npm list -g --depth=0 <clean_name> --json
         for prefix in prefixes:
             try:
                 cmd = [self.npm_path, "list", "-g", "--depth=0", clean_name, "--json", "--prefix", prefix]
@@ -262,23 +313,6 @@ class NpmAdapter(BaseSourceAdapter):
                         ver = info.get("version") if isinstance(info, dict) else info
                         if ver:
                             return str(ver).strip()
-            except Exception:
-                pass
-
-        # 3. Direct binary version check if package is npm or corepack
-        if clean_name.lower() == "npm":
-            try:
-                res = silent_run([self.npm_path, "--version"], timeout=10)
-                if res.returncode == 0 and res.stdout:
-                    return res.stdout.strip()
-            except Exception:
-                pass
-        elif clean_name.lower() == "corepack":
-            try:
-                cp_path = shutil.which("corepack") or "corepack"
-                res = silent_run([cp_path, "--version"], timeout=10)
-                if res.returncode == 0 and res.stdout:
-                    return res.stdout.strip()
             except Exception:
                 pass
 
