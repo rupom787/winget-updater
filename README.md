@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-94%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="94 Tests Passing" />
+  <img src="https://img.shields.io/badge/Unit%20Tests-137%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="137 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />
@@ -29,8 +29,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.30_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.0.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.74_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  </a>
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.0.0/Uninstall.exe">
+    <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.48_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
   </a>
 </p>
 
@@ -50,10 +53,11 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.30 MB | `B3F54FF4D6FE45A6F399CB73B46BEC534F041C99A1C246CA68D68923F796B687` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.0.0/WingetUpdater.exe) | Windows 11 (64-bit) | 13.74 MB | `70CC3726939D7E9427A184BDB1DDC2396A31D22A85F1708E4049BD1058A07B76` |
+| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.0.0/Uninstall.exe) | Windows 11 (64-bit) | 13.48 MB | `890A089F4DBD07122237DC4BB9659BBC43DF76E3E9582F576346F1D6B12396D5` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v1.9.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.0.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.

@@ -880,7 +880,7 @@
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        const text = "WINGET UPDATER // SYSTEM ARCHITECTURE // V1.9.0 // 2026 // TRUTH ENGINE  \u2022  ";
+        const text = "WINGET UPDATER // SYSTEM ARCHITECTURE // V2.0.0 // 2026 // TRUTH ENGINE  \u2022  ";
         ctx.fillText(text + text, rCanvas.width / 2, rCanvas.height / 2);
 
         const tex = new THREE.CanvasTexture(rCanvas);
@@ -1684,7 +1684,7 @@
       if (playBtn) playBtn.innerHTML = '<span class="play-icon-shape">&#9654;</span>';
       launchVideo.currentTime = 0;
       audio.playSuccessChime();
-      showToast("✓ LAUNCH FILM COMPLETE &bull; GET V1.9.0");
+      showToast("✓ LAUNCH FILM COMPLETE &bull; GET V2.0.0");
     });
 
     if (videoSoundToggle && videoSoundLabel) {
