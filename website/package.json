@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
-    "motion": "^14.9.1"
+    "motion": "^14.9.1",
+    "webgl-fluid": "^0.4.0"
   }
 }
