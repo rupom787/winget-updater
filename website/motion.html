@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Motion Graphics Showcase // SaaSWAVE (30s)</title>
+    <title>3D Motion Graphics Showcase // SaaSWAVE (30s)</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="alternate icon" href="favicon.ico" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -362,14 +364,21 @@
       const theaterBox = document.getElementById("theater-box");
 
       function togglePlay() {
+        if (!video) return;
         if (video.paused) {
-          video.play();
-          theaterBox.classList.add("playing");
-          playBtn.innerHTML = "&#10074;&#10074;";
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              if (theaterBox) theaterBox.classList.add("playing");
+              if (playBtn) playBtn.innerHTML = "&#10074;&#10074;";
+            }).catch(() => {
+              // Gracefully handle playback cancellation
+            });
+          }
         } else {
           video.pause();
-          theaterBox.classList.remove("playing");
-          playBtn.innerHTML = "&#9654;";
+          if (theaterBox) theaterBox.classList.remove("playing");
+          if (playBtn) playBtn.innerHTML = "&#9654;";
         }
       }
 

@@ -138,7 +138,7 @@
       if (!this.ctx) this.init();
       if (!this.ctx) return;
       try {
-        if (this.ctx.state === "suspended") this.ctx.resume();
+        if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
         const chord = [220, 277.18, 329.63, 440, 659.25];
         chord.forEach((f) => {
           const osc = this.ctx.createOscillator();
@@ -613,10 +613,13 @@
   let monolithMesh, wireMesh, coreMesh, particleSystem, dirLight1, dirLight2;
 
   if (typeof THREE !== "undefined" && canvas && canvasFrame) {
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, canvasFrame.clientWidth / canvasFrame.clientHeight, 0.1, 100);
+    try {
+      const scene = new THREE.Scene();
+      const initialAspect = canvasFrame.clientHeight > 0 ? (canvasFrame.clientWidth / canvasFrame.clientHeight) : 1;
+      const camera = new THREE.PerspectiveCamera(45, initialAspect, 0.1, 100);
     camera.position.set(0, 0, 5.0);
 
+    canvas.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
     const renderer = new THREE.WebGLRenderer({
       canvas: canvas,
       antialias: true,
@@ -771,11 +774,14 @@
     window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));
 
     window.addEventListener("resize", () => {
+      if (!canvasFrame || !renderer || !camera) return;
       const w = canvasFrame.clientWidth;
       const h = canvasFrame.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
     });
 
     const clock = new THREE.Clock();
@@ -815,6 +821,9 @@
       renderer.render(scene, camera);
     }
     animateThree();
+    } catch (err) {
+      console.warn("WebGL Monolith could not be initialized:", err);
+    }
   }
 
   function updateMonolithOnScroll() {
@@ -903,7 +912,19 @@
   if (copyBtn && codeSnippet) {
     copyBtn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(codeSnippet.textContent.trim());
+        const textToCopy = codeSnippet.textContent.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(textToCopy);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = textToCopy;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
         copyBtn.textContent = "Copied!";
         showToast("✓ Copied install command to clipboard!");
         setTimeout(() => {

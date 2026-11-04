@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e0f2b"/>
+      <stop offset="100%" stop-color="#1a1c3b"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2a6d"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded Squircle Base -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bgGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <!-- Windows 4-Grid Modernized Quadrants with Neon Glow -->
+  <rect x="14" y="14" width="16" height="16" rx="4" fill="url(#cyanGrad)"/>
+  <rect x="34" y="14" width="16" height="16" rx="4" fill="url(#cyanGrad)" opacity="0.8"/>
+  <rect x="14" y="34" width="16" height="16" rx="4" fill="url(#cyanGrad)" opacity="0.8"/>
+  <rect x="34" y="34" width="16" height="16" rx="4" fill="url(#pinkGrad)"/>
+  <!-- Dynamic Upgrade Chevron Overlaid -->
+  <path d="M32 20 L40 28 L35 28 L35 44 L29 44 L29 28 L24 28 Z" fill="#ffffff" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>
+</svg>

@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Voice Audition Studio // Winget Updater</title>
+    <title>Voice Audition Studio // Winget Updater</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="alternate icon" href="favicon.ico" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -645,9 +647,15 @@
           currentTimeCode = timeCode;
           currentCard = card;
 
-          audio.play().catch(() => {});
-          playBtn.innerHTML = "&#10074;&#10074;";
-          card.classList.add("is-playing");
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              playBtn.innerHTML = "&#10074;&#10074;";
+              card.classList.add("is-playing");
+            }).catch(() => {
+              stopCurrent();
+            });
+          }
         });
 
         audio.addEventListener("timeupdate", () => {
@@ -691,7 +699,21 @@
       document.querySelectorAll(".choose-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const name = btn.getAttribute("data-name");
-          navigator.clipboard.writeText(`Use ${name}`).catch(() => {});
+          const copyText = `Use ${name}`;
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(copyText).catch(() => {});
+            } else {
+              const ta = document.createElement("textarea");
+              ta.value = copyText;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+            }
+          } catch (e) {}
           toast.textContent = `Copied to clipboard: "Use ${name}" — Paste it here in chat!`;
           toast.classList.add("show");
           setTimeout(() => {
