@@ -1294,12 +1294,6 @@
           }
           if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [REASSEMBLING]";
           if (gemHintEl) gemHintEl.textContent = "MAGNETIC REASSEMBLY IN PROGRESS";
-
-          setTimeout(() => {
-            isReassembling = false;
-            if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
-            if (gemHintEl) gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
-          }, 1200);
         }
       }
 
@@ -1341,7 +1335,7 @@
               const impact = 1.0 + Math.min(cursorSpeed / 1200, 1.2);
               triggerShatter(impact);
             }
-          } else if (distToRock > rockScreenRadius * 1.18) {
+          } else if (distToRock > rockScreenRadius * 1.08) {
             // Reassemble trigger: cursor moves away from rock zone
             isInsideRock = false;
             if (isShatteredState) {
@@ -1368,6 +1362,20 @@
           triggerShatter(1.8);
         }
       });
+
+      const telemetryBox = document.querySelector(".canvas-telemetry-fullscreen");
+      if (telemetryBox) {
+        telemetryBox.style.cursor = "pointer";
+        telemetryBox.title = "Click to toggle crystal shatter or reassemble";
+        telemetryBox.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isShatteredState) {
+            triggerReassemble();
+          } else {
+            triggerShatter(1.8);
+          }
+        });
+      }
 
       canvasFrame.addEventListener("pointerdown", (e) => {
         isDragging = true;
@@ -1422,7 +1430,8 @@
         updateBackTexture(document.documentElement.classList.contains("dream-mode"));
       });
 
-      const clock = new THREE.Clock();
+      let lastFrameTime = performance.now();
+      const animationStartTime = performance.now();
 
       function animateThree() {
         requestAnimationFrame(animateThree);
@@ -1431,7 +1440,12 @@
           return;
         }
 
-        const elapsed = clock.getElapsedTime();
+        const now = performance.now();
+        // Reliable frame delta time (independent of THREE.Clock side effects)
+        const dt = Math.min(Math.max((now - lastFrameTime) / 1000, 0.001), 0.05);
+        lastFrameTime = now;
+        const elapsed = (now - animationStartTime) / 1000;
+
         if (crystalMat && crystalMat.uniforms) {
           crystalMat.uniforms.uTime.value = elapsed;
         }
@@ -1454,8 +1468,6 @@
           pixelBadgeMesh.position.y = 1.30 + Math.sin(elapsed * 2.2) * 0.04;
         }
 
-        const dt = Math.min(clock.getDelta(), 0.04);
-
         // Portal scale lerp
         const targetPScale = isShatteredState ? 1.05 : 0.0;
         portalScale += (targetPScale - portalScale) * (isShatteredState ? 0.08 : 0.12);
@@ -1469,6 +1481,7 @@
         }
 
         // Full-screen zero-g physics simulation for all solid crystal chunks
+        let allReassembled = true;
         for (let i = 0; i < shardData.length; i++) {
           const s = shardData[i];
           if (!s || !s.mesh) continue;
@@ -1478,14 +1491,15 @@
             const toHome = new THREE.Vector3().subVectors(s.centroid, s.currPos);
             const dist = toHome.length();
 
-            if (dist > 0.012) {
-              const springF = toHome.clone().multiplyScalar(24.0);
+            if (dist > 0.006) {
+              allReassembled = false;
+              const springF = toHome.clone().multiplyScalar(36.0);
               s.velocity.addScaledVector(springF, dt);
-              s.velocity.multiplyScalar(Math.exp(-dt * 6.5));
+              s.velocity.multiplyScalar(Math.exp(-dt * 8.0));
               s.currPos.addScaledVector(s.velocity, dt);
 
               // Smoothly orient back to original crystal facet alignment
-              s.currQuat.slerp(s.homeQuat, dt * 10.0);
+              s.currQuat.slerp(s.homeQuat, Math.min(dt * 15.0, 1.0));
             } else {
               s.currPos.copy(s.centroid);
               s.currQuat.copy(s.homeQuat);
@@ -1493,6 +1507,7 @@
               s.angVel.set(0, 0, 0);
             }
           } else {
+            allReassembled = false;
             // SHATTERED: Wide 3D dispersion with space drag + harmonic zero-g bobbing
             const targetPos = s.centroid.clone().addScaledVector(s.scatterDir, s.scatterDist);
             const toTarget = new THREE.Vector3().subVectors(targetPos, s.currPos);
@@ -1518,6 +1533,25 @@
 
           s.mesh.position.copy(s.currPos);
           s.mesh.quaternion.copy(s.currQuat);
+        }
+
+        if (!isShatteredState) {
+          if (allReassembled) {
+            isReassembling = false;
+            if (gemStatusEl && gemStatusEl.textContent !== "QUARTZ CRYSTAL ROCK [SOLID]") {
+              gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
+            }
+            if (gemHintEl && gemHintEl.textContent !== "MOVE CURSOR OVER ROCK TO SHATTER") {
+              gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
+            }
+          } else {
+            if (gemStatusEl && gemStatusEl.textContent !== "QUARTZ CRYSTAL ROCK [REASSEMBLING]") {
+              gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [REASSEMBLING]";
+            }
+            if (gemHintEl && gemHintEl.textContent !== "MAGNETIC REASSEMBLY IN PROGRESS") {
+              gemHintEl.textContent = "MAGNETIC REASSEMBLY IN PROGRESS";
+            }
+          }
         }
 
         // Particle sparkle orbit

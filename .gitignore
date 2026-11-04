@@ -18,6 +18,7 @@ run_state.json
 config.json
 dist/run_state.json
 dist/config.json
+dist/*.json
 dist/WingetUpdater/
 *.log
 dist/*.log
