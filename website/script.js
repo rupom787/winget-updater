@@ -1152,7 +1152,24 @@
           uTime: { value: 0.0 },
         },
         transparent: true,
+        side: THREE.DoubleSide,
       });
+
+      // 12 wide scatter trajectories that disperse solid shards across the full screen in 3D
+      const scatterConfigs = [
+        { dir: new THREE.Vector3(-1.6,  0.8,  0.9).normalize(), dist: 3.3, mass: 1.1, rotSpeed: 2.2 }, // High-left over headline
+        { dir: new THREE.Vector3(-1.9, -0.2, -0.7).normalize(), dist: 3.7, mass: 1.4, rotSpeed: 1.8 }, // Mid-left across italic text
+        { dir: new THREE.Vector3(-1.4, -1.3,  1.2).normalize(), dist: 3.4, mass: 1.0, rotSpeed: 2.6 }, // Low-left near buttons
+        { dir: new THREE.Vector3( 0.2,  1.6, -0.9).normalize(), dist: 2.9, mass: 0.9, rotSpeed: 2.4 }, // High-center towards header
+        { dir: new THREE.Vector3( 1.4,  1.3,  0.6).normalize(), dist: 3.3, mass: 1.2, rotSpeed: 2.0 }, // High-right
+        { dir: new THREE.Vector3( 1.9,  0.2, -0.5).normalize(), dist: 3.8, mass: 1.5, rotSpeed: 1.6 }, // Far-right edge
+        { dir: new THREE.Vector3( 1.5, -1.0,  0.8).normalize(), dist: 3.5, mass: 1.2, rotSpeed: 2.2 }, // Low-right
+        { dir: new THREE.Vector3(-0.3, -1.7, -0.6).normalize(), dist: 3.0, mass: 1.3, rotSpeed: 1.9 }, // Low-center towards prompt
+        { dir: new THREE.Vector3(-0.9,  1.4, -1.3).normalize(), dist: 3.4, mass: 1.0, rotSpeed: 2.5 }, // Deep-back high-left
+        { dir: new THREE.Vector3( 0.9, -1.5,  1.5).normalize(), dist: 3.2, mass: 1.2, rotSpeed: 2.1 }, // Close-front low-right
+        { dir: new THREE.Vector3( 1.7, -0.4,  1.0).normalize(), dist: 3.6, mass: 1.4, rotSpeed: 1.7 }, // Close-front right
+        { dir: new THREE.Vector3(-1.7,  0.4, -1.0).normalize(), dist: 3.4, mass: 1.1, rotSpeed: 2.3 }, // Deep-back mid-left
+      ];
 
       Promise.all([
         fetch("assets/rock_meta.json").then((r) => r.json()),
@@ -1167,6 +1184,7 @@
           geo.setAttribute("position", new THREE.BufferAttribute(posView, 3));
           geo.setAttribute("normal", new THREE.BufferAttribute(normView, 3));
           geo.setIndex(new THREE.BufferAttribute(idxView, 1));
+          geo.computeVertexNormals(); // Solid chiseled facet normals
 
           const mesh = new THREE.Mesh(geo, crystalMat);
           const centroid = new THREE.Vector3(...c.centroid);
@@ -1174,83 +1192,144 @@
           rockGroup.add(mesh);
           shardMeshes.push(mesh);
 
-          const normC = centroid.clone().normalize();
-          const swirl = new THREE.Vector3().crossVectors(normC, new THREE.Vector3(0, 1, 0)).multiplyScalar(0.35);
-          const explodeDir = normC.add(swirl).normalize();
-
+          const cfg = scatterConfigs[idx % scatterConfigs.length];
           const tumbleAxis = new THREE.Vector3(
-            Math.sin(idx * 1.7) * 2 - 1,
-            Math.cos(idx * 2.3) * 2 - 1,
-            Math.sin(idx * 3.1) * 2 - 1
+            Math.sin(idx * 2.3 + 1.1),
+            Math.cos(idx * 1.7 + 0.5),
+            Math.sin(idx * 3.1 + 2.4)
           ).normalize();
 
           shardData.push({
+            mesh: mesh,
             centroid: centroid.clone(),
-            explodeDir: explodeDir,
-            explodeDist: 1.15 + (Math.sin(idx * 3.7) * 0.5 + 0.5) * 0.65,
+            currPos: centroid.clone(),
+            velocity: new THREE.Vector3(0, 0, 0),
+            homeQuat: new THREE.Quaternion(),
+            currQuat: new THREE.Quaternion(),
+            angVel: new THREE.Vector3(0, 0, 0),
             tumbleAxis: tumbleAxis,
-            tumbleSpeed: Math.PI * (1.2 + (idx % 4) * 0.5),
-            driftSpeed: 0.6 + (idx % 5) * 0.2,
-            driftPhase: (idx * 0.45) % (Math.PI * 2),
+            tumbleSpeed: cfg.rotSpeed,
+            scatterDir: cfg.dir,
+            scatterDist: cfg.dist,
+            mass: cfg.mass,
+            driftPhase: (idx * 0.52) % (Math.PI * 2),
+            driftSpeed: 0.5 + (idx % 4) * 0.15,
           });
         });
+
+        if (window.location.search.includes("shatter")) {
+          isShatteredState = true;
+          portalScale = 1.05;
+          for (let i = 0; i < shardData.length; i++) {
+            const s = shardData[i];
+            s.currPos.addScaledVector(s.scatterDir, s.scatterDist * 0.95);
+            s.currQuat.setFromAxisAngle(s.tumbleAxis, s.tumbleSpeed * 1.5);
+            s.mesh.position.copy(s.currPos);
+            s.mesh.quaternion.copy(s.currQuat);
+          }
+        }
       }).catch((err) => {
         console.warn("Could not load crystal rock binary:", err);
       });
 
       // --- 8. PHYSICS, MOUSE SHATTER & REASSEMBLE CONTROLLER ---
-      let shatterProgress = 0.0;
-      let targetShatter = 0.0;
       let isShatteredState = false;
+      let portalScale = 0.0;
       let targetLeanX = 0, targetLeanY = 0;
       let isDragging = false;
       let previousPointerX = 0, previousPointerY = 0;
       let dragVelocityX = 0, dragVelocityY = 0;
 
       if (window.location.search.includes("shatter")) {
-        shatterProgress = 1.0;
-        targetShatter = 1.0;
         isShatteredState = true;
       }
-      function triggerShatter() {
+
+      function triggerShatter(impulseStrength = 1.0) {
         if (!isShatteredState) {
           isShatteredState = true;
-          targetShatter = 1.0;
-          if (audio) audio.playCrystalShatter();
+          if (audio) {
+            audio.playCrystalShatter();
+            if (audio.playBlip) {
+              audio.playBlip(2800, 0.04, 0.08);
+              setTimeout(() => audio.playBlip(1600, 0.08, 0.06), 35);
+            }
+          }
           if (gemStatusEl) gemStatusEl.textContent = "COSMIC PURPLE DREAM PORTAL [FRACTURED]";
           if (gemHintEl) gemHintEl.textContent = "CLICK PORTAL OR MOVE AWAY TO REASSEMBLE";
+
+          // Inject initial kinetic impulse into all solid shards
+          const strength = Math.min(Math.max(impulseStrength, 0.8), 2.5);
+          for (let i = 0; i < shardData.length; i++) {
+            const s = shardData[i];
+            const impulse = (s.scatterDist * 2.8 * strength) / s.mass;
+            s.velocity.copy(s.scatterDir).multiplyScalar(impulse);
+            s.angVel.copy(s.tumbleAxis).multiplyScalar(s.tumbleSpeed * 2.2 * strength);
+          }
         }
       }
 
       function triggerReassemble() {
         if (isShatteredState) {
           isShatteredState = false;
-          targetShatter = 0.0;
-          if (audio) audio.playCrystalReassemble();
+          if (audio) {
+            audio.playCrystalReassemble();
+            if (audio.playBlip) audio.playBlip(1200, 0.04, 0.05);
+          }
           if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
-          if (gemHintEl) gemHintEl.textContent = "HOVER TO SHATTER \u2022 LEAVE TO REASSEMBLE";
+          if (gemHintEl) gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
         }
       }
+
+      let prevCursorX = 0, prevCursorY = 0, prevCursorTime = performance.now();
+      let isInsideRock = false;
 
       window.addEventListener("mousemove", (e) => {
         const w = window.innerWidth;
         const h = window.innerHeight;
+        const now = performance.now();
+        const dt = Math.max((now - prevCursorTime) / 1000, 0.001);
+        const vx = (e.clientX - prevCursorX) / dt;
+        const vy = (e.clientY - prevCursorY) / dt;
+        const cursorSpeed = Math.hypot(vx, vy);
+
+        prevCursorX = e.clientX;
+        prevCursorY = e.clientY;
+        prevCursorTime = now;
+
         const nx = (e.clientX / w) * 2 - 1;
         const ny = -((e.clientY / h) * 2 - 1);
         targetLeanY = nx * 0.9;
         targetLeanX = -ny * 0.6;
 
-        // Proximity detection across fullscreen hero
-        const isNearRock = (w > 900 && e.clientX > w * 0.38) || (w <= 900 && Math.hypot(e.clientX - w / 2, e.clientY - h * 0.65) < 360);
+        // Calculate crystal rock screen position precisely in pixels
+        if (rockGroup && camera) {
+          const rockCenterWorld = rockGroup.position.clone();
+          const rockScreen = rockCenterWorld.project(camera);
+          const rockPixelX = (rockScreen.x * 0.5 + 0.5) * w;
+          const rockPixelY = (-(rockScreen.y * 0.5) + 0.5) * h;
 
-        if (isNearRock) {
-          triggerShatter();
-        } else {
-          triggerReassemble();
+          const distToRock = Math.hypot(e.clientX - rockPixelX, e.clientY - rockPixelY);
+          const rockScreenRadius = Math.min(w, h) * (w > 768 ? 0.22 : 0.32);
+
+          // Physical break trigger: cursor strikes or moves into the rock!
+          if (distToRock < rockScreenRadius) {
+            if (!isInsideRock) {
+              isInsideRock = true;
+              const impact = 1.0 + Math.min(cursorSpeed / 1200, 1.2);
+              triggerShatter(impact);
+            }
+          } else if (distToRock > rockScreenRadius * 1.55) {
+            // Reassemble trigger: cursor moves away from rock zone
+            if (isInsideRock || isShatteredState) {
+              isInsideRock = false;
+              triggerReassemble();
+            }
+          }
         }
       });
 
       window.addEventListener("mouseleave", () => {
+        isInsideRock = false;
         triggerReassemble();
         targetLeanX = 0;
         targetLeanY = 0;
@@ -1263,7 +1342,7 @@
           if (dreamBtn) dreamBtn.click();
           triggerReassemble();
         } else {
-          triggerShatter();
+          triggerShatter(1.8);
         }
       });
 
@@ -1352,50 +1431,70 @@
           pixelBadgeMesh.position.y = 1.30 + Math.sin(elapsed * 2.2) * 0.04;
         }
 
-        // Smooth spring lerp for shatter progress
-        shatterProgress += (targetShatter - shatterProgress) * 0.085;
-        if (shatterProgress < 0.0008) shatterProgress = 0;
+        const dt = Math.min(clock.getDelta(), 0.04);
 
-        const easeProgress = 1 - Math.pow(1 - shatterProgress, 3);
-
-        // Update each 3D crystal chunk
-        for (let i = 0; i < shardMeshes.length; i++) {
-          const mesh = shardMeshes[i];
-          const data = shardData[i];
-          if (!data) continue;
-
-          if (shatterProgress === 0) {
-            mesh.position.copy(data.centroid);
-            mesh.quaternion.identity();
-            mesh.scale.set(1, 1, 1);
-          } else {
-            const dist = data.explodeDist * easeProgress;
-            const driftX = Math.sin(elapsed * data.driftSpeed + data.driftPhase) * 0.12 * easeProgress;
-            const driftY = Math.cos(elapsed * data.driftSpeed * 0.8 + data.driftPhase) * 0.12 * easeProgress;
-            const driftZ = Math.sin(elapsed * data.driftSpeed * 1.3 + data.driftPhase) * 0.12 * easeProgress;
-
-            mesh.position.set(
-              data.centroid.x + data.explodeDir.x * dist + driftX,
-              data.centroid.y + data.explodeDir.y * dist + driftY,
-              data.centroid.z + data.explodeDir.z * dist + driftZ
-            );
-
-            const angle = data.tumbleSpeed * easeProgress + (elapsed * 0.45 * easeProgress);
-            mesh.quaternion.setFromAxisAngle(data.tumbleAxis, angle);
-
-            const s = 1.0 + Math.sin(elapsed * 2.5 + i) * 0.03 * easeProgress;
-            mesh.scale.set(s, s, s);
-          }
-        }
-
-        // Cosmic Purple Dream Portal reveal & spin
+        // Portal scale lerp
+        const targetPScale = isShatteredState ? 1.05 : 0.0;
+        portalScale += (targetPScale - portalScale) * (isShatteredState ? 0.08 : 0.12);
+        if (portalScale < 0.005) portalScale = 0.0;
         if (portalGroup) {
-          const pScale = easeProgress * 1.05;
-          portalGroup.scale.set(pScale, pScale, pScale);
+          portalGroup.scale.set(portalScale, portalScale, portalScale);
           portalGroup.rotation.z = elapsed * 0.22;
         }
         if (portalLight) {
-          portalLight.intensity = easeProgress * 4.2;
+          portalLight.intensity = portalScale * 4.5;
+        }
+
+        // Full-screen zero-g physics simulation for all solid crystal chunks
+        for (let i = 0; i < shardData.length; i++) {
+          const s = shardData[i];
+          if (!s || !s.mesh) continue;
+
+          if (!isShatteredState) {
+            // REASSEMBLING: Magnetic Damped Harmonic Spring pulling toward centroid
+            const toHome = new THREE.Vector3().subVectors(s.centroid, s.currPos);
+            const dist = toHome.length();
+
+            if (dist > 0.012) {
+              const springF = toHome.clone().multiplyScalar(14.0);
+              s.velocity.addScaledVector(springF, dt);
+              s.velocity.multiplyScalar(Math.exp(-dt * 7.5));
+              s.currPos.addScaledVector(s.velocity, dt);
+
+              // Smoothly orient back to original crystal facet alignment
+              s.currQuat.slerp(s.homeQuat, dt * 8.0);
+            } else {
+              s.currPos.copy(s.centroid);
+              s.currQuat.copy(s.homeQuat);
+              s.velocity.set(0, 0, 0);
+              s.angVel.set(0, 0, 0);
+            }
+          } else {
+            // SHATTERED: Wide 3D dispersion with space drag + harmonic zero-g bobbing
+            const targetPos = s.centroid.clone().addScaledVector(s.scatterDir, s.scatterDist);
+            const toTarget = new THREE.Vector3().subVectors(targetPos, s.currPos);
+
+            // Guidance acceleration towards scattered zero-g orbit
+            s.velocity.addScaledVector(toTarget, dt * 2.8);
+            s.velocity.multiplyScalar(Math.exp(-dt * 2.2)); // Space drag
+
+            // Micro harmonic orbital drift
+            const driftX = Math.sin(elapsed * s.driftSpeed + s.driftPhase) * 0.008;
+            const driftY = Math.cos(elapsed * s.driftSpeed * 0.8 + s.driftPhase) * 0.008;
+            const driftZ = Math.sin(elapsed * s.driftSpeed * 1.2 + s.driftPhase) * 0.008;
+            s.currPos.x += s.velocity.x * dt + driftX;
+            s.currPos.y += s.velocity.y * dt + driftY;
+            s.currPos.z += s.velocity.z * dt + driftZ;
+
+            // 3D rotation tumbling
+            const spinAmount = Math.max(s.angVel.length(), 0.35) * dt;
+            const deltaRot = new THREE.Quaternion().setFromAxisAngle(s.tumbleAxis, spinAmount);
+            s.currQuat.multiply(deltaRot);
+            s.angVel.multiplyScalar(Math.exp(-dt * 0.8));
+          }
+
+          s.mesh.position.copy(s.currPos);
+          s.mesh.quaternion.copy(s.currQuat);
         }
 
         // Particle sparkle orbit

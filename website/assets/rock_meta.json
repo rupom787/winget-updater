@@ -1,6 +1,7 @@
 {
-  "version": 2,
-  "totalBytes": 1114596,
+  "version": 3,
+  "solid": true,
+  "totalBytes": 1196724,
   "chunks": [
     {
       "chunkId": 0,
@@ -9,12 +10,12 @@
         1.0554071435455505,
         0.150817142832412
       ],
-      "numVerts": 3459,
-      "numTris": 5417,
+      "numVerts": 3460,
+      "numTris": 6690,
       "posByteOffset": 0,
-      "normByteOffset": 41508,
-      "idxByteOffset": 83016,
-      "numIndices": 16251
+      "normByteOffset": 41520,
+      "idxByteOffset": 83040,
+      "numIndices": 20070
     },
     {
       "chunkId": 1,
@@ -23,12 +24,12 @@
         0.6949258123898082,
         0.5594005410184104
       ],
-      "numVerts": 3146,
-      "numTris": 4410,
-      "posByteOffset": 115520,
-      "normByteOffset": 153272,
-      "idxByteOffset": 191024,
-      "numIndices": 13230
+      "numVerts": 3147,
+      "numTris": 5980,
+      "posByteOffset": 123180,
+      "normByteOffset": 160944,
+      "idxByteOffset": 198708,
+      "numIndices": 17940
     },
     {
       "chunkId": 2,
@@ -37,12 +38,12 @@
         0.5696259526404697,
         0.43239388389178407
       ],
-      "numVerts": 2485,
-      "numTris": 3708,
-      "posByteOffset": 217484,
-      "normByteOffset": 247304,
-      "idxByteOffset": 277124,
-      "numIndices": 11124
+      "numVerts": 2486,
+      "numTris": 4880,
+      "posByteOffset": 234588,
+      "normByteOffset": 264420,
+      "idxByteOffset": 294252,
+      "numIndices": 14640
     },
     {
       "chunkId": 3,
@@ -51,12 +52,12 @@
         0.3168527093277803,
         -0.507789736036384
       ],
-      "numVerts": 2049,
-      "numTris": 3053,
-      "posByteOffset": 299372,
-      "normByteOffset": 323960,
-      "idxByteOffset": 348548,
-      "numIndices": 9159
+      "numVerts": 2050,
+      "numTris": 3964,
+      "posByteOffset": 323532,
+      "normByteOffset": 348132,
+      "idxByteOffset": 372732,
+      "numIndices": 11892
     },
     {
       "chunkId": 4,
@@ -65,12 +66,12 @@
         0.5428161317459452,
         -0.465061421101184
       ],
-      "numVerts": 1288,
-      "numTris": 2249,
-      "posByteOffset": 366868,
-      "normByteOffset": 382324,
-      "idxByteOffset": 397780,
-      "numIndices": 6747
+      "numVerts": 1289,
+      "numTris": 2570,
+      "posByteOffset": 396516,
+      "normByteOffset": 411984,
+      "idxByteOffset": 427452,
+      "numIndices": 7710
     },
     {
       "chunkId": 5,
@@ -79,12 +80,12 @@
         -0.1830954590710957,
         -0.02315392089118577
       ],
-      "numVerts": 2205,
-      "numTris": 3520,
-      "posByteOffset": 411276,
-      "normByteOffset": 437736,
-      "idxByteOffset": 464196,
-      "numIndices": 10560
+      "numVerts": 2206,
+      "numTris": 4362,
+      "posByteOffset": 442872,
+      "normByteOffset": 469344,
+      "idxByteOffset": 495816,
+      "numIndices": 13086
     },
     {
       "chunkId": 6,
@@ -93,12 +94,12 @@
         -0.0808788704716434,
         0.35404277755575364
       ],
-      "numVerts": 1074,
-      "numTris": 1537,
-      "posByteOffset": 485316,
-      "normByteOffset": 498204,
-      "idxByteOffset": 511092,
-      "numIndices": 4611
+      "numVerts": 1075,
+      "numTris": 2094,
+      "posByteOffset": 521988,
+      "normByteOffset": 534888,
+      "idxByteOffset": 547788,
+      "numIndices": 6282
     },
     {
       "chunkId": 7,
@@ -107,12 +108,12 @@
         -0.19022695962431993,
         0.7226546068281122
       ],
-      "numVerts": 958,
-      "numTris": 1651,
-      "posByteOffset": 520316,
-      "normByteOffset": 531812,
-      "idxByteOffset": 543308,
-      "numIndices": 4953
+      "numVerts": 959,
+      "numTris": 1912,
+      "posByteOffset": 560352,
+      "normByteOffset": 571860,
+      "idxByteOffset": 583368,
+      "numIndices": 5736
     },
     {
       "chunkId": 8,
@@ -121,12 +122,12 @@
         -0.4974990808962766,
         -0.6761947051106885
       ],
-      "numVerts": 3043,
-      "numTris": 4500,
-      "posByteOffset": 553216,
-      "normByteOffset": 589732,
-      "idxByteOffset": 626248,
-      "numIndices": 13500
+      "numVerts": 3044,
+      "numTris": 5850,
+      "posByteOffset": 594840,
+      "normByteOffset": 631368,
+      "idxByteOffset": 667896,
+      "numIndices": 17550
     },
     {
       "chunkId": 9,
@@ -135,12 +136,12 @@
         -0.8571707809954041,
         0.04485863834377601
       ],
-      "numVerts": 3688,
-      "numTris": 5280,
-      "posByteOffset": 653248,
-      "normByteOffset": 697504,
-      "idxByteOffset": 741760,
-      "numIndices": 15840
+      "numVerts": 3689,
+      "numTris": 7104,
+      "posByteOffset": 702996,
+      "normByteOffset": 747264,
+      "idxByteOffset": 791532,
+      "numIndices": 21312
     },
     {
       "chunkId": 10,
@@ -149,12 +150,12 @@
         -0.9354977873682874,
         0.3242678795811934
       ],
-      "numVerts": 4684,
-      "numTris": 7194,
-      "posByteOffset": 773440,
-      "normByteOffset": 829648,
-      "idxByteOffset": 885856,
-      "numIndices": 21582
+      "numVerts": 4685,
+      "numTris": 9034,
+      "posByteOffset": 834156,
+      "normByteOffset": 890376,
+      "idxByteOffset": 946596,
+      "numIndices": 27102
     },
     {
       "chunkId": 11,
@@ -163,12 +164,12 @@
         -1.0316631621813617,
         -0.18358135984745727
       ],
-      "numVerts": 5484,
-      "numTris": 8993,
-      "posByteOffset": 929020,
-      "normByteOffset": 994828,
-      "idxByteOffset": 1060636,
-      "numIndices": 26979
+      "numVerts": 5485,
+      "numTris": 10714,
+      "posByteOffset": 1000800,
+      "normByteOffset": 1066620,
+      "idxByteOffset": 1132440,
+      "numIndices": 32142
     }
   ]
 }
