@@ -669,7 +669,7 @@
   const gemStatusEl = document.getElementById("telemetry-gem-status");
   const gemHintEl = document.getElementById("telemetry-gem-hint");
 
-  let rockGroup, shardMeshes = [], shardData = [], portalGroup, portalLight, ringMesh, causticMesh, pixelBadgeMesh;
+  let rockGroup, shardMeshes = [], shardData = [], portalGroup, portalLight, causticMesh;
   let dirLight1, dirLight2, dirLight3, crystalMat, portalMat, particleSystem;
 
   if (typeof THREE !== "undefined" && canvas && canvasFrame) {
@@ -726,15 +726,12 @@
         if (w > 1080) {
           rockGroup.position.set(0.95, -0.05, 0);
           if (causticMesh) causticMesh.position.set(0.95, -1.6, -0.2);
-          if (ringMesh) ringMesh.position.set(0.95, -0.05, 0);
         } else if (w > 768) {
           rockGroup.position.set(0.65, -0.1, 0);
           if (causticMesh) causticMesh.position.set(0.65, -1.6, -0.2);
-          if (ringMesh) ringMesh.position.set(0.65, -0.1, 0);
         } else {
           rockGroup.position.set(0, -0.55, 0);
           if (causticMesh) causticMesh.position.set(0, -2.1, -0.2);
-          if (ringMesh) ringMesh.position.set(0, -0.55, 0);
         }
       }
 
@@ -828,24 +825,24 @@
         ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Concentric Luminous Ripple Rings
-        ctx.strokeStyle = "rgba(216, 180, 254, 0.75)";
-        ctx.lineWidth = 3;
+        // Concentric Luminous Ripple Rings (Pure Celestial Starlight)
+        ctx.strokeStyle = "rgba(224, 242, 254, 0.75)";
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size * 0.35, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.strokeStyle = "rgba(192, 132, 252, 0.45)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(186, 230, 253, 0.45)";
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size * 0.22, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Center Pulsing Orb
+        // Center Pulsing Orb (Pure Diamond Core)
         const centerGrad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.12);
         centerGrad.addColorStop(0, "rgba(255, 255, 255, 1)");
-        centerGrad.addColorStop(0.4, "rgba(216, 180, 254, 0.9)");
-        centerGrad.addColorStop(1, "rgba(147, 51, 234, 0)");
+        centerGrad.addColorStop(0.4, "rgba(240, 249, 255, 0.85)");
+        centerGrad.addColorStop(1, "rgba(186, 230, 253, 0)");
         ctx.fillStyle = centerGrad;
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size * 0.12, 0, Math.PI * 2);
@@ -857,8 +854,8 @@
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.letterSpacing = "0.15em";
-        ctx.shadowColor = "rgba(147, 51, 234, 0.9)";
-        ctx.shadowBlur = 12;
+        ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+        ctx.shadowBlur = 10;
         ctx.fillText("ENTER", size / 2, size / 2 - 16);
         ctx.font = "bold 24px 'Space Grotesk', -apple-system, sans-serif";
         ctx.fillText("THE DREAM", size / 2, size / 2 + 18);
@@ -866,40 +863,17 @@
         return new THREE.CanvasTexture(pCanvas);
       }
 
-      // B. Orbiting Typography Ring Texture
-      function createRingTexture() {
-        const rCanvas = document.createElement("canvas");
-        rCanvas.width = 1024;
-        rCanvas.height = 128;
-        const ctx = rCanvas.getContext("2d");
-        ctx.clearRect(0, 0, rCanvas.width, rCanvas.height);
-
-        ctx.fillStyle = "rgba(100, 116, 139, 0.85)";
-        ctx.font = "bold 22px 'JetBrains Mono', monospace";
-        ctx.letterSpacing = "0.22em";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        const text = "WINGET UPDATER // SYSTEM ARCHITECTURE // V2.0.0 // 2026 // TRUTH ENGINE  \u2022  ";
-        ctx.fillText(text + text, rCanvas.width / 2, rCanvas.height / 2);
-
-        const tex = new THREE.CanvasTexture(rCanvas);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.ClampToEdgeWrapping;
-        return tex;
-      }
-
-      // C. Caustic Floor Glow Texture
+      // C. Pure Quartz Caustic Floor Light Pool
       function createCausticTexture() {
         const cCanvas = document.createElement("canvas");
         cCanvas.width = 512;
         cCanvas.height = 512;
         const ctx = cCanvas.getContext("2d");
         const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 250);
-        grad.addColorStop(0, "rgba(255, 235, 190, 0.45)");
-        grad.addColorStop(0.35, "rgba(255, 210, 150, 0.22)");
-        grad.addColorStop(0.7, "rgba(255, 190, 120, 0.05)");
-        grad.addColorStop(1, "rgba(255, 180, 100, 0)");
+        grad.addColorStop(0, "rgba(240, 248, 255, 0.32)");
+        grad.addColorStop(0.35, "rgba(224, 242, 254, 0.14)");
+        grad.addColorStop(0.7, "rgba(200, 230, 255, 0.03)");
+        grad.addColorStop(1, "rgba(200, 230, 255, 0)");
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(256, 256, 250, 0, Math.PI * 2);
@@ -907,60 +881,19 @@
         return new THREE.CanvasTexture(cCanvas);
       }
 
-      // D. Floating Retro Pixel-Art Crystal Badge Texture
-      function createPixelBadgeTexture() {
-        const bCanvas = document.createElement("canvas");
-        bCanvas.width = 64;
-        bCanvas.height = 64;
-        const ctx = bCanvas.getContext("2d");
-        ctx.imageSmoothingEnabled = false;
-
-        // Draw cute 16-bit faceted crystal icon
-        const px = (x, y, w, h, col) => {
-          ctx.fillStyle = col;
-          ctx.fillRect(x * 2, y * 2, w * 2, h * 2);
-        };
-
-        // Black outline diamond
-        px(10, 2, 12, 2, "#000");
-        px(6, 4, 4, 4, "#000");
-        px(22, 4, 4, 4, "#000");
-        px(3, 8, 3, 6, "#000");
-        px(26, 8, 3, 6, "#000");
-        px(3, 14, 2, 2, "#000");
-        px(27, 14, 2, 2, "#000");
-        px(5, 16, 3, 3, "#000");
-        px(24, 16, 3, 3, "#000");
-        px(8, 19, 4, 4, "#000");
-        px(20, 19, 4, 4, "#000");
-        px(12, 23, 8, 3, "#000");
-
-        // Ice blue & white gemstone facets
-        px(10, 4, 12, 4, "#ffffff");
-        px(6, 8, 8, 6, "#cffafe");
-        px(14, 8, 8, 6, "#67e8f9");
-        px(22, 8, 4, 6, "#06b6d4");
-        px(5, 14, 6, 2, "#38bdf8");
-        px(11, 14, 10, 5, "#0284c7");
-        px(21, 14, 6, 2, "#0369a1");
-        px(12, 19, 8, 4, "#0f172a");
-
-        return new THREE.CanvasTexture(bCanvas);
-      }
-
-      // --- 2. LIGHTING & ENVIRONMENT ---
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
+      // --- 2. LUXURY STUDIO LIGHTING (PURE OPTICAL WHITE & SILVER) ---
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
       scene.add(ambientLight);
 
-      dirLight1 = new THREE.DirectionalLight(0xffffff, 4.5); // Crisp specular key
+      dirLight1 = new THREE.DirectionalLight(0xffffff, 5.2); // Crisp diamond specular key
       dirLight1.position.set(5, 7, 5);
       scene.add(dirLight1);
 
-      dirLight2 = new THREE.DirectionalLight(0xffe082, 3.2); // Warm golden caustic bounce
+      dirLight2 = new THREE.DirectionalLight(0xf1f5f9, 3.2); // Soft silver bounce fill
       dirLight2.position.set(-6, 3, -4);
       scene.add(dirLight2);
 
-      dirLight3 = new THREE.DirectionalLight(0x7dd3fc, 2.8); // Cool cyan chromatic edge
+      dirLight3 = new THREE.DirectionalLight(0xe2e8f0, 2.8); // Pure chiseled facet edge rim
       dirLight3.position.set(3, -5, -4);
       scene.add(dirLight3);
 
@@ -977,34 +910,11 @@
       causticMesh.rotation.x = -Math.PI / 2.3;
       scene.add(causticMesh);
 
-      // --- 4. ORBITING TYPOGRAPHY RING ---
-      const ringGeo = new THREE.CylinderGeometry(2.15, 2.15, 0.22, 64, 1, true);
-      const ringMat = new THREE.MeshBasicMaterial({
-        map: createRingTexture(),
-        transparent: true,
-        opacity: 0.7,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      });
-      ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = 0.35;
-      ringMesh.rotation.z = -0.15;
-      scene.add(ringMesh);
-
-      // --- 5. FLOATING PIXEL CRYSTAL BADGE ---
-      const badgeGeo = new THREE.PlaneGeometry(0.48, 0.48);
-      const badgeMat = new THREE.MeshBasicMaterial({
-        map: createPixelBadgeTexture(),
-        transparent: true,
-        depthWrite: false,
-      });
-      pixelBadgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
-      pixelBadgeMesh.position.set(0.12, 1.30, 0.25);
-      rockGroup.add(pixelBadgeMesh);
+      // Note: Orbiting cylinder circle & pixel badge removed per user request for pure monolithic quartz elegance
 
       updateRockPlacement();
 
-      // --- 6. COSMIC PURPLE DREAM PORTAL IN CENTER ---
+      // --- 4. CELESTIAL ZERO-G GRAVITATIONAL SINGULARITY (SILVER / WHITE) ---
       portalGroup = new THREE.Group();
       portalGroup.position.set(0, 0, -0.35);
       portalGroup.scale.set(0, 0, 0); // hidden until shattered
@@ -1020,7 +930,7 @@
       const portalDisc = new THREE.Mesh(portalGeo, portalMat);
       portalGroup.add(portalDisc);
 
-      portalLight = new THREE.PointLight(0xa855f7, 0, 8);
+      portalLight = new THREE.PointLight(0xffffff, 0, 8);
       portalLight.position.set(0, 0, 0.1);
       portalGroup.add(portalLight);
 
@@ -1092,48 +1002,56 @@
           vec3 V = normalize(vViewPosition);
           vec3 N = normalize(vNormal);
 
-          vec2 normUv = vWorldPosition.xy * 0.45 + vWorldPosition.z * 0.12;
+          // Fine raw chiseled facet micro-surface normals
+          vec2 normUv = vWorldPosition.xy * 0.40 + vWorldPosition.z * 0.14;
           vec3 normalTex = texture2D(tNormal, normUv).rgb * 2.0 - 1.0;
-          N = normalize(N + normalTex * 0.38);
+          N = normalize(N + normalTex * 0.26);
 
           float NdotV = clamp(dot(N, V), 0.0, 1.0);
-          float fresnel = pow(1.0 - NdotV, 2.5);
 
-          vec2 refractOffset = vec2(-N.x, N.y) * uRefract;
+          // Physical Quartz / Diamond Fresnel (F0 = 0.055, rising to 1.0 at grazing angles)
+          float f0 = 0.055;
+          float fresnel = f0 + (1.0 - f0) * pow(1.0 - NdotV, 3.6);
 
-          float disp = uDisp;
+          // Physical optical refraction offset
+          vec2 refractOffset = vec2(-N.x, N.y) * (uRefract * 0.90);
+
+          // Subtle physical chromatic dispersion (delicate optical glass, zero synthetic rainbow)
+          float disp = uDisp * 0.40;
           float r = texture2D(tBack, clamp(screenUv + refractOffset * (1.0 + disp), 0.001, 0.999)).r;
           float g = texture2D(tBack, clamp(screenUv + refractOffset, 0.001, 0.999)).g;
           float b = texture2D(tBack, clamp(screenUv + refractOffset * (1.0 - disp), 0.001, 0.999)).b;
           vec3 refractedColor = vec3(r, g, b);
 
-          vec4 iceVein = texture2D(tMatcap, normUv * 0.75 + vec2(uTime * 0.015, 0.0));
+          // Internal mineral cleavage depth and suspended light fractures
+          vec4 internalCleavage = texture2D(tMatcap, normUv * 0.70 + vec2(uTime * 0.008, 0.0));
 
-          vec3 light1 = normalize(vec3(0.45, 0.75, 0.55));
-          vec3 light2 = normalize(vec3(-0.55, 0.35, 0.4));
+          // Triple studio specular glints for crystalline brilliance:
+          // Key Light: intense diamond sparkle
+          vec3 light1 = normalize(vec3(0.55, 0.80, 0.60));
           vec3 H1 = normalize(light1 + V);
+          float spec1 = pow(max(dot(N, H1), 0.0), 90.0) * 2.8;
+
+          // Fill Light: faceted edge definition
+          vec3 light2 = normalize(vec3(-0.65, 0.35, 0.40));
           vec3 H2 = normalize(light2 + V);
-          float spec1 = pow(max(dot(N, H1), 0.0), 55.0) * 1.5;
-          float spec2 = pow(max(dot(N, H2), 0.0), 35.0) * 0.75;
+          float spec2 = pow(max(dot(N, H2), 0.0), 45.0) * 1.2;
 
-          vec3 rainbow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (NdotV * 5.2 + vWorldPosition.y * 1.8));
-          vec3 edgeRainbow = rainbow * fresnel * 0.38;
+          // Back Rim Kicker: razor-sharp silhouette glint
+          vec3 light3 = normalize(vec3(0.15, -0.65, -0.60));
+          vec3 H3 = normalize(light3 + V);
+          float spec3 = pow(max(dot(N, H3), 0.0), 32.0) * 0.95;
 
-          vec3 crystalTint;
-          if (uNight > 0.5) {
-            crystalTint = mix(vec3(0.12, 0.08, 0.28), vec3(0.72, 0.48, 0.98), fresnel);
-            refractedColor = mix(refractedColor, vec3(0.85, 0.75, 1.0), 0.3);
-          } else {
-            crystalTint = mix(vec3(0.88, 0.90, 0.92), vec3(1.0, 1.0, 1.0), fresnel);
-          }
+          // Pure optical quartz tint: pristine icy-white / silver, zero muddy colors
+          vec3 quartzTint = mix(vec3(0.95, 0.97, 1.0), vec3(1.0, 1.0, 1.0), fresnel);
 
-          vec3 col = mix(refractedColor, crystalTint, 0.24);
-          col += iceVein.rgb * 0.06 * (1.0 - uNight * 0.5);
-          col += vec3(1.0) * (spec1 + spec2);
-          col += edgeRainbow;
-          col += vec3(1.0) * fresnel * 0.42;
+          // Composite: pristine high-transmittance crystal volume
+          vec3 col = mix(refractedColor, quartzTint, 0.18);
+          col += internalCleavage.rgb * 0.045; // Delicate internal mineral inclusions
+          col += vec3(1.0) * (spec1 + spec2 + spec3); // Triple studio specular glints
+          col += quartzTint * fresnel * 0.52; // Brilliant grazing rim reflection
 
-          float alpha = clamp(0.92 + fresnel * 0.08, 0.0, 1.0);
+          float alpha = clamp(0.91 + fresnel * 0.09, 0.0, 1.0);
 
           gl_FragColor = vec4(col, alpha);
         }
@@ -1409,10 +1327,10 @@
           crystalMat.uniforms.uNight.value = isDream ? 1.0 : 0.0;
         }
         updateBackTexture(isDream);
-        if (pMat) pMat.color.setHex(isDream ? 0xe879f9 : 0x93c5fd);
+        if (pMat) pMat.color.setHex(isDream ? 0xe2e8f0 : 0x94a3b8);
         if (dirLight1) dirLight1.color.setHex(0xffffff);
-        if (dirLight2) dirLight2.color.setHex(isDream ? 0xa855f7 : 0xffd166);
-        if (dirLight3) dirLight3.color.setHex(isDream ? 0x00f0ff : 0x38bdf8);
+        if (dirLight2) dirLight2.color.setHex(0xf1f5f9);
+        if (dirLight3) dirLight3.color.setHex(0xe2e8f0);
       };
 
       window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));

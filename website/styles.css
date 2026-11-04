@@ -152,15 +152,14 @@ html.dream-mode .analog-noise-overlay {
   border-left: 1px solid var(--border);
 }
 
-/* Custom Magnetic Cursor */
+/* Custom Magnetic Cursor (Disabled per user request for pure clean native interaction) */
 .custom-cursor {
+  display: none !important;
   position: fixed;
   top: 0;
   left: 0;
   pointer-events: none;
   z-index: 9999;
-  transform: translate3d(-100px, -100px, 0);
-  transition: opacity 0.3s ease;
 }
 
 .cursor-dot {
