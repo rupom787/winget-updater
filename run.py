@@ -44,5 +44,75 @@ except Exception:
 
 from winget_updater.cli import main
 
+
+def _extract_bundled_uninstaller() -> None:
+    """Extract the bundled Uninstall.exe from the PyInstaller bundle to the app directory
+    and register the application in Windows Add/Remove Programs (registry)."""
+    if not getattr(sys, "frozen", False):
+        return  # Only runs when packaged as .exe
+
+    try:
+        bundle_dir = Path(sys._MEIPASS)
+        bundled_uninstaller = bundle_dir / "Uninstall.exe"
+        if not bundled_uninstaller.exists():
+            return  # No bundled uninstaller found (dev build or stripped)
+
+        # Extract to the directory containing the main WingetUpdater.exe
+        app_dir = Path(sys.executable).parent
+        target_uninstaller = app_dir / "Uninstall.exe"
+
+        # Always overwrite to keep uninstaller in sync with the main exe version
+        import shutil
+        shutil.copy2(str(bundled_uninstaller), str(target_uninstaller))
+
+        # Register in Windows Add/Remove Programs (HKLM\...\Uninstall\WingetUpdater)
+        _register_add_remove_programs(app_dir, target_uninstaller)
+    except Exception:
+        pass  # Non-critical — app works fine without registry entry
+
+
+def _register_add_remove_programs(app_dir: Path, uninstaller_path: Path) -> None:
+    """Creates or updates the Windows registry entry so the app appears in Add/Remove Programs."""
+    try:
+        import winreg
+
+        reg_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WingetUpdater"
+
+        version = "2.1.0"
+        try:
+            from winget_updater import __version__
+            version = __version__
+        except Exception:
+            pass
+
+        values = {
+            "DisplayName": "Winget Updater — Windows 11 Edition",
+            "DisplayVersion": version,
+            "Publisher": "rupom787",
+            "UninstallString": f'"{uninstaller_path}"',
+            "QuietUninstallString": f'"{uninstaller_path}" --silent',
+            "InstallLocation": str(app_dir),
+            "DisplayIcon": f'"{app_dir / "WingetUpdater.exe"}"',
+            "NoModify": 1,
+            "NoRepair": 1,
+        }
+
+        for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            try:
+                key = winreg.CreateKeyEx(hive, reg_key_path, 0, winreg.KEY_WRITE)
+                for name, value in values.items():
+                    if isinstance(value, int):
+                        winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, value)
+                    else:
+                        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
+                winreg.CloseKey(key)
+                break
+            except (PermissionError, OSError):
+                continue
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
+    _extract_bundled_uninstaller()
     sys.exit(main())

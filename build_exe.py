@@ -1,4 +1,6 @@
-"""Build script to compile the application into a standalone Windows .exe with PyInstaller."""
+"""Build script to compile the application into a standalone Windows .exe with PyInstaller.
+Bundles the uninstaller executable INSIDE WingetUpdater.exe so only a single executable is distributed.
+"""
 
 import os
 import shutil
@@ -14,6 +16,19 @@ def build():
 
     print("=== Building WingetUpdater.exe for Windows 11 ===")
 
+    # 1. First compile Uninstall.exe so it exists for embedding inside the main installer
+    from build_uninstaller import build_uninstaller
+    print("\n--- Step 1: Compiling Bundled Uninstaller ---")
+    if not build_uninstaller():
+        print("Error: Failed to compile uninstaller.")
+        return False
+
+    uninstaller_path = dist_dir / "Uninstall.exe"
+    if not uninstaller_path.exists():
+        print(f"Error: {uninstaller_path} was not created.")
+        return False
+
+    print("\n--- Step 2: Compiling WingetUpdater.exe (with embedded Uninstaller) ---")
     cmd = [
         sys.executable,
         "-m", "PyInstaller",
@@ -25,6 +40,7 @@ def build():
         "--uac-admin",  # Embeds Windows UAC administrator manifest directly into EXE
         "--add-data", f"{root_dir / 'exclusions.json'};.",
         "--add-data", f"{root_dir / 'sources.json'};.",
+        "--add-data", f"{uninstaller_path};.",  # Embeds Uninstall.exe inside WingetUpdater.exe!
         str(root_dir / "run.py"),
     ]
 
@@ -38,9 +54,10 @@ def build():
     if exe_path.exists():
         size_mb = exe_path.stat().st_size / (1024 * 1024)
         print("\n" + "=" * 60)
-        print(f"SUCCESS: Executable created at:")
+        print("SUCCESS: Standalone WingetUpdater.exe created at:")
         print(f"  {exe_path}")
         print(f"  Size: {size_mb:.2f} MB")
+        print("  Embedded components: Uninstall.exe, exclusions.json, sources.json")
         print("=" * 60)
 
         # Ensure default exclusions.json and sources.json exist in dist folder next to EXE
@@ -51,10 +68,6 @@ def build():
                 shutil.copy2(src_cfg, dst_cfg)
                 print(f"Copied {cfg_file} to dist/")
 
-        # Also compile Uninstall.exe
-        from build_uninstaller import build_uninstaller
-        build_uninstaller()
-
         return True
     else:
         print("Error: Target executable was not found after build.")
@@ -64,4 +77,3 @@ def build():
 if __name__ == "__main__":
     if not build():
         sys.exit(1)
-

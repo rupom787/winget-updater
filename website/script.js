@@ -1234,6 +1234,8 @@
 
       // --- 8. PHYSICS, MOUSE SHATTER & REASSEMBLE CONTROLLER ---
       let isShatteredState = false;
+      let isReassembling = false;
+      let reassembleTimer = null;
       let portalScale = 0.0;
       let targetLeanX = 0, targetLeanY = 0;
       let isDragging = false;
@@ -1247,6 +1249,11 @@
       function triggerShatter(impulseStrength = 1.0) {
         if (!isShatteredState) {
           isShatteredState = true;
+          isReassembling = false;
+          if (reassembleTimer) {
+            clearTimeout(reassembleTimer);
+            reassembleTimer = null;
+          }
           if (audio) {
             audio.playCrystalShatter();
             if (audio.playBlip) {
@@ -1255,7 +1262,7 @@
             }
           }
           if (gemStatusEl) gemStatusEl.textContent = "COSMIC PURPLE DREAM PORTAL [FRACTURED]";
-          if (gemHintEl) gemHintEl.textContent = "CLICK PORTAL OR MOVE AWAY TO REASSEMBLE";
+          if (gemHintEl) gemHintEl.textContent = "SHATTERED — MAGNETIC REASSEMBLY ARMED";
 
           // Inject initial kinetic impulse into all solid shards
           const strength = Math.min(Math.max(impulseStrength, 0.8), 2.5);
@@ -1265,18 +1272,34 @@
             s.velocity.copy(s.scatterDir).multiplyScalar(impulse);
             s.angVel.copy(s.tumbleAxis).multiplyScalar(s.tumbleSpeed * 2.2 * strength);
           }
+
+          // Automatically reassemble after 2.8 seconds so it always comes back together and fixes itself!
+          reassembleTimer = setTimeout(() => {
+            triggerReassemble();
+          }, 2800);
         }
       }
 
       function triggerReassemble() {
+        if (reassembleTimer) {
+          clearTimeout(reassembleTimer);
+          reassembleTimer = null;
+        }
         if (isShatteredState) {
           isShatteredState = false;
+          isReassembling = true;
           if (audio) {
             audio.playCrystalReassemble();
             if (audio.playBlip) audio.playBlip(1200, 0.04, 0.05);
           }
-          if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
-          if (gemHintEl) gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
+          if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [REASSEMBLING]";
+          if (gemHintEl) gemHintEl.textContent = "MAGNETIC REASSEMBLY IN PROGRESS";
+
+          setTimeout(() => {
+            isReassembling = false;
+            if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
+            if (gemHintEl) gemHintEl.textContent = "MOVE CURSOR OVER ROCK TO SHATTER";
+          }, 1200);
         }
       }
 
@@ -1313,15 +1336,15 @@
 
           // Physical break trigger: cursor strikes or moves into the rock!
           if (distToRock < rockScreenRadius) {
-            if (!isInsideRock) {
+            if (!isInsideRock && !isReassembling) {
               isInsideRock = true;
               const impact = 1.0 + Math.min(cursorSpeed / 1200, 1.2);
               triggerShatter(impact);
             }
-          } else if (distToRock > rockScreenRadius * 1.55) {
+          } else if (distToRock > rockScreenRadius * 1.18) {
             // Reassemble trigger: cursor moves away from rock zone
-            if (isInsideRock || isShatteredState) {
-              isInsideRock = false;
+            isInsideRock = false;
+            if (isShatteredState) {
               triggerReassemble();
             }
           }
@@ -1456,13 +1479,13 @@
             const dist = toHome.length();
 
             if (dist > 0.012) {
-              const springF = toHome.clone().multiplyScalar(14.0);
+              const springF = toHome.clone().multiplyScalar(24.0);
               s.velocity.addScaledVector(springF, dt);
-              s.velocity.multiplyScalar(Math.exp(-dt * 7.5));
+              s.velocity.multiplyScalar(Math.exp(-dt * 6.5));
               s.currPos.addScaledVector(s.velocity, dt);
 
               // Smoothly orient back to original crystal facet alignment
-              s.currQuat.slerp(s.homeQuat, dt * 8.0);
+              s.currQuat.slerp(s.homeQuat, dt * 10.0);
             } else {
               s.currPos.copy(s.centroid);
               s.currQuat.copy(s.homeQuat);

@@ -6,6 +6,7 @@ __pycache__/
 # PyInstaller build intermediates (keep dist/WingetUpdater.exe)
 build/
 *.spec
+dist/Uninstall.exe
 
 # Testing and coverage
 .pytest_cache/

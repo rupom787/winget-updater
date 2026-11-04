@@ -2113,3 +2113,130 @@ class LiveWarningBar(tk.Frame):
 class InspectorPane(DetailsDrawer):
     """Backwards compatibility alias for DetailsDrawer."""
     pass
+
+
+class AppUpdateNotificationBanner(tk.Frame):
+    """Modern notification banner surfaced when a newer version of Winget Updater is available on GitHub."""
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        on_download_click: Optional[Callable[[str], None]] = None,
+        on_dismiss_click: Optional[Callable[[], None]] = None,
+    ):
+        super().__init__(
+            parent,
+            bg="#fdf2f8",
+            highlightbackground="#fbcfe8",
+            highlightthickness=1,
+            padx=14,
+            pady=8,
+        )
+        self.on_download_click = on_download_click
+        self.on_dismiss_click = on_dismiss_click
+        self.current_download_url = ""
+        self.latest_version = ""
+
+        # Left Column: Badge & Details
+        self.left_col = tk.Frame(self, bg="#fdf2f8")
+        self.left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.title_row = tk.Frame(self.left_col, bg="#fdf2f8")
+        self.title_row.pack(anchor="w")
+
+        self.lbl_badge = RoundedPillBadge(
+            self.title_row,
+            text="APP UPDATE AVAILABLE",
+            bg_color="#fce7f3",
+            fg_color="#9d174d",
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            height=20,
+            parent_bg="#fdf2f8",
+        )
+        self.lbl_badge.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.lbl_headline = tk.Label(
+            self.title_row,
+            text="A new release of Winget Updater is ready",
+            bg="#fdf2f8",
+            fg="#831843",
+            font=("Segoe UI", 9, "bold"),
+        )
+        self.lbl_headline.pack(side=tk.LEFT)
+
+        self.lbl_desc = tk.Label(
+            self.left_col,
+            text="Click Update Now to view release notes and download the verified executable.",
+            bg="#fdf2f8",
+            fg="#9d174d",
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_desc.pack(anchor="w", pady=(2, 0))
+
+        # Right Column: Action Deck
+        self.right_col = tk.Frame(self, bg="#fdf2f8")
+        self.right_col.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.btn_download = RoundedButton(
+            self.right_col,
+            text="⚡ Update Now",
+            width=115,
+            height=28,
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
+            radius=8,
+            font=("Segoe UI", 8, "bold"),
+            command=self._handle_download,
+            parent_bg="#fdf2f8",
+        )
+        self.btn_download.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.btn_dismiss = RoundedButton(
+            self.right_col,
+            text="✕ Dismiss",
+            width=76,
+            height=28,
+            bg_color="#fce7f3",
+            fg_color="#831843",
+            hover_bg="#fbcfe8",
+            radius=8,
+            font=("Segoe UI", 8),
+            command=self._handle_dismiss,
+            parent_bg="#fdf2f8",
+        )
+        self.btn_dismiss.pack(side=tk.LEFT)
+
+    def set_update_info(self, version: str, download_url: str):
+        self.latest_version = version
+        self.current_download_url = download_url
+        self.lbl_headline.config(text=f"A new release of Winget Updater is ready: v{version}")
+
+    def _handle_download(self):
+        if self.on_download_click:
+            self.on_download_click(self.current_download_url)
+        else:
+            import webbrowser
+            url = self.current_download_url or "https://github.com/rupom787/winget-updater/releases/latest"
+            webbrowser.open(url)
+
+    def _handle_dismiss(self):
+        self.pack_forget()
+        if self.on_dismiss_click:
+            self.on_dismiss_click()
+
+    def apply_theme(self, theme):
+        is_dark = getattr(theme, "is_dark", False)
+        bg = "#2a1215" if is_dark else "#fdf2f8"
+        border = "#4c1d24" if is_dark else "#fbcfe8"
+        text_fg = "#fce7f3" if is_dark else "#831843"
+        desc_fg = "#f472b6" if is_dark else "#9d174d"
+
+        self.config(bg=bg, highlightbackground=border)
+        self.left_col.config(bg=bg)
+        self.title_row.config(bg=bg)
+        self.right_col.config(bg=bg)
+        self.lbl_headline.config(bg=bg, fg=text_fg)
+        self.lbl_desc.config(bg=bg, fg=desc_fg)

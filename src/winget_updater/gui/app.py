@@ -24,6 +24,8 @@ from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.engine.state_manager import StateManager
 from winget_updater.engine.tracker import UpdateTracker
 from winget_updater.engine.updater import UpdateEngine, UpdateRunSummary
+from winget_updater.engine.auto_updater import AppUpdateChecker
+from winget_updater.engine.uninstaller import Uninstaller
 from winget_updater.engine.windows_update import WindowsUpdateManager
 from winget_updater.gui.animations import (
     CyberLaserHeaderCanvas,
@@ -36,6 +38,7 @@ from winget_updater.gui.animations import (
 )
 from winget_updater.gui.components import (
     DetailsDrawer,
+    AppUpdateNotificationBanner,
     DiagnosticsResolutionBanner,
     ElevationBanner,
     FloatingGlassBatchDock,
@@ -541,6 +544,14 @@ class MainWindow(tk.Tk):
         )
         self.diag_banner.pack_forget()
 
+        # Notification banner for app updates
+        self.app_update_banner = AppUpdateNotificationBanner(
+            self.table_container,
+            on_download_click=self._handle_app_update_download,
+            on_dismiss_click=self._handle_app_update_dismiss,
+        )
+        self.app_update_banner.pack_forget()
+
         self.table = ProgramTableView(
             self.table_container,
             on_double_click=self._handle_row_double_click,
@@ -672,6 +683,8 @@ class MainWindow(tk.Tk):
             self.batch_dock.apply_theme(t)
         if hasattr(self, "diag_banner"):
             self.diag_banner.apply_theme(t)
+        if hasattr(self, "app_update_banner"):
+            self.app_update_banner.apply_theme(t)
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
         if hasattr(self, "btn_complete_system"):
@@ -2039,3 +2052,60 @@ class MainWindow(tk.Tk):
             entry.select_range(0, tk.END)
             self._show_floating_toast("Quick search active (Type to filter)", "🔍")
         return "break"
+
+
+    def _ensure_uninstaller_extracted(self) -> None:
+        """Extracts bundled uninstaller next to executable and registers in Windows Settings."""
+        try:
+            if hasattr(sys, "frozen"):
+                app_dir = Path(sys.executable).resolve().parent
+                uninstaller_target = app_dir / "Uninstall.exe"
+
+                # Check if bundled in PyInstaller MEIPASS
+                meipass = getattr(sys, "_MEIPASS", None)
+                if meipass:
+                    bundled_uninstaller = Path(meipass) / "Uninstall.exe"
+                    if bundled_uninstaller.exists() and not uninstaller_target.exists():
+                        import shutil
+                        shutil.copy2(bundled_uninstaller, uninstaller_target)
+                        logger.info(f"Extracted bundled Uninstall.exe to {uninstaller_target}")
+
+                from winget_updater import __version__
+                Uninstaller.register_in_windows_registry(
+                    install_dir=app_dir,
+                    version=__version__,
+                    uninstall_exe_path=uninstaller_target if uninstaller_target.exists() else None,
+                )
+        except Exception as e:
+            logger.debug(f"Error in uninstaller registration: {e}")
+
+    def _check_app_updates_async(self, force: bool = False) -> None:
+        """Checks GitHub releases in background and notifies user if an update is available."""
+        if hasattr(self, "app_updater"):
+            self.app_updater.check_in_background(self._on_app_update_result, force=force)
+
+    def _on_app_update_result(self, result: dict) -> None:
+        """Callback executed when GitHub release query completes."""
+        if result and result.get("update_available"):
+            self.after(0, lambda: self._show_app_update_banner(result))
+
+    def _show_app_update_banner(self, result: dict) -> None:
+        """Surfaces the update notification banner above the table."""
+        if hasattr(self, "app_update_banner"):
+            ver = result.get("latest_version", "latest")
+            url = result.get("download_url") or result.get("html_url", "")
+            self.app_update_banner.set_update_info(ver, url)
+            self.app_update_banner.pack(fill=tk.X, pady=(0, 8), before=self.table)
+            self._show_floating_toast(f"⚡ Winget Updater v{ver} is available!", icon="⚡")
+
+    def _handle_app_update_download(self, url: str) -> None:
+        """Opens the GitHub release page or direct download link."""
+        import webbrowser
+        target_url = url or "https://github.com/rupom787/winget-updater/releases/latest"
+        webbrowser.open(target_url)
+        self._show_floating_toast("Opening GitHub release page in your browser...", icon="🌐")
+
+    def _handle_app_update_dismiss(self) -> None:
+        """Dismisses the update banner."""
+        if hasattr(self, "app_update_banner"):
+            self.app_update_banner.pack_forget()
