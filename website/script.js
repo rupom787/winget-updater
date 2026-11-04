@@ -111,6 +111,54 @@
       } catch (e) {}
     }
 
+    playCrystalShatter() {
+      if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+      try {
+        const freqs = [2800, 3400, 2100, 4200, 1800, 3800];
+        freqs.forEach((f, idx) => {
+          setTimeout(() => {
+            if (!this.ctx || this.ctx.state !== "running") return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const now = this.ctx.currentTime;
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(f, now);
+            osc.frequency.exponentialRampToValueAtTime(f * 0.35, now + 0.09);
+            gain.gain.setValueAtTime(0.04, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.09);
+          }, idx * 18);
+        });
+      } catch (e) {}
+    }
+
+    playCrystalReassemble() {
+      if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+      try {
+        const chord = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+        chord.forEach((f, idx) => {
+          setTimeout(() => {
+            if (!this.ctx || this.ctx.state !== "running") return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const now = this.ctx.currentTime;
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(f * 0.85, now);
+            osc.frequency.exponentialRampToValueAtTime(f, now + 0.14);
+            gain.gain.setValueAtTime(0.035, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+          }, idx * 28);
+        });
+      } catch (e) {}
+    }
+
     playSuccessChime() {
       if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
       try {
@@ -360,6 +408,10 @@
   if (gateBtn) {
     gateBtn.addEventListener("click", unlockExperience);
   }
+  if (window.location.search.includes("preview")) {
+    if (enterGate) enterGate.classList.add("dismissed");
+    document.documentElement.classList.remove("lenis-stopped");
+  }
 
   window.addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === " " || e.key === "Escape") && enterGate && !enterGate.classList.contains("dismissed")) {
@@ -606,230 +658,593 @@
   }
 
   // ==========================================
-  // 14. THREE.JS REFRACTIVE GLASS MONOLITH WITH DRAG ORBIT
+  // 14. THREE.JS DAIKI FUJITA ORGANIC CRYSTAL ROCK WITH COSMIC DREAM PORTAL
   // ==========================================
   const canvas = document.getElementById("hero-webgl-canvas");
   const canvasFrame = document.getElementById("canvas-frame");
-  let monolithMesh, wireMesh, coreMesh, particleSystem, dirLight1, dirLight2;
+  const gemStatusEl = document.getElementById("telemetry-gem-status");
+  const gemHintEl = document.getElementById("telemetry-gem-hint");
+
+  let rockGroup, shardMeshes = [], shardData = [], portalGroup, portalLight, ringMesh, causticMesh, pixelBadgeMesh;
+  let dirLight1, dirLight2, dirLight3, crystalMat, portalMat, particleSystem;
 
   if (typeof THREE !== "undefined" && canvas && canvasFrame) {
     try {
       const scene = new THREE.Scene();
       const initialAspect = canvasFrame.clientHeight > 0 ? (canvasFrame.clientWidth / canvasFrame.clientHeight) : 1;
-      const camera = new THREE.PerspectiveCamera(45, initialAspect, 0.1, 100);
-    camera.position.set(0, 0, 5.0);
+      const camera = new THREE.PerspectiveCamera(42, initialAspect, 0.1, 100);
+      camera.position.set(0, 0, 5.2);
 
-    canvas.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvas,
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setSize(canvasFrame.clientWidth, canvasFrame.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      canvas.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+      renderer.setSize(canvasFrame.clientWidth, canvasFrame.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Outer Monolith: Refractive Crystal Glass (MeshPhysicalMaterial)
-    const monolithGeo = new THREE.OctahedronGeometry(1.68, 0);
-    const monolithMat = new THREE.MeshPhysicalMaterial({
-      color: 0x991b1b,
-      roughness: 0.1,
-      metalness: 0.15,
-      transmission: 0.85,
-      ior: 1.58,
-      thickness: 1.4,
-      transparent: true,
-      opacity: 0.95,
-      flatShading: true,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.08,
-    });
-    monolithMesh = new THREE.Mesh(monolithGeo, monolithMat);
-    scene.add(monolithMesh);
+      // Dynamic Studio HDR PMREM Environment for Real Crystal Refraction
+      const pmremGen = new THREE.PMREMGenerator(renderer);
+      pmremGen.compileEquirectangularShader();
 
-    // Glowing Wireframe Cage
-    const wireGeo = new THREE.WireframeGeometry(monolithGeo);
-    const wireMat = new THREE.LineBasicMaterial({
-      color: 0x0284c7,
-      transparent: true,
-      opacity: 0.65,
-    });
-    wireMesh = new THREE.LineSegments(wireGeo, wireMat);
-    scene.add(wireMesh);
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0xf1f5f9);
 
-    // Inner Floating Emerald Prism
-    const coreGeo = new THREE.IcosahedronGeometry(0.72, 1);
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0x047857,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.75,
-    });
-    coreMesh = new THREE.Mesh(coreGeo, coreMat);
-    scene.add(coreMesh);
+      // Bright specular key card (top-right)
+      const cKey = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      cKey.position.set(4, 8, 4);
+      cKey.lookAt(0, 0, 0);
+      envScene.add(cKey);
 
-    // Floating Ambient Particles
-    const pCount = 140;
-    const pGeo = new THREE.BufferGeometry();
-    const pPos = new Float32Array(pCount * 3);
-    for (let i = 0; i < pCount * 3; i += 3) {
-      pPos[i] = (Math.random() - 0.5) * 8;
-      pPos[i + 1] = (Math.random() - 0.5) * 6;
-      pPos[i + 2] = (Math.random() - 0.5) * 6;
-    }
-    pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
-    const pMat = new THREE.PointsMaterial({
-      size: 0.035,
-      color: 0x64748b,
-      transparent: true,
-      opacity: 0.65,
-    });
-    particleSystem = new THREE.Points(pGeo, pMat);
-    scene.add(particleSystem);
+      // Deep dark contrast card (for crisp internal facet refractions)
+      const cDark = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ color: 0x09090b }));
+      cDark.position.set(-6, -1, -4);
+      cDark.lookAt(0, 0, 0);
+      envScene.add(cDark);
 
-    // Dynamic Directional & Specular Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
-    scene.add(ambientLight);
+      // Warm amber caustic card (for Daiki golden caustic sheen)
+      const cWarm = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshBasicMaterial({ color: 0xfde68a }));
+      cWarm.position.set(5, -4, -3);
+      cWarm.lookAt(0, 0, 0);
+      envScene.add(cWarm);
 
-    dirLight1 = new THREE.DirectionalLight(0xff2a6d, 2.8);
-    dirLight1.position.set(4, 5, 4);
-    scene.add(dirLight1);
+      const envTarget = pmremGen.fromScene(envScene);
+      scene.environment = envTarget.texture;
 
-    dirLight2 = new THREE.DirectionalLight(0x00f0ff, 2.4);
-    dirLight2.position.set(-4, -3, 3);
-    scene.add(dirLight2);
+      rockGroup = new THREE.Group();
+      scene.add(rockGroup);
 
-    // Mouse Lean & Inertia Drag Orbit Tracking
-    let targetLeanX = 0, targetLeanY = 0;
-    let isHoveringCanvas = false;
-    let isDragging = false;
-    let previousPointerX = 0, previousPointerY = 0;
-    let dragVelocityX = 0, dragVelocityY = 0;
+      // --- 1. PROCEDURAL TEXTURES: DREAM PORTAL, ORBITING RING, CAUSTICS, PIXEL BADGE ---
+      
+      // A. Cosmic Purple Dream Portal Texture
+      function createPortalTexture() {
+        const size = 512;
+        const pCanvas = document.createElement("canvas");
+        pCanvas.width = size;
+        pCanvas.height = size;
+        const ctx = pCanvas.getContext("2d");
 
-    canvasFrame.addEventListener("pointerdown", (e) => {
-      isDragging = true;
-      previousPointerX = e.clientX;
-      previousPointerY = e.clientY;
-      dragVelocityX = 0;
-      dragVelocityY = 0;
-      audio.playBlip(1800, 0.02, 0.03);
-    });
+        // Cosmic Nebula Radial Glow
+        const grad = ctx.createRadialGradient(size / 2, size / 2, 10, size / 2, size / 2, size / 2);
+        grad.addColorStop(0.0, "rgba(230, 200, 255, 0.95)");
+        grad.addColorStop(0.2, "rgba(147, 51, 234, 0.92)");
+        grad.addColorStop(0.55, "rgba(88, 28, 135, 0.88)");
+        grad.addColorStop(0.82, "rgba(59, 7, 100, 0.5)");
+        grad.addColorStop(1.0, "rgba(30, 3, 50, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.fill();
 
-    window.addEventListener("pointermove", (e) => {
-      if (isDragging) {
-        const deltaX = e.clientX - previousPointerX;
-        const deltaY = e.clientY - previousPointerY;
-        dragVelocityX = deltaX * 0.008;
-        dragVelocityY = deltaY * 0.008;
-        monolithMesh.rotation.y += dragVelocityX;
-        monolithMesh.rotation.x += dragVelocityY;
+        // Concentric Luminous Ripple Rings
+        ctx.strokeStyle = "rgba(216, 180, 254, 0.75)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(192, 132, 252, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size * 0.22, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Center Pulsing Orb
+        const centerGrad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.12);
+        centerGrad.addColorStop(0, "rgba(255, 255, 255, 1)");
+        centerGrad.addColorStop(0.4, "rgba(216, 180, 254, 0.9)");
+        centerGrad.addColorStop(1, "rgba(147, 51, 234, 0)");
+        ctx.fillStyle = centerGrad;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Typography: ENTER THE DREAM
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 26px 'Space Grotesk', -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.letterSpacing = "0.15em";
+        ctx.shadowColor = "rgba(147, 51, 234, 0.9)";
+        ctx.shadowBlur = 12;
+        ctx.fillText("ENTER", size / 2, size / 2 - 16);
+        ctx.font = "bold 24px 'Space Grotesk', -apple-system, sans-serif";
+        ctx.fillText("THE DREAM", size / 2, size / 2 + 18);
+
+        return new THREE.CanvasTexture(pCanvas);
+      }
+
+      // B. Orbiting Typography Ring Texture
+      function createRingTexture() {
+        const rCanvas = document.createElement("canvas");
+        rCanvas.width = 1024;
+        rCanvas.height = 128;
+        const ctx = rCanvas.getContext("2d");
+        ctx.clearRect(0, 0, rCanvas.width, rCanvas.height);
+
+        ctx.fillStyle = "rgba(100, 116, 139, 0.85)";
+        ctx.font = "bold 22px 'JetBrains Mono', monospace";
+        ctx.letterSpacing = "0.22em";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const text = "WINGET UPDATER // SYSTEM ARCHITECTURE // V1.9.0 // 2026 // TRUTH ENGINE  \u2022  ";
+        ctx.fillText(text + text, rCanvas.width / 2, rCanvas.height / 2);
+
+        const tex = new THREE.CanvasTexture(rCanvas);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        return tex;
+      }
+
+      // C. Caustic Floor Glow Texture
+      function createCausticTexture() {
+        const cCanvas = document.createElement("canvas");
+        cCanvas.width = 512;
+        cCanvas.height = 512;
+        const ctx = cCanvas.getContext("2d");
+        const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 250);
+        grad.addColorStop(0, "rgba(255, 235, 190, 0.45)");
+        grad.addColorStop(0.35, "rgba(255, 210, 150, 0.22)");
+        grad.addColorStop(0.7, "rgba(255, 190, 120, 0.05)");
+        grad.addColorStop(1, "rgba(255, 180, 100, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(256, 256, 250, 0, Math.PI * 2);
+        ctx.fill();
+        return new THREE.CanvasTexture(cCanvas);
+      }
+
+      // D. Floating Retro Pixel-Art Crystal Badge Texture
+      function createPixelBadgeTexture() {
+        const bCanvas = document.createElement("canvas");
+        bCanvas.width = 64;
+        bCanvas.height = 64;
+        const ctx = bCanvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+
+        // Draw cute 16-bit faceted crystal icon
+        const px = (x, y, w, h, col) => {
+          ctx.fillStyle = col;
+          ctx.fillRect(x * 2, y * 2, w * 2, h * 2);
+        };
+
+        // Black outline diamond
+        px(10, 2, 12, 2, "#000");
+        px(6, 4, 4, 4, "#000");
+        px(22, 4, 4, 4, "#000");
+        px(3, 8, 3, 6, "#000");
+        px(26, 8, 3, 6, "#000");
+        px(3, 14, 2, 2, "#000");
+        px(27, 14, 2, 2, "#000");
+        px(5, 16, 3, 3, "#000");
+        px(24, 16, 3, 3, "#000");
+        px(8, 19, 4, 4, "#000");
+        px(20, 19, 4, 4, "#000");
+        px(12, 23, 8, 3, "#000");
+
+        // Ice blue & white gemstone facets
+        px(10, 4, 12, 4, "#ffffff");
+        px(6, 8, 8, 6, "#cffafe");
+        px(14, 8, 8, 6, "#67e8f9");
+        px(22, 8, 4, 6, "#06b6d4");
+        px(5, 14, 6, 2, "#38bdf8");
+        px(11, 14, 10, 5, "#0284c7");
+        px(21, 14, 6, 2, "#0369a1");
+        px(12, 19, 8, 4, "#0f172a");
+
+        return new THREE.CanvasTexture(bCanvas);
+      }
+
+      // --- 2. LIGHTING & ENVIRONMENT ---
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
+      scene.add(ambientLight);
+
+      dirLight1 = new THREE.DirectionalLight(0xffffff, 4.5); // Crisp specular key
+      dirLight1.position.set(5, 7, 5);
+      scene.add(dirLight1);
+
+      dirLight2 = new THREE.DirectionalLight(0xffe082, 3.2); // Warm golden caustic bounce
+      dirLight2.position.set(-6, 3, -4);
+      scene.add(dirLight2);
+
+      dirLight3 = new THREE.DirectionalLight(0x7dd3fc, 2.8); // Cool cyan chromatic edge
+      dirLight3.position.set(3, -5, -4);
+      scene.add(dirLight3);
+
+      // --- 3. FLOOR CAUSTIC LIGHT POOL ---
+      const causticGeo = new THREE.PlaneGeometry(4.0, 3.0);
+      const causticMat = new THREE.MeshBasicMaterial({
+        map: createCausticTexture(),
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+      });
+      causticMesh = new THREE.Mesh(causticGeo, causticMat);
+      causticMesh.position.set(0, -1.6, -0.2);
+      causticMesh.rotation.x = -Math.PI / 2.3;
+      scene.add(causticMesh);
+
+      // --- 4. ORBITING TYPOGRAPHY RING ---
+      const ringGeo = new THREE.CylinderGeometry(2.15, 2.15, 0.22, 64, 1, true);
+      const ringMat = new THREE.MeshBasicMaterial({
+        map: createRingTexture(),
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = 0.35;
+      ringMesh.rotation.z = -0.15;
+      scene.add(ringMesh);
+
+      // --- 5. FLOATING PIXEL CRYSTAL BADGE ---
+      const badgeGeo = new THREE.PlaneGeometry(0.5, 0.5);
+      const badgeMat = new THREE.MeshBasicMaterial({
+        map: createPixelBadgeTexture(),
+        transparent: true,
+        depthWrite: false,
+      });
+      pixelBadgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
+      pixelBadgeMesh.position.set(0.95, 1.25, 0.3);
+      scene.add(pixelBadgeMesh);
+
+      // --- 6. COSMIC PURPLE DREAM PORTAL IN CENTER ---
+      portalGroup = new THREE.Group();
+      portalGroup.position.set(0, 0, -0.35);
+      portalGroup.scale.set(0, 0, 0); // hidden until shattered
+      rockGroup.add(portalGroup);
+
+      const portalGeo = new THREE.PlaneGeometry(2.8, 2.8);
+      portalMat = new THREE.MeshBasicMaterial({
+        map: createPortalTexture(),
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const portalDisc = new THREE.Mesh(portalGeo, portalMat);
+      portalGroup.add(portalDisc);
+
+      portalLight = new THREE.PointLight(0xa855f7, 0, 8);
+      portalLight.position.set(0, 0, 0.1);
+      portalGroup.add(portalLight);
+
+      // Floating Ambient Micro-Sparkles
+      const pCount = 90;
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(pCount * 3);
+      for (let i = 0; i < pCount * 3; i += 3) {
+        pPos[i] = (Math.random() - 0.5) * 8;
+        pPos[i + 1] = (Math.random() - 0.5) * 6;
+        pPos[i + 2] = (Math.random() - 0.5) * 6;
+      }
+      pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+      const pMat = new THREE.PointsMaterial({
+        size: 0.04,
+        color: 0x93c5fd,
+        transparent: true,
+        opacity: 0.7,
+      });
+      particleSystem = new THREE.Points(pGeo, pMat);
+      scene.add(particleSystem);
+
+      // --- 7. LOAD 12 NATURAL SCULPTED CRYSTAL ROCK CHUNKS ---
+      const normalMap = new THREE.TextureLoader().load("assets/ice_normal.webp");
+      normalMap.wrapS = THREE.RepeatWrapping;
+      normalMap.wrapT = THREE.RepeatWrapping;
+
+      // Authentic Translucent Quartz / Ice Crystal Physical Material
+      crystalMat = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        roughness: 0.14,
+        metalness: 0.06,
+        transmission: 0.82,
+        ior: 1.54, // Quartz
+        thickness: 3.2,
+        transparent: true,
+        opacity: 0.98,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
+        reflectivity: 0.98,
+        envMapIntensity: 2.2,
+        normalMap: normalMap,
+        normalScale: new THREE.Vector2(1.4, 1.4),
+      });
+
+      Promise.all([
+        fetch("assets/rock_meta.json").then((r) => r.json()),
+        fetch("assets/rock_shards.bin").then((r) => r.arrayBuffer()),
+      ]).then(([meta, bin]) => {
+        meta.chunks.forEach((c, idx) => {
+          const posView = new Float32Array(bin, c.posByteOffset, c.numVerts * 3);
+          const normView = new Float32Array(bin, c.normByteOffset, c.numVerts * 3);
+          const idxView = new Uint16Array(bin, c.idxByteOffset, c.numIndices);
+
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute("position", new THREE.BufferAttribute(posView, 3));
+          geo.setAttribute("normal", new THREE.BufferAttribute(normView, 3));
+          geo.setIndex(new THREE.BufferAttribute(idxView, 1));
+
+          const mesh = new THREE.Mesh(geo, crystalMat);
+          const centroid = new THREE.Vector3(...c.centroid);
+          mesh.position.copy(centroid);
+          rockGroup.add(mesh);
+          shardMeshes.push(mesh);
+
+          const normC = centroid.clone().normalize();
+          const swirl = new THREE.Vector3().crossVectors(normC, new THREE.Vector3(0, 1, 0)).multiplyScalar(0.35);
+          const explodeDir = normC.add(swirl).normalize();
+
+          const tumbleAxis = new THREE.Vector3(
+            Math.sin(idx * 1.7) * 2 - 1,
+            Math.cos(idx * 2.3) * 2 - 1,
+            Math.sin(idx * 3.1) * 2 - 1
+          ).normalize();
+
+          shardData.push({
+            centroid: centroid.clone(),
+            explodeDir: explodeDir,
+            explodeDist: 2.2 + (Math.sin(idx * 3.7) * 0.5 + 0.5) * 1.8,
+            tumbleAxis: tumbleAxis,
+            tumbleSpeed: Math.PI * (1.8 + (idx % 4) * 0.7),
+            driftSpeed: 0.8 + (idx % 5) * 0.25,
+            driftPhase: (idx * 0.45) % (Math.PI * 2),
+          });
+        });
+      }).catch((err) => {
+        console.warn("Could not load crystal rock binary:", err);
+      });
+
+      // --- 8. PHYSICS, MOUSE SHATTER & REASSEMBLE CONTROLLER ---
+      let shatterProgress = 0.0;
+      let targetShatter = 0.0;
+      let isShatteredState = false;
+      let targetLeanX = 0, targetLeanY = 0;
+      let isDragging = false;
+      let previousPointerX = 0, previousPointerY = 0;
+      let dragVelocityX = 0, dragVelocityY = 0;
+
+      if (window.location.search.includes("shatter")) {
+        shatterProgress = 1.0;
+        targetShatter = 1.0;
+        isShatteredState = true;
+      }
+      function triggerShatter() {
+        if (!isShatteredState) {
+          isShatteredState = true;
+          targetShatter = 1.0;
+          if (audio) audio.playCrystalShatter();
+          if (gemStatusEl) gemStatusEl.textContent = "COSMIC PURPLE DREAM PORTAL [FRACTURED]";
+          if (gemHintEl) gemHintEl.textContent = "CLICK PORTAL OR MOVE AWAY TO REASSEMBLE";
+        }
+      }
+
+      function triggerReassemble() {
+        if (isShatteredState) {
+          isShatteredState = false;
+          targetShatter = 0.0;
+          if (audio) audio.playCrystalReassemble();
+          if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
+          if (gemHintEl) gemHintEl.textContent = "HOVER TO SHATTER \u2022 LEAVE TO REASSEMBLE";
+        }
+      }
+
+      canvasFrame.addEventListener("mouseenter", () => {
+        triggerShatter();
+      });
+
+      canvasFrame.addEventListener("mouseleave", () => {
+        triggerReassemble();
+        targetLeanX = 0;
+        targetLeanY = 0;
+      });
+
+      canvasFrame.addEventListener("mousemove", (e) => {
+        const rect = canvasFrame.getBoundingClientRect();
+        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+        targetLeanY = nx * 1.2;
+        targetLeanX = -ny * 0.8;
+      });
+
+      canvasFrame.addEventListener("click", () => {
+        if (isShatteredState) {
+          // If dream portal is open, clicking it triggers dream mode!
+          const dreamBtn = document.getElementById("fixed-theme-btn");
+          if (dreamBtn) dreamBtn.click();
+          triggerReassemble();
+        } else {
+          triggerShatter();
+        }
+      });
+
+      canvasFrame.addEventListener("pointerdown", (e) => {
+        isDragging = true;
         previousPointerX = e.clientX;
         previousPointerY = e.clientY;
-      }
-    });
+        dragVelocityX = 0;
+        dragVelocityY = 0;
+        if (audio) audio.playBlip(1800, 0.02, 0.03);
+      });
 
-    window.addEventListener("pointerup", () => {
-      isDragging = false;
-    });
+      window.addEventListener("pointermove", (e) => {
+        if (isDragging && rockGroup) {
+          const deltaX = e.clientX - previousPointerX;
+          const deltaY = e.clientY - previousPointerY;
+          dragVelocityX = deltaX * 0.008;
+          dragVelocityY = deltaY * 0.008;
+          rockGroup.rotation.y += dragVelocityX;
+          rockGroup.rotation.x += dragVelocityY;
+          previousPointerX = e.clientX;
+          previousPointerY = e.clientY;
+        }
+      });
 
-    canvasFrame.addEventListener("mousemove", (e) => {
-      const rect = canvasFrame.getBoundingClientRect();
-      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetLeanY = nx * 1.3;
-      targetLeanX = -ny * 0.9;
-      isHoveringCanvas = true;
-    });
+      window.addEventListener("pointerup", () => {
+        isDragging = false;
+      });
 
-    canvasFrame.addEventListener("mouseleave", () => {
-      isHoveringCanvas = false;
-      targetLeanX = 0;
-      targetLeanY = 0;
-    });
+      // --- 9. THEME PALETTE SWITCHER ---
+      window.syncThreePalette = function (isDream) {
+        if (!crystalMat) return;
+        if (isDream) {
+          crystalMat.color.setHex(0xc084fc);
+          crystalMat.emissive.setHex(0x2e1065);
+          crystalMat.roughness = 0.08;
+          crystalMat.transmission = 0.92;
+          pMat.color.setHex(0xe879f9);
+          dirLight1.color.setHex(0xffffff);
+          dirLight2.color.setHex(0xa855f7);
+          dirLight3.color.setHex(0x00f0ff);
+        } else {
+          crystalMat.color.setHex(0xf8fafc);
+          crystalMat.emissive.setHex(0x000000);
+          crystalMat.roughness = 0.10;
+          crystalMat.transmission = 0.94;
+          pMat.color.setHex(0x93c5fd);
+          dirLight1.color.setHex(0xffffff);
+          dirLight2.color.setHex(0xffd166);
+          dirLight3.color.setHex(0x38bdf8);
+        }
+      };
 
-    // Theme Switcher for 3D Scene
-    window.syncThreePalette = function (isDream) {
-      if (!monolithMesh) return;
-      if (isDream) {
-        monolithMat.color.setHex(0x0e0f2b);
-        monolithMat.roughness = 0.08;
-        monolithMat.transmission = 0.9;
-        wireMat.color.setHex(0x00f0ff);
-        coreMat.color.setHex(0xff2a6d);
-        pMat.color.setHex(0x00f0ff);
-        dirLight1.color.setHex(0x00f0ff);
-        dirLight2.color.setHex(0xff2a6d);
-      } else {
-        monolithMat.color.setHex(0x991b1b);
-        monolithMat.roughness = 0.12;
-        monolithMat.transmission = 0.85;
-        wireMat.color.setHex(0x0284c7);
-        coreMat.color.setHex(0x047857);
-        pMat.color.setHex(0x64748b);
-        dirLight1.color.setHex(0xffffff);
-        dirLight2.color.setHex(0x0284c7);
-      }
-    };
+      window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));
 
-    window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));
+      window.addEventListener("resize", () => {
+        if (!canvasFrame || !renderer || !camera) return;
+        const w = canvasFrame.clientWidth;
+        const h = canvasFrame.clientHeight;
+        if (w > 0 && h > 0) {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        }
+      });
 
-    window.addEventListener("resize", () => {
-      if (!canvasFrame || !renderer || !camera) return;
-      const w = canvasFrame.clientWidth;
-      const h = canvasFrame.clientHeight;
-      if (w > 0 && h > 0) {
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
-      }
-    });
+      const clock = new THREE.Clock();
 
-    const clock = new THREE.Clock();
+      function animateThree() {
+        requestAnimationFrame(animateThree);
+        if (prefersReducedMotion) {
+          renderer.render(scene, camera);
+          return;
+        }
 
-    function animateThree() {
-      requestAnimationFrame(animateThree);
-      if (prefersReducedMotion) {
+        const elapsed = clock.getElapsedTime();
+
+        // Inertia drag damping & idle rock rotation
+        if (!isDragging && rockGroup) {
+          dragVelocityX *= 0.92;
+          dragVelocityY *= 0.92;
+          rockGroup.rotation.y += dragVelocityX + 0.005;
+          rockGroup.rotation.x += dragVelocityY + 0.002;
+        }
+
+        // Orbiting typography ring rotation
+        if (ringMesh) {
+          ringMesh.rotation.y = -elapsed * 0.14;
+        }
+
+        // Floating pixel badge bobbing
+        if (pixelBadgeMesh) {
+          pixelBadgeMesh.position.y = 1.25 + Math.sin(elapsed * 2.2) * 0.04;
+        }
+
+        // Smooth spring lerp for shatter progress
+        shatterProgress += (targetShatter - shatterProgress) * 0.085;
+        if (shatterProgress < 0.0008) shatterProgress = 0;
+
+        const easeProgress = 1 - Math.pow(1 - shatterProgress, 3);
+
+        // Update each 3D crystal chunk
+        for (let i = 0; i < shardMeshes.length; i++) {
+          const mesh = shardMeshes[i];
+          const data = shardData[i];
+          if (!data) continue;
+
+          if (shatterProgress === 0) {
+            mesh.position.copy(data.centroid);
+            mesh.quaternion.identity();
+            mesh.scale.set(1, 1, 1);
+          } else {
+            const dist = data.explodeDist * easeProgress;
+            const driftX = Math.sin(elapsed * data.driftSpeed + data.driftPhase) * 0.12 * easeProgress;
+            const driftY = Math.cos(elapsed * data.driftSpeed * 0.8 + data.driftPhase) * 0.12 * easeProgress;
+            const driftZ = Math.sin(elapsed * data.driftSpeed * 1.3 + data.driftPhase) * 0.12 * easeProgress;
+
+            mesh.position.set(
+              data.centroid.x + data.explodeDir.x * dist + driftX,
+              data.centroid.y + data.explodeDir.y * dist + driftY,
+              data.centroid.z + data.explodeDir.z * dist + driftZ
+            );
+
+            const angle = data.tumbleSpeed * easeProgress + (elapsed * 0.45 * easeProgress);
+            mesh.quaternion.setFromAxisAngle(data.tumbleAxis, angle);
+
+            const s = 1.0 + Math.sin(elapsed * 2.5 + i) * 0.03 * easeProgress;
+            mesh.scale.set(s, s, s);
+          }
+        }
+
+        // Cosmic Purple Dream Portal reveal & spin
+        if (portalGroup) {
+          const pScale = easeProgress * 1.05;
+          portalGroup.scale.set(pScale, pScale, pScale);
+          portalGroup.rotation.z = elapsed * 0.22;
+        }
+        if (portalLight) {
+          portalLight.intensity = easeProgress * 4.2;
+        }
+
+        // Particle sparkle orbit
+        if (particleSystem) {
+          particleSystem.rotation.y = elapsed * 0.02;
+        }
+
+        // Camera lean toward mouse
+        if (isShatteredState && !isDragging) {
+          scene.rotation.y += (targetLeanY - scene.rotation.y) * 0.07;
+          scene.rotation.x += (targetLeanX - scene.rotation.x) * 0.07;
+        } else if (!isDragging) {
+          scene.rotation.y += (0 - scene.rotation.y) * 0.05;
+          scene.rotation.x += (0 - scene.rotation.x) * 0.05;
+        }
+
         renderer.render(scene, camera);
-        return;
       }
-
-      const elapsed = clock.getElapsedTime();
-
-      // Inertia drag damping
-      if (!isDragging) {
-        dragVelocityX *= 0.93;
-        dragVelocityY *= 0.93;
-        monolithMesh.rotation.y += dragVelocityX + 0.006;
-        monolithMesh.rotation.x += dragVelocityY + 0.003;
-      }
-
-      wireMesh.rotation.copy(monolithMesh.rotation);
-
-      coreMesh.rotation.y -= 0.014;
-      coreMesh.rotation.z += 0.007;
-
-      particleSystem.rotation.y = elapsed * 0.025;
-
-      if (isHoveringCanvas && !isDragging) {
-        scene.rotation.y += (targetLeanY - scene.rotation.y) * 0.08;
-        scene.rotation.x += (targetLeanX - scene.rotation.x) * 0.08;
-      } else if (!isDragging) {
-        scene.rotation.y += (0 - scene.rotation.y) * 0.05;
-        scene.rotation.x += (0 - scene.rotation.x) * 0.05;
-      }
-
-      renderer.render(scene, camera);
-    }
-    animateThree();
+      animateThree();
     } catch (err) {
-      console.warn("WebGL Monolith could not be initialized:", err);
+      console.warn("WebGL Crystal Rock could not be initialized:", err);
     }
   }
 
   function updateMonolithOnScroll() {
-    if (!monolithMesh || prefersReducedMotion) return;
+    if (!rockGroup || prefersReducedMotion) return;
     const scrollY = window.scrollY || document.documentElement.scrollTop;
-    monolithMesh.rotation.z = scrollY * 0.0015;
+    rockGroup.rotation.z = scrollY * 0.0015;
   }
 
   // ==========================================

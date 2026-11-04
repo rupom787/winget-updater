@@ -1,0 +1,174 @@
+{
+  "version": 2,
+  "totalBytes": 1114596,
+  "chunks": [
+    {
+      "chunkId": 0,
+      "centroid": [
+        0.16211065223082968,
+        1.0554071435455505,
+        0.150817142832412
+      ],
+      "numVerts": 3459,
+      "numTris": 5417,
+      "posByteOffset": 0,
+      "normByteOffset": 41508,
+      "idxByteOffset": 83016,
+      "numIndices": 16251
+    },
+    {
+      "chunkId": 1,
+      "centroid": [
+        0.6480685989727673,
+        0.6949258123898082,
+        0.5594005410184104
+      ],
+      "numVerts": 3146,
+      "numTris": 4410,
+      "posByteOffset": 115520,
+      "normByteOffset": 153272,
+      "idxByteOffset": 191024,
+      "numIndices": 13230
+    },
+    {
+      "chunkId": 2,
+      "centroid": [
+        -0.6327343460633391,
+        0.5696259526404697,
+        0.43239388389178407
+      ],
+      "numVerts": 2485,
+      "numTris": 3708,
+      "posByteOffset": 217484,
+      "normByteOffset": 247304,
+      "idxByteOffset": 277124,
+      "numIndices": 11124
+    },
+    {
+      "chunkId": 3,
+      "centroid": [
+        0.549706598363529,
+        0.3168527093277803,
+        -0.507789736036384
+      ],
+      "numVerts": 2049,
+      "numTris": 3053,
+      "posByteOffset": 299372,
+      "normByteOffset": 323960,
+      "idxByteOffset": 348548,
+      "numIndices": 9159
+    },
+    {
+      "chunkId": 4,
+      "centroid": [
+        -0.472666875641921,
+        0.5428161317459452,
+        -0.465061421101184
+      ],
+      "numVerts": 1288,
+      "numTris": 2249,
+      "posByteOffset": 366868,
+      "normByteOffset": 382324,
+      "idxByteOffset": 397780,
+      "numIndices": 6747
+    },
+    {
+      "chunkId": 5,
+      "centroid": [
+        0.8196465755536172,
+        -0.1830954590710957,
+        -0.02315392089118577
+      ],
+      "numVerts": 2205,
+      "numTris": 3520,
+      "posByteOffset": 411276,
+      "normByteOffset": 437736,
+      "idxByteOffset": 464196,
+      "numIndices": 10560
+    },
+    {
+      "chunkId": 6,
+      "centroid": [
+        -0.8266726808286023,
+        -0.0808788704716434,
+        0.35404277755575364
+      ],
+      "numVerts": 1074,
+      "numTris": 1537,
+      "posByteOffset": 485316,
+      "normByteOffset": 498204,
+      "idxByteOffset": 511092,
+      "numIndices": 4611
+    },
+    {
+      "chunkId": 7,
+      "centroid": [
+        0.3920989465356089,
+        -0.19022695962431993,
+        0.7226546068281122
+      ],
+      "numVerts": 958,
+      "numTris": 1651,
+      "posByteOffset": 520316,
+      "normByteOffset": 531812,
+      "idxByteOffset": 543308,
+      "numIndices": 4953
+    },
+    {
+      "chunkId": 8,
+      "centroid": [
+        -0.29892512266850085,
+        -0.4974990808962766,
+        -0.6761947051106885
+      ],
+      "numVerts": 3043,
+      "numTris": 4500,
+      "posByteOffset": 553216,
+      "normByteOffset": 589732,
+      "idxByteOffset": 626248,
+      "numIndices": 13500
+    },
+    {
+      "chunkId": 9,
+      "centroid": [
+        0.6504032273479226,
+        -0.8571707809954041,
+        0.04485863834377601
+      ],
+      "numVerts": 3688,
+      "numTris": 5280,
+      "posByteOffset": 653248,
+      "normByteOffset": 697504,
+      "idxByteOffset": 741760,
+      "numIndices": 15840
+    },
+    {
+      "chunkId": 10,
+      "centroid": [
+        -0.6635399095661999,
+        -0.9354977873682874,
+        0.3242678795811934
+      ],
+      "numVerts": 4684,
+      "numTris": 7194,
+      "posByteOffset": 773440,
+      "normByteOffset": 829648,
+      "idxByteOffset": 885856,
+      "numIndices": 21582
+    },
+    {
+      "chunkId": 11,
+      "centroid": [
+        0.08764570721951236,
+        -1.0316631621813617,
+        -0.18358135984745727
+      ],
+      "numVerts": 5484,
+      "numTris": 8993,
+      "posByteOffset": 929020,
+      "normByteOffset": 994828,
+      "idxByteOffset": 1060636,
+      "numIndices": 26979
+    }
+  ]
+}
