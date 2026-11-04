@@ -155,6 +155,11 @@
 
     <!-- HERO SECTION -->
     <section id="hero" class="hero-section">
+      <!-- Fullscreen 3D Interactive Quartz Crystal Rock & Cosmic Portal (Spans Whole Screen) -->
+      <div class="hero-canvas-fullscreen" id="canvas-frame">
+        <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Quartz Crystal Rock"></canvas>
+      </div>
+
       <div class="section-bounds hero-bounds">
         <div class="hero-top-meta">
           <span class="meta-item">WINDOWS 11 BUILD 26300 NATIVE</span>
@@ -190,16 +195,14 @@
             </div>
           </div>
 
-          <div class="subgrid-col-right">
-            <!-- Three.js 3D Interactive Hyperrealistic Ruby Gemstone with Mouse Shatter & Reassemble -->
-            <div class="hero-canvas-frame" id="canvas-frame">
-              <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Quartz Crystal Rock"></canvas>
-              <div class="canvas-telemetry">
-                <span class="telemetry-node" id="telemetry-gem-status">QUARTZ CRYSTAL ROCK [SOLID]</span>
-                <span class="telemetry-node" id="telemetry-gem-hint">HOVER TO SHATTER &bull; LEAVE TO REASSEMBLE</span>
-              </div>
-            </div>
+          <div class="subgrid-col-right" aria-hidden="true">
+            <!-- Spatial balancing column while 3D crystal covers full screen -->
           </div>
+        </div>
+
+        <div class="canvas-telemetry-fullscreen">
+          <span class="telemetry-node" id="telemetry-gem-status">QUARTZ CRYSTAL ROCK [SOLID]</span>
+          <span class="telemetry-node" id="telemetry-gem-hint">HOVER TO SHATTER &bull; LEAVE TO REASSEMBLE</span>
         </div>
 
         <div class="hero-scroll-prompt">

@@ -393,6 +393,7 @@
     audio.playEnterChord();
     if (enterGate) {
       enterGate.classList.add("dismissed");
+      setTimeout(() => { enterGate.style.display = "none"; }, 850);
     }
     document.documentElement.classList.remove("lenis-stopped");
     if (soundBtn) {
@@ -409,7 +410,10 @@
     gateBtn.addEventListener("click", unlockExperience);
   }
   if (window.location.search.includes("preview")) {
-    if (enterGate) enterGate.classList.add("dismissed");
+    if (enterGate) {
+      enterGate.classList.add("dismissed");
+      enterGate.style.display = "none";
+    }
     document.documentElement.classList.remove("lenis-stopped");
   }
 
@@ -716,6 +720,92 @@
       rockGroup = new THREE.Group();
       scene.add(rockGroup);
 
+      function updateRockPlacement() {
+        if (!rockGroup) return;
+        const w = window.innerWidth;
+        if (w > 1080) {
+          rockGroup.position.set(0.95, -0.05, 0);
+          if (causticMesh) causticMesh.position.set(0.95, -1.6, -0.2);
+          if (ringMesh) ringMesh.position.set(0.95, -0.05, 0);
+        } else if (w > 768) {
+          rockGroup.position.set(0.65, -0.1, 0);
+          if (causticMesh) causticMesh.position.set(0.65, -1.6, -0.2);
+          if (ringMesh) ringMesh.position.set(0.65, -0.1, 0);
+        } else {
+          rockGroup.position.set(0, -0.55, 0);
+          if (causticMesh) causticMesh.position.set(0, -2.1, -0.2);
+          if (ringMesh) ringMesh.position.set(0, -0.55, 0);
+        }
+      }
+
+      // --- BACKGROUND TEXT REFRACTION BUFFER ---
+      const backCanvas = document.createElement("canvas");
+      backCanvas.width = 1920;
+      backCanvas.height = 1080;
+      const backCtx = backCanvas.getContext("2d");
+      const backTexture = new THREE.CanvasTexture(backCanvas);
+      backTexture.minFilter = THREE.LinearFilter;
+      backTexture.magFilter = THREE.LinearFilter;
+
+      function updateBackTexture(isDream) {
+        const w = window.innerWidth || 1920;
+        const h = window.innerHeight || 1080;
+        backCanvas.width = Math.min(Math.max(w, 512), 2048);
+        backCanvas.height = Math.min(Math.max(h, 512), 2048);
+        const bw = backCanvas.width;
+        const bh = backCanvas.height;
+        backCtx.clearRect(0, 0, bw, bh);
+
+        // Background canvas fill
+        backCtx.fillStyle = isDream ? "#07081a" : "#eceae4";
+        backCtx.fillRect(0, 0, bw, bh);
+
+        // Architectural vertical grid lines
+        backCtx.strokeStyle = isDream ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.05)";
+        backCtx.lineWidth = 1;
+        const numCols = bw > 768 ? 6 : 4;
+        for (let i = 1; i < numCols; i++) {
+          const gx = (bw / numCols) * i;
+          backCtx.beginPath();
+          backCtx.moveTo(gx, 0);
+          backCtx.lineTo(gx, bh);
+          backCtx.stroke();
+        }
+
+        // Draw responsive headline text matching page layout
+        const padLeft = bw > 768 ? 65 : 24;
+        if (bw > 768) {
+          backCtx.fillStyle = isDream ? "#a855f7" : "#555555";
+          backCtx.font = "500 13px 'DM Mono', monospace";
+          backCtx.fillText("WINDOWS 11 BUILD 26300 NATIVE    DIRECTX 12 / DWM COMPOSITION    0.0% IDLE CPU // 13.3 MB", padLeft, 120);
+
+          backCtx.fillStyle = isDream ? "#f8fafc" : "#121212";
+          backCtx.font = "600 76px 'Inter Tight', -apple-system, sans-serif";
+          backCtx.fillText("Software for updating.", padLeft, 235);
+
+          backCtx.font = "italic 400 92px 'Instrument Serif', Georgia, serif";
+          backCtx.fillText("Systems for dreaming.", padLeft, 335);
+
+          backCtx.font = "500 12px 'DM Mono', monospace";
+          backCtx.fillStyle = isDream ? "#94a3b8" : "#666666";
+          backCtx.fillText("DESKTOP SYSTEM ARCHITECTURE — WINDOWS 11", padLeft, 430);
+
+          backCtx.font = "400 18px 'Inter Tight', sans-serif";
+          backCtx.fillText("A high-precision Windows package orchestrator engineered to eliminate", padLeft, 475);
+          backCtx.fillText("phantom installer exits, abolish GDI UI micro-stutters, and synthesize", padLeft, 505);
+          backCtx.fillText("Winget, Store, Pip, and Npm into one fluid direct-composited reality.", padLeft, 535);
+        } else {
+          backCtx.fillStyle = isDream ? "#f8fafc" : "#121212";
+          backCtx.font = "600 36px 'Inter Tight', -apple-system, sans-serif";
+          backCtx.fillText("Software for updating.", padLeft, 160);
+
+          backCtx.font = "italic 400 44px 'Instrument Serif', Georgia, serif";
+          backCtx.fillText("Systems for dreaming.", padLeft, 210);
+        }
+
+        backTexture.needsUpdate = true;
+      }
+
       // --- 1. PROCEDURAL TEXTURES: DREAM PORTAL, ORBITING RING, CAUSTICS, PIXEL BADGE ---
       
       // A. Cosmic Purple Dream Portal Texture
@@ -902,15 +992,17 @@
       scene.add(ringMesh);
 
       // --- 5. FLOATING PIXEL CRYSTAL BADGE ---
-      const badgeGeo = new THREE.PlaneGeometry(0.5, 0.5);
+      const badgeGeo = new THREE.PlaneGeometry(0.48, 0.48);
       const badgeMat = new THREE.MeshBasicMaterial({
         map: createPixelBadgeTexture(),
         transparent: true,
         depthWrite: false,
       });
       pixelBadgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
-      pixelBadgeMesh.position.set(0.95, 1.25, 0.3);
-      scene.add(pixelBadgeMesh);
+      pixelBadgeMesh.position.set(0.12, 1.30, 0.25);
+      rockGroup.add(pixelBadgeMesh);
+
+      updateRockPlacement();
 
       // --- 6. COSMIC PURPLE DREAM PORTAL IN CENTER ---
       portalGroup = new THREE.Group();
@@ -952,26 +1044,114 @@
       scene.add(particleSystem);
 
       // --- 7. LOAD 12 NATURAL SCULPTED CRYSTAL ROCK CHUNKS ---
-      const normalMap = new THREE.TextureLoader().load("assets/ice_normal.webp");
-      normalMap.wrapS = THREE.RepeatWrapping;
-      normalMap.wrapT = THREE.RepeatWrapping;
+      const textureLoader = new THREE.TextureLoader();
+      const iceNormalMap = textureLoader.load("assets/ice_normal.webp");
+      iceNormalMap.wrapS = THREE.RepeatWrapping;
+      iceNormalMap.wrapT = THREE.RepeatWrapping;
 
-      // Authentic Translucent Quartz / Ice Crystal Physical Material
-      crystalMat = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        roughness: 0.14,
-        metalness: 0.06,
-        transmission: 0.82,
-        ior: 1.54, // Quartz
-        thickness: 3.2,
+      const iceMatMap = textureLoader.load("assets/ice_mat.webp");
+      iceMatMap.wrapS = THREE.RepeatWrapping;
+      iceMatMap.wrapT = THREE.RepeatWrapping;
+
+      const crystalVertexShader = `
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        varying vec4 vScreenPos;
+
+        void main() {
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          vec4 mvPosition = viewMatrix * worldPos;
+          vViewPosition = -mvPosition.xyz;
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * mvPosition;
+          vScreenPos = gl_Position;
+        }
+      `;
+
+      const crystalFragmentShader = `
+        precision highp float;
+
+        uniform sampler2D tBack;
+        uniform sampler2D tNormal;
+        uniform sampler2D tMatcap;
+        uniform float uDisp;
+        uniform float uRefract;
+        uniform float uNight;
+        uniform float uTime;
+
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        varying vec4 vScreenPos;
+
+        void main() {
+          vec2 screenUv = (vScreenPos.xy / vScreenPos.w) * 0.5 + 0.5;
+
+          vec3 V = normalize(vViewPosition);
+          vec3 N = normalize(vNormal);
+
+          vec2 normUv = vWorldPosition.xy * 0.45 + vWorldPosition.z * 0.12;
+          vec3 normalTex = texture2D(tNormal, normUv).rgb * 2.0 - 1.0;
+          N = normalize(N + normalTex * 0.38);
+
+          float NdotV = clamp(dot(N, V), 0.0, 1.0);
+          float fresnel = pow(1.0 - NdotV, 2.5);
+
+          vec2 refractOffset = vec2(-N.x, N.y) * uRefract;
+
+          float disp = uDisp;
+          float r = texture2D(tBack, clamp(screenUv + refractOffset * (1.0 + disp), 0.001, 0.999)).r;
+          float g = texture2D(tBack, clamp(screenUv + refractOffset, 0.001, 0.999)).g;
+          float b = texture2D(tBack, clamp(screenUv + refractOffset * (1.0 - disp), 0.001, 0.999)).b;
+          vec3 refractedColor = vec3(r, g, b);
+
+          vec4 iceVein = texture2D(tMatcap, normUv * 0.75 + vec2(uTime * 0.015, 0.0));
+
+          vec3 light1 = normalize(vec3(0.45, 0.75, 0.55));
+          vec3 light2 = normalize(vec3(-0.55, 0.35, 0.4));
+          vec3 H1 = normalize(light1 + V);
+          vec3 H2 = normalize(light2 + V);
+          float spec1 = pow(max(dot(N, H1), 0.0), 55.0) * 1.5;
+          float spec2 = pow(max(dot(N, H2), 0.0), 35.0) * 0.75;
+
+          vec3 rainbow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (NdotV * 5.2 + vWorldPosition.y * 1.8));
+          vec3 edgeRainbow = rainbow * fresnel * 0.38;
+
+          vec3 crystalTint;
+          if (uNight > 0.5) {
+            crystalTint = mix(vec3(0.12, 0.08, 0.28), vec3(0.72, 0.48, 0.98), fresnel);
+            refractedColor = mix(refractedColor, vec3(0.85, 0.75, 1.0), 0.3);
+          } else {
+            crystalTint = mix(vec3(0.88, 0.90, 0.92), vec3(1.0, 1.0, 1.0), fresnel);
+          }
+
+          vec3 col = mix(refractedColor, crystalTint, 0.24);
+          col += iceVein.rgb * 0.06 * (1.0 - uNight * 0.5);
+          col += vec3(1.0) * (spec1 + spec2);
+          col += edgeRainbow;
+          col += vec3(1.0) * fresnel * 0.42;
+
+          float alpha = clamp(0.92 + fresnel * 0.08, 0.0, 1.0);
+
+          gl_FragColor = vec4(col, alpha);
+        }
+      `;
+
+      crystalMat = new THREE.ShaderMaterial({
+        vertexShader: crystalVertexShader,
+        fragmentShader: crystalFragmentShader,
+        uniforms: {
+          tBack: { value: backTexture },
+          tNormal: { value: iceNormalMap },
+          tMatcap: { value: iceMatMap },
+          uDisp: { value: 0.045 },
+          uRefract: { value: 0.08 },
+          uNight: { value: 0.0 },
+          uTime: { value: 0.0 },
+        },
         transparent: true,
-        opacity: 0.98,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.05,
-        reflectivity: 0.98,
-        envMapIntensity: 2.2,
-        normalMap: normalMap,
-        normalScale: new THREE.Vector2(1.4, 1.4),
       });
 
       Promise.all([
@@ -1007,10 +1187,10 @@
           shardData.push({
             centroid: centroid.clone(),
             explodeDir: explodeDir,
-            explodeDist: 2.2 + (Math.sin(idx * 3.7) * 0.5 + 0.5) * 1.8,
+            explodeDist: 1.15 + (Math.sin(idx * 3.7) * 0.5 + 0.5) * 0.65,
             tumbleAxis: tumbleAxis,
-            tumbleSpeed: Math.PI * (1.8 + (idx % 4) * 0.7),
-            driftSpeed: 0.8 + (idx % 5) * 0.25,
+            tumbleSpeed: Math.PI * (1.2 + (idx % 4) * 0.5),
+            driftSpeed: 0.6 + (idx % 5) * 0.2,
             driftPhase: (idx * 0.45) % (Math.PI * 2),
           });
         });
@@ -1052,22 +1232,28 @@
         }
       }
 
-      canvasFrame.addEventListener("mouseenter", () => {
-        triggerShatter();
+      window.addEventListener("mousemove", (e) => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const nx = (e.clientX / w) * 2 - 1;
+        const ny = -((e.clientY / h) * 2 - 1);
+        targetLeanY = nx * 0.9;
+        targetLeanX = -ny * 0.6;
+
+        // Proximity detection across fullscreen hero
+        const isNearRock = (w > 900 && e.clientX > w * 0.38) || (w <= 900 && Math.hypot(e.clientX - w / 2, e.clientY - h * 0.65) < 360);
+
+        if (isNearRock) {
+          triggerShatter();
+        } else {
+          triggerReassemble();
+        }
       });
 
-      canvasFrame.addEventListener("mouseleave", () => {
+      window.addEventListener("mouseleave", () => {
         triggerReassemble();
         targetLeanX = 0;
         targetLeanY = 0;
-      });
-
-      canvasFrame.addEventListener("mousemove", (e) => {
-        const rect = canvasFrame.getBoundingClientRect();
-        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-        targetLeanY = nx * 1.2;
-        targetLeanX = -ny * 0.8;
       });
 
       canvasFrame.addEventListener("click", () => {
@@ -1109,39 +1295,29 @@
 
       // --- 9. THEME PALETTE SWITCHER ---
       window.syncThreePalette = function (isDream) {
-        if (!crystalMat) return;
-        if (isDream) {
-          crystalMat.color.setHex(0xc084fc);
-          crystalMat.emissive.setHex(0x2e1065);
-          crystalMat.roughness = 0.08;
-          crystalMat.transmission = 0.92;
-          pMat.color.setHex(0xe879f9);
-          dirLight1.color.setHex(0xffffff);
-          dirLight2.color.setHex(0xa855f7);
-          dirLight3.color.setHex(0x00f0ff);
-        } else {
-          crystalMat.color.setHex(0xf8fafc);
-          crystalMat.emissive.setHex(0x000000);
-          crystalMat.roughness = 0.10;
-          crystalMat.transmission = 0.94;
-          pMat.color.setHex(0x93c5fd);
-          dirLight1.color.setHex(0xffffff);
-          dirLight2.color.setHex(0xffd166);
-          dirLight3.color.setHex(0x38bdf8);
+        if (crystalMat && crystalMat.uniforms) {
+          crystalMat.uniforms.uNight.value = isDream ? 1.0 : 0.0;
         }
+        updateBackTexture(isDream);
+        if (pMat) pMat.color.setHex(isDream ? 0xe879f9 : 0x93c5fd);
+        if (dirLight1) dirLight1.color.setHex(0xffffff);
+        if (dirLight2) dirLight2.color.setHex(isDream ? 0xa855f7 : 0xffd166);
+        if (dirLight3) dirLight3.color.setHex(isDream ? 0x00f0ff : 0x38bdf8);
       };
 
       window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));
 
       window.addEventListener("resize", () => {
         if (!canvasFrame || !renderer || !camera) return;
-        const w = canvasFrame.clientWidth;
-        const h = canvasFrame.clientHeight;
+        const w = canvasFrame.clientWidth || window.innerWidth;
+        const h = canvasFrame.clientHeight || window.innerHeight;
         if (w > 0 && h > 0) {
           camera.aspect = w / h;
           camera.updateProjectionMatrix();
           renderer.setSize(w, h);
         }
+        updateRockPlacement();
+        updateBackTexture(document.documentElement.classList.contains("dream-mode"));
       });
 
       const clock = new THREE.Clock();
@@ -1154,6 +1330,9 @@
         }
 
         const elapsed = clock.getElapsedTime();
+        if (crystalMat && crystalMat.uniforms) {
+          crystalMat.uniforms.uTime.value = elapsed;
+        }
 
         // Inertia drag damping & idle rock rotation
         if (!isDragging && rockGroup) {
@@ -1170,7 +1349,7 @@
 
         // Floating pixel badge bobbing
         if (pixelBadgeMesh) {
-          pixelBadgeMesh.position.y = 1.25 + Math.sin(elapsed * 2.2) * 0.04;
+          pixelBadgeMesh.position.y = 1.30 + Math.sin(elapsed * 2.2) * 0.04;
         }
 
         // Smooth spring lerp for shatter progress
@@ -1300,7 +1479,9 @@
   if (dreamTriggerBtn) dreamTriggerBtn.addEventListener("click", toggleTheme);
 
   // Sync initial state
-  if (isDreamActive()) {
+  if (window.location.search.includes("dream")) {
+    setMode("dream");
+  } else if (isDreamActive()) {
     setMode("dream");
   } else {
     setMode("wake");

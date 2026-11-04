@@ -634,94 +634,82 @@ html.dream-mode .btn-play-circle {
   background: var(--border);
 }
 
-/* Three.js Canvas Container - Seamless Gemstone Hero Backdrop */
-.hero-canvas-frame {
+/* Fullscreen Hero 3D WebGL Canvas Layer - Covers the Entire Screen Without Any Box */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.hero-canvas-fullscreen {
   position: absolute;
-  top: 50%;
-  right: 4%;
-  transform: translateY(-46%);
-  width: clamp(500px, 46vw, 680px);
-  height: clamp(500px, 46vw, 680px);
-  background: transparent;
-  border: none;
-  overflow: visible;
-  cursor: grab;
-  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: auto;
+  z-index: 1;
+  cursor: grab;
+  overflow: hidden;
 }
 
-@media (max-width: 1024px) {
-  .hero-canvas-frame {
-    position: relative;
-    top: auto;
-    right: auto;
-    transform: none;
-    width: 100%;
-    height: 440px;
-    margin-top: 32px;
-  }
-}
-
-.hero-canvas-frame::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 85%;
-  height: 85%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(225, 29, 72, 0.14) 0%, rgba(159, 18, 57, 0.04) 50%, transparent 75%);
-  filter: blur(52px);
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 0.5s ease;
-}
-
-.hero-canvas-frame:hover::before {
-  opacity: 1.5;
-  filter: blur(60px);
-}
-
-.dream-mode .hero-canvas-frame::before {
-  background: radial-gradient(circle, rgba(244, 63, 94, 0.22) 0%, rgba(136, 19, 55, 0.07) 50%, transparent 75%);
-}
-
-.hero-canvas-frame:active {
+.hero-canvas-fullscreen:active {
   cursor: grabbing;
 }
 
 .hero-webgl-canvas {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   display: block;
-  position: relative;
-  z-index: 1;
 }
 
-.canvas-telemetry {
+.hero-bounds {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hero-bounds a,
+.hero-bounds button,
+.hero-bounds input {
+  pointer-events: auto;
+}
+
+.canvas-telemetry-fullscreen {
   position: absolute;
-  bottom: 8px;
-  left: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 32px;
   display: flex;
   justify-content: space-between;
+  gap: 16px;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
   color: var(--ink-dim);
   pointer-events: none;
-  z-index: 2;
-  background: rgba(var(--bg-rgb, 255, 255, 255), 0.55);
+  z-index: 3;
+  background: rgba(var(--bg-rgb, 255, 255, 255), 0.65);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(225, 29, 72, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.18);
 }
 
-.dream-mode .canvas-telemetry {
-  background: rgba(14, 15, 43, 0.65);
-  border-color: rgba(244, 63, 94, 0.22);
+.dream-mode .canvas-telemetry-fullscreen {
+  background: rgba(14, 15, 43, 0.75);
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+@media (max-width: 768px) {
+  .canvas-telemetry-fullscreen {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    font-size: 8px;
+    padding: 4px 12px;
+    gap: 8px;
+  }
 }
 
 .hero-scroll-prompt {
