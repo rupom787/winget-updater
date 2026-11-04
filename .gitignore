@@ -14,6 +14,7 @@ htmlcov/
 
 # Local state & logs
 run_state.json
+config.json
 dist/run_state.json
 dist/config.json
 dist/WingetUpdater/

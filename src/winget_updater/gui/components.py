@@ -458,6 +458,12 @@ class SidebarNavigation(tk.Frame):
         self._render_navigation_items()
         self._render_navigation_items()
 
+    def _on_details_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust diagnostic wraplength so text never clips or overflows."""
+        if hasattr(self, "lbl_diag_text"):
+            new_wrap = max(220, event.width - 36)
+            self.lbl_diag_text.config(wraplength=new_wrap)
+
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
         self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
@@ -540,6 +546,7 @@ class DetailsDrawer(tk.Frame):
         # Left / Details Container
         self.details_container = tk.Frame(self, bg="#faf6f6")
         self.details_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.details_container.bind("<Configure>", self._on_details_resize)
 
         # Header Row: Program Avatar, Title, and Rounded Status Pill
         self.header_row = tk.Frame(self.details_container, bg="#faf6f6")
@@ -652,33 +659,15 @@ class DetailsDrawer(tk.Frame):
             hover_bg="#9f1239",
             radius=8,
             font=("Segoe UI", 9, "bold"),
-            width=180,
-            height=32,
+            height=30,
             parent_bg="#faf6f6",
         )
         self.btn_update.pack(fill=tk.X, pady=(0, 4))
         self.btn_update.config(state="disabled")
 
-        # Row 2: Secondary Standard Actions
+        # Row 2: Secondary Quick Actions (Row A: Folder, Copy ID, Pin)
         self.secondary_actions = tk.Frame(self.actions_container, bg="#faf6f6")
-        self.secondary_actions.pack(fill=tk.X, pady=(0, 4))
-
-        self.btn_exclude = RoundedButton(
-            self.secondary_actions,
-            text="Exclude",
-            command=self._on_exclude_click,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
-            font=("Segoe UI", 8),
-            width=58,
-            height=26,
-            parent_bg="#faf6f6",
-        )
-        self.btn_exclude.pack(side=tk.LEFT, padx=(0, 3))
-        self.btn_exclude.config(state="disabled")
+        self.secondary_actions.pack(fill=tk.X, pady=(0, 3))
 
         self.btn_open_folder = RoundedButton(
             self.secondary_actions,
@@ -690,11 +679,10 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=54,
-            height=26,
+            height=24,
             parent_bg="#faf6f6",
         )
-        self.btn_open_folder.pack(side=tk.LEFT, padx=(0, 3))
+        self.btn_open_folder.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
         self.btn_open_folder.config(state="disabled")
 
         self.btn_copy_id = RoundedButton(
@@ -707,11 +695,10 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=58,
-            height=26,
+            height=24,
             parent_bg="#faf6f6",
         )
-        self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 3))
+        self.btn_copy_id.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
         self.btn_copy_id.config(state="disabled")
 
         self.btn_pin = RoundedButton(
@@ -724,15 +711,34 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=54,
-            height=26,
+            height=24,
             parent_bg="#faf6f6",
         )
-        self.btn_pin.pack(side=tk.LEFT, padx=(0, 3))
+        self.btn_pin.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
         self.btn_pin.config(state="disabled")
 
+        # Row 3: Secondary State Actions (Row B: Exclude, Skip, Uninstall)
+        self.secondary_row_b = tk.Frame(self.actions_container, bg="#faf6f6")
+        self.secondary_row_b.pack(fill=tk.X, pady=(0, 3))
+
+        self.btn_exclude = RoundedButton(
+            self.secondary_row_b,
+            text="Exclude",
+            command=self._on_exclude_click,
+            bg_color="#ffffff",
+            fg_color="#334155",
+            hover_bg="#fff1f2",
+            border_color="#e2e8f0",
+            radius=6,
+            font=("Segoe UI", 8),
+            height=24,
+            parent_bg="#faf6f6",
+        )
+        self.btn_exclude.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.btn_exclude.config(state="disabled")
+
         self.btn_skip = RoundedButton(
-            self.secondary_actions,
+            self.secondary_row_b,
             text="⏭️ Skip",
             command=self._on_skip_click,
             bg_color="#ffffff",
@@ -741,15 +747,14 @@ class DetailsDrawer(tk.Frame):
             border_color="#e2e8f0",
             radius=6,
             font=("Segoe UI", 8),
-            width=65,
-            height=26,
+            height=24,
             parent_bg="#faf6f6",
         )
-        self.btn_skip.pack(side=tk.LEFT)
+        self.btn_skip.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
         self.btn_skip.config(state="disabled")
 
         self.btn_uninstall = RoundedButton(
-            self.secondary_actions,
+            self.secondary_row_b,
             text="🗑️ Uninstall",
             command=self._on_uninstall_click,
             bg_color="#ffffff",
@@ -758,11 +763,10 @@ class DetailsDrawer(tk.Frame):
             border_color="#fecaca",
             radius=6,
             font=("Segoe UI", 8),
-            width=76,
-            height=26,
+            height=24,
             parent_bg="#faf6f6",
         )
-        self.btn_uninstall.pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
         self.btn_uninstall.config(state="disabled")
 
         # Row 3: Extended Package Resolution & Fallback Actions
@@ -1020,6 +1024,12 @@ class DetailsDrawer(tk.Frame):
         if self.current_item and self.on_skip_version:
             self.on_skip_version(self.current_item)
 
+    def _on_details_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust diagnostic wraplength so text never clips or overflows."""
+        if hasattr(self, "lbl_diag_text"):
+            new_wrap = max(220, event.width - 36)
+            self.lbl_diag_text.config(wraplength=new_wrap)
+
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
         self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
@@ -1034,6 +1044,8 @@ class DetailsDrawer(tk.Frame):
         self.lbl_notes.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
         self.actions_container.config(bg=theme.bg_sidebar)
         self.secondary_actions.config(bg=theme.bg_sidebar)
+        if hasattr(self, "secondary_row_b"):
+            self.secondary_row_b.config(bg=theme.bg_sidebar)
         self.resolution_actions.config(bg=theme.bg_sidebar)
         self.status_pill.config(bg=theme.bg_sidebar)
         if hasattr(self, "diagnostic_box"):
@@ -1157,6 +1169,12 @@ class DiagnosticsResolutionBanner(tk.Frame):
         )
         self.lbl_desc.config(text=txt)
 
+    def _on_details_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust diagnostic wraplength so text never clips or overflows."""
+        if hasattr(self, "lbl_diag_text"):
+            new_wrap = max(220, event.width - 36)
+            self.lbl_diag_text.config(wraplength=new_wrap)
+
     def apply_theme(self, theme: ThemeColors) -> None:
         is_dark = (theme.name == "dark")
         bg_col = "#261908" if is_dark else "#fffbeb"
@@ -1259,9 +1277,10 @@ class ProgramTableView(tk.Frame):
         cols = [c[0] for c in self.COLUMNS]
         self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="extended", style="CleanWine.Treeview")
 
+        self._last_configured_width: int = 0
         for col_id, col_text, col_width in self.COLUMNS:
             self.tree.heading(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
-            self.tree.column(col_id, width=col_width, anchor=tk.W)
+            self.tree.column(col_id, width=col_width, minwidth=90, anchor=tk.W)
 
         # Clear Status Badge Tags
         self.tree.tag_configure("tag_available", background="#fef2f2", foreground="#991b1b")
@@ -1296,9 +1315,16 @@ class ProgramTableView(tk.Frame):
         self.tree.bind("<Button-3>", self._show_context_menu)
         self.tree.bind("<<TreeviewSelect>>", self._handle_select)
         self.tree.bind("<MouseWheel>", self._on_mousewheel)
+        self.bind("<Configure>", self._on_table_resize)
 
         # Context Menu
         self.context_menu = tk.Menu(self, tearoff=0, bg="#ffffff", fg="#0f172a", activebackground="#fff1f2", activeforeground="#881337")
+
+    def _on_details_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust diagnostic wraplength so text never clips or overflows."""
+        if hasattr(self, "lbl_diag_text"):
+            new_wrap = max(220, event.width - 36)
+            self.lbl_diag_text.config(wraplength=new_wrap)
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
@@ -1355,6 +1381,38 @@ class ProgramTableView(tk.Frame):
     def hide_skeleton(self) -> None:
         self.skeleton.stop_shimmer()
         self.skeleton.lower()
+
+    def _on_table_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust column widths so they proportionally fill 100% of visible table space."""
+        total_w = event.width
+        if total_w < 50 or abs(total_w - self._last_configured_width) < 6:
+            return
+        self._last_configured_width = total_w
+
+        # Account for vertical scrollbar (~18px) and border padding (~4px)
+        available = max(total_w - 22, 500)
+
+        min_installed = 110
+        min_latest = 110
+        min_status = 140
+        min_name = 220
+        min_total = min_installed + min_latest + min_status + min_name  # 580
+
+        if available <= min_total:
+            self.tree.column("name", width=min_name, stretch=False)
+            self.tree.column("installed", width=min_installed, stretch=False)
+            self.tree.column("latest", width=min_latest, stretch=False)
+            self.tree.column("status", width=min_status, stretch=False)
+        else:
+            w_inst = max(min_installed, int(available * 0.17))
+            w_late = max(min_latest, int(available * 0.17))
+            w_stat = max(min_status, int(available * 0.18))
+            w_name = available - (w_inst + w_late + w_stat)
+
+            self.tree.column("name", width=w_name, stretch=True)
+            self.tree.column("installed", width=w_inst, stretch=False)
+            self.tree.column("latest", width=w_late, stretch=False)
+            self.tree.column("status", width=w_stat, stretch=False)
 
     def _on_mousewheel(self, event):
         lines = int(-3 * (event.delta / 120))
@@ -1924,6 +1982,12 @@ class FloatingGlassBatchDock(tk.Frame):
     def _on_clear_clicked(self) -> None:
         if self.on_clear_selection:
             self.on_clear_selection()
+
+    def _on_details_resize(self, event: tk.Event) -> None:
+        """Dynamically adjust diagnostic wraplength so text never clips or overflows."""
+        if hasattr(self, "lbl_diag_text"):
+            new_wrap = max(220, event.width - 36)
+            self.lbl_diag_text.config(wraplength=new_wrap)
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
