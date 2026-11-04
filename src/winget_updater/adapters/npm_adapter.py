@@ -195,6 +195,10 @@ class NpmAdapter(BaseSourceAdapter):
                             if isinstance(info, dict):
                                 cur_v = info.get("current", "")
                                 lat_v = info.get("latest", "")
+                                from winget_updater.winget.version_comparator import compare_versions
+                                comp = compare_versions(cur_v, lat_v)
+                                if comp is not None and comp >= 0:
+                                    continue
                                 clean_k = pkg_name.strip().lower()
                                 updates[clean_k] = {
                                     "installed_version": cur_v,
@@ -291,6 +295,16 @@ class NpmAdapter(BaseSourceAdapter):
         if dry_run:
             return True, f"[Dry Run] Simulated npm install -g for '{clean_name}@latest'"
 
+        # Gracefully and forcibly terminate any active locking node/npm processes
+        try:
+            from winget_updater.engine.process_lock import ProcessLockDetector
+            running = ProcessLockDetector.find_running_processes_for_item(item)
+            if running:
+                ProcessLockDetector.terminate_processes([p[0] for p in running], force=True)
+                import time; time.sleep(0.5)
+        except Exception:
+            pass
+
         # Use npm install -g <pkg>@latest to ensure major and breaking updates apply correctly
         cmd = [self.npm_path, "install", "-g", "--no-audit", "--no-fund", "--loglevel=error", f"{clean_name}@latest"]
         try:
@@ -303,7 +317,18 @@ class NpmAdapter(BaseSourceAdapter):
             res = silent_run(cmd, timeout=240)
             if res.returncode == 0:
                 return True, f"Successfully updated npm package '{clean_name}'"
-            return False, f"npm update failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"
+
+            # If standard execution failed due to permissions or locked files, attempt elevated execution
+            from winget_updater.elevation import is_elevated
+            err_text = res.stderr.strip() or res.stdout.strip()
+            if not is_elevated() and any(k in err_text.lower() for k in ["eperm", "access", "denied", "operation not permitted", "permission", "eexist"]) or clean_name == "npm":
+                logger.info(f"Retrying npm update for '{clean_name}' with administrator elevation...")
+                elev_arg = f"Start-Process cmd -ArgumentList '/c \"{self.npm_path}\" install -g --no-audit --no-fund --loglevel=error {clean_name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
+                elev_res = silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=240)
+                if elev_res.returncode == 0:
+                    return True, f"Successfully updated npm package '{clean_name}' (elevated)"
+
+            return False, f"npm update failed (Code {res.returncode}): {err_text}"
         except Exception as e:
             return False, f"Exception executing npm update: {e}"
 

@@ -147,6 +147,10 @@ class PipAdapter(BaseSourceAdapter):
                         continue
                     cur_v = entry.get("version", "")
                     lat_v = entry.get("latest_version", "")
+                    from winget_updater.winget.version_comparator import compare_versions
+                    comp = compare_versions(cur_v, lat_v)
+                    if comp is not None and comp >= 0:
+                        continue
                     clean_k = pkg_name.strip().lower()
                     updates[clean_k] = {
                         "installed_version": cur_v,

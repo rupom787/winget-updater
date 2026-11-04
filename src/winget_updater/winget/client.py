@@ -137,6 +137,7 @@ class WingetClient:
         col_id = -1
         col_ver = -1
         col_avail = -1
+        col_match = -1
         col_source = -1
 
         for i, line in enumerate(lines):
@@ -147,6 +148,7 @@ class WingetClient:
                 col_id = line.find("Id")
                 col_ver = line.find("Version")
                 col_avail = line.find("Available") if "Available" in line else -1
+                col_match = line.find("Match") if "Match" in line else -1
                 col_source = line.find("Source") if "Source" in line else -1
                 break
 
@@ -176,6 +178,11 @@ class WingetClient:
                     else:
                         avail_val = row[col_avail:].strip()
                         source_val = ""
+                elif col_match != -1:
+                    id_val = row[col_id:col_ver].strip()
+                    ver_val = row[col_ver:col_match].strip()
+                    avail_val = None
+                    source_val = row[col_source:].strip() if col_source != -1 else ""
                 elif col_source != -1:
                     id_val = row[col_id:col_ver].strip()
                     ver_val = row[col_ver:col_source].strip()
@@ -186,6 +193,9 @@ class WingetClient:
                     ver_val = row[col_ver:].strip()
                     avail_val = None
                     source_val = ""
+
+                if ver_val and any(term in ver_val for term in ("Moniker:", "Tag:", "Command:")):
+                    ver_val = ver_val.split()[0].strip()
 
                 if id_val and name_val:
                     entry = WingetPackageEntry(
@@ -522,6 +532,10 @@ class WingetClient:
         except Exception as e:
             logger.error(f"Error searching winget catalog: {e}")
             return []
+
+    def search_catalog(self, query: str, count: int = 30) -> List[WingetPackageEntry]:
+        """Alias for search_packages for compatibility."""
+        return self.search_packages(query, count=count)
 
     def update_sources(self) -> Tuple[bool, str]:
         """Synchronizes all configured package sources with their upstream repositories."""

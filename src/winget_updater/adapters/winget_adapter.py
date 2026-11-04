@@ -50,6 +50,27 @@ class WingetAdapter(BaseSourceAdapter):
         """Uninstalls a package cleanly and rapidly via silent winget."""
         return self.client.uninstall_package(pkg_id, dry_run=False)
 
+    def search_packages(self, query: str) -> List[ProgramItem]:
+        """Discovers and searches packages in the official winget repository."""
+        if not query or len(query.strip()) < 2:
+            return []
+        entries = self.client.search_packages(query)
+        items = []
+        for entry in entries:
+            items.append(
+                ProgramItem(
+                    name=entry.name,
+                    id=entry.id,
+                    installed_version="Not Installed",
+                    latest_version=entry.version or "Latest",
+                    package_type=PackageType.WIN32_EXE,
+                    source=entry.source or "winget",
+                    action=UpdateAction.AVAILABLE,
+                    notes=f"Official winget package ({entry.id})",
+                )
+            )
+        return items
+
     def update_sources(self) -> Tuple[bool, str]:
         """Synchronizes and updates the winget package index."""
         return self.client.update_sources()

@@ -178,6 +178,9 @@ class SidebarNavigation(tk.Frame):
             font=("Segoe UI", 9),
         )
         self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.entry_search = self.search_entry  # Backwards-compatibility alias
+        self.search_entry.bind("<Return>", lambda e: self._on_search_return())
+        self.search_entry.bind("<Escape>", lambda e: self._clear_search())
 
         self.btn_clear_search = tk.Button(
             self.search_container,
@@ -418,7 +421,13 @@ class SidebarNavigation(tk.Frame):
     def _on_search_changed(self, *args) -> None:
         if self._debounce_timer:
             self.after_cancel(self._debounce_timer)
-        self._debounce_timer = self.after(150, self._trigger_search)
+        self._debounce_timer = self.after(200, self._trigger_search)
+
+    def _on_search_return(self) -> None:
+        if self._debounce_timer:
+            self.after_cancel(self._debounce_timer)
+            self._debounce_timer = None
+        self._trigger_search()
 
     def _trigger_search(self) -> None:
         self._debounce_timer = None
@@ -426,6 +435,9 @@ class SidebarNavigation(tk.Frame):
             self.on_search_changed(self.search_var.get().strip())
 
     def _clear_search(self) -> None:
+        if self._debounce_timer:
+            self.after_cancel(self._debounce_timer)
+            self._debounce_timer = None
         self.search_var.set("")
         if self.on_search_changed:
             self.on_search_changed("")
@@ -876,7 +888,8 @@ class DetailsDrawer(tk.Frame):
 
         # Diagnostic Explanation Box
         reason = item.get_diagnostic_reason()
-        if (not item.can_auto_update()) and item.action != UpdateAction.UP_TO_DATE:
+        is_catalog = item.installed_version in ("Not Installed", "None", None, "")
+        if (not item.can_auto_update()) and item.action != UpdateAction.UP_TO_DATE and not is_catalog:
             self.lbl_diag_text.config(text=f"Why can't this update automatically? {reason}")
             self.diagnostic_box.pack(fill=tk.X, pady=(5, 0))
         else:
@@ -885,7 +898,14 @@ class DetailsDrawer(tk.Frame):
         # Update button state
         can_update = item.can_auto_update()
 
-        if can_update:
+        if is_catalog:
+            self.lbl_versions.config(text=f"Repository Source: {src.upper()}   •   Available Release: {lat_v}")
+            self.btn_update.config(state="normal", text="Install software", bg="#881337", fg="#ffffff")
+            self.btn_exclude.config(state="disabled")
+            self.btn_open_folder.config(state="disabled")
+            self.btn_uninstall.config(state="disabled")
+            self.btn_pin.config(state="disabled", text="📌 Pin")
+        elif can_update:
             self.btn_update.config(state="normal", text="Update application", bg="#881337", fg="#ffffff")
         else:
             if item.action == UpdateAction.UP_TO_DATE:
@@ -942,6 +962,8 @@ class DetailsDrawer(tk.Frame):
             self.btn_website.pack_forget()
 
     def _get_status_pill_info(self, item: ProgramItem) -> tuple[str, str, str]:
+        if item.installed_version in ("Not Installed", "None", None, ""):
+            return "Ready to install", "#ecfdf5", "#065f46"
         if item.outcome == UpdateOutcome.UPDATED:
             return "Updated", "#ecfdf5", "#065f46"
         if item.outcome == UpdateOutcome.SIMULATED:
@@ -1283,6 +1305,7 @@ class ProgramTableView(tk.Frame):
             self.tree.column(col_id, width=col_width, minwidth=90, anchor=tk.W)
 
         # Clear Status Badge Tags
+        self.tree.tag_configure("tag_catalog", background="#f0fdf4", foreground="#166534")
         self.tree.tag_configure("tag_available", background="#fef2f2", foreground="#991b1b")
         self.tree.tag_configure("tag_uptodate", background="#ffffff", foreground="#166534")
         self.tree.tag_configure("tag_uptodate_alt", background="#fdfafa", foreground="#166534")
@@ -1347,6 +1370,7 @@ class ProgramTableView(tk.Frame):
             foreground=[("selected", theme.accent_burgundy)],
         )
 
+        self.tree.tag_configure("tag_catalog", background="#ecfdf5", foreground="#065f46")
         self.tree.tag_configure("tag_available", background=theme.tag_available_bg, foreground=theme.tag_available_fg)
         self.tree.tag_configure("tag_uptodate", background=theme.tag_uptodate_bg, foreground=theme.tag_uptodate_fg)
         self.tree.tag_configure("tag_uptodate_alt", background=theme.tag_uptodate_alt_bg, foreground=theme.tag_uptodate_alt_fg)
@@ -1445,7 +1469,10 @@ class ProgramTableView(tk.Frame):
                 self.items_by_iid[iid] = item
 
                 # Determine badge string and color tag
-                if item.outcome == UpdateOutcome.UPDATED:
+                if item.installed_version in ("Not Installed", "None", None, ""):
+                    status_str = "Ready to install"
+                    tag = "tag_catalog"
+                elif item.outcome == UpdateOutcome.UPDATED:
                     status_str = "Updated"
                     tag = "tag_uptodate"
                 elif item.outcome == UpdateOutcome.SIMULATED:

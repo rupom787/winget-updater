@@ -471,8 +471,16 @@ class PackageMatcher:
         is_verified = (entry.source or "").lower() in ("winget", "msstore")
         item.is_verified_winget = is_verified
 
-        # Downgrade check
+        # Downgrade and up-to-date checks
         comp = compare_versions(item.installed_version, item.latest_version)
+        if comp is not None and comp == 0:
+            # Installed is already at latest version!
+            item.action = UpdateAction.UP_TO_DATE
+            item.outcome = UpdateOutcome.SUCCEEDED
+            item.notes = f"Application is up to date ({item.installed_version})"
+            item.unavailability_reason = None
+            return
+
         if comp is not None and comp > 0:
             # Installed is NEWER than source!
             item.action = UpdateAction.NEWER_THAN_SOURCE
@@ -519,7 +527,13 @@ class PackageMatcher:
             # Winget reports an available version
             item.latest_version = entry.available_version
             comp = compare_versions(item.installed_version, entry.available_version)
-            if comp is not None and comp > 0:
+            if comp is not None and comp == 0:
+                item.action = UpdateAction.UP_TO_DATE
+                item.outcome = UpdateOutcome.SUCCEEDED
+                item.notes = f"Application is up to date ({item.installed_version})"
+                item.unavailability_reason = None
+                return
+            elif comp is not None and comp > 0:
                 item.action = UpdateAction.NEWER_THAN_SOURCE
                 item.outcome = UpdateOutcome.AWAITING_CONFIRMATION
                 item.notes = "Installed version is newer than source listing (downgrade warning)."
@@ -538,6 +552,11 @@ class PackageMatcher:
                 item.action = UpdateAction.AVAILABLE
                 item.outcome = UpdateOutcome.PENDING
                 item.notes = f"Update available from {entry.source}"
+                return
+            else:
+                item.action = UpdateAction.UP_TO_DATE
+                item.notes = f"Application is up to date ({item.installed_version})"
+                return
                 item.unavailability_reason = None
                 return
 

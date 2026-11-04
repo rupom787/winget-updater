@@ -16,6 +16,7 @@ from winget_updater.compatibility.checker import CompatibilityChecker
 from winget_updater.compatibility.system_info import SystemInfoProvider
 from winget_updater.config import ConfigManager
 from winget_updater.discovery.composite import CompositeScanner
+from winget_updater.winget.catalog import get_popular_catalog, search_catalog_packages
 from winget_updater.engine.cleanup import DiskCleanupManager
 from winget_updater.engine.process_lock import ProcessLockDetector
 from winget_updater.engine.restore_point import RestorePointManager
@@ -127,6 +128,8 @@ class MainWindow(tk.Tk):
         self.filtered_programs: List[ProgramItem] = []
         self.active_filter: str = "All Software"
         self.search_query: str = ""
+        self.catalog_items: List[ProgramItem] = []
+        self._catalog_search_generation: int = 0
         self.active_category: str = "All Categories"
         self.selected_item: Optional[ProgramItem] = None
         self.updating_package_ids: Set[str] = set()
@@ -827,7 +830,12 @@ class MainWindow(tk.Tk):
                 elif msg_type == "UPDATE_COMPLETE":
                     self._on_update_completed(data)
                 elif msg_type == "CATALOG_RESULTS":
-                    self._on_catalog_results(data)
+                    if isinstance(data, tuple) and len(data) == 3:
+                        items, gen_id, q_term = data
+                        if gen_id == self._catalog_search_generation:
+                            self._on_catalog_results(items, query=q_term)
+                    else:
+                        self._on_catalog_results(data)
                 elif msg_type == "REFRESH_ITEM":
                     self.table.update_item(data)
                     if self.drawer.current_item and self.drawer.current_item.name == data.name:
@@ -846,10 +854,10 @@ class MainWindow(tk.Tk):
             self.lbl_view_title.config(text="Discover & Install Packages")
             if hasattr(self, "diag_banner"):
                 self.diag_banner.pack_forget()
-            self.lbl_view_subtitle.config(text="Search and install from official Windows package repositories")
+            self.lbl_view_subtitle.config(text="Discover, search, and install software from official Windows repositories")
             self.btn_update.config(state="disabled")
             self.btn_update_selected.config(state="disabled")
-            self._search_catalog(self.search_query.strip() or "popular")
+            self._search_catalog(self.search_query.strip())
         elif filter_name in ("Cannot Update", "Review & cannot update", "Review & issues"):
             self.lbl_view_title.config(text="Review & Issues")
             self.lbl_view_subtitle.config(text="Applications requiring review, publisher variance verification, or repository linking")
@@ -897,17 +905,35 @@ class MainWindow(tk.Tk):
         self.drawer.set_item(item)
 
         if self.active_filter == "Software Catalog" and item:
+            is_installed = item.installed_version not in ("Not Installed", "None", None, "")
+            if is_installed:
+                if item.action == UpdateAction.UP_TO_DATE:
+                    txt = "Up to date"
+                    st = "disabled"
+                    bg_c = "#ffffff"
+                    fg_c = "#9ca3af"
+                else:
+                    txt = "Update application"
+                    st = "normal"
+                    bg_c = "#881337"
+                    fg_c = "#ffffff"
+            else:
+                txt = "Install software"
+                st = "normal"
+                bg_c = "#881337"
+                fg_c = "#ffffff"
+
             self.drawer.btn_update.config(
-                state="normal",
-                text="Install software",
-                bg="#881337",
-                fg="#ffffff",
+                state=st,
+                text=txt,
+                bg=bg_c,
+                fg=fg_c,
             )
             self.btn_update_selected.config(
-                state="normal",
-                text="Install selected",
-                bg="#881337",
-                fg="#ffffff",
+                state=st,
+                text="Install selected" if not is_installed else txt,
+                bg=bg_c,
+                fg=fg_c,
             )
             return
 
@@ -1069,44 +1095,59 @@ class MainWindow(tk.Tk):
         self._show_floating_toast(f"Excluded {count} packages", "🛡️")
 
     def _search_catalog(self, query: str) -> None:
-        q = query.strip() or "popular"
+        self._catalog_search_generation += 1
+        gen_id = self._catalog_search_generation
+        q = query.strip()
+
+        # If query is empty, immediately render the curated popular Windows software catalog
+        if not q:
+            items = get_popular_catalog(self.all_programs)
+            self.catalog_items = items
+            self.filtered_programs = items
+            self.table.populate(items)
+            self.lbl_view_subtitle.config(text=f"Curated Popular Windows Catalog ({len(items)} packages)")
+            self.status_lbl.config(text=f"Catalog ready: {len(items)} popular packages ready to install.")
+            return
+
+        # Immediate fast display of local curated matches
+        immediate_matches = search_catalog_packages(q, installed_programs=self.all_programs)
+        if immediate_matches:
+            self.catalog_items = immediate_matches
+            self.filtered_programs = immediate_matches
+            self.table.populate(immediate_matches)
+            self.lbl_view_subtitle.config(text=f"Found {len(immediate_matches)} packages matching '{q}'...")
+
         self.status_lbl.config(text=f"Searching repository catalogs for '{q}'...")
-        self.table.show_skeleton()
 
         def worker():
-            items = []
-            # 1. Search secondary package managers (Pip, Npm, Scoop, Chocolatey)
+            secondary_matches = []
             try:
                 secondary_matches = self.source_manager.search_all(q)
-                items.extend(secondary_matches)
             except Exception as e:
                 logger.error(f"Catalog search error in source manager: {e}")
 
-            # 2. Search official Winget catalog
+            winget_entries = []
             try:
-                entries = self.winget.search_packages(q, count=25)
-                for entry in entries:
-                    it = ProgramItem(
-                        name=entry.name,
-                        id=entry.id,
-                        installed_version="Not Installed",
-                        latest_version=entry.version or "Latest",
-                        package_type=PackageType.WIN32_EXE,
-                        source=entry.source or "winget",
-                        action=UpdateAction.AVAILABLE,
-                        notes="Official winget package ready to install",
-                    )
-                    items.append(it)
+                winget_entries = self.winget.search_packages(q, count=25)
             except Exception as e:
                 logger.error(f"Catalog search error in winget: {e}")
 
-            self.msg_queue.put(("CATALOG_RESULTS", items))
+            merged_items = search_catalog_packages(
+                q,
+                winget_entries=winget_entries,
+                installed_programs=self.all_programs,
+                secondary_items=secondary_matches,
+            )
+
+            self.msg_queue.put(("CATALOG_RESULTS", (merged_items, gen_id, q)))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _on_catalog_results(self, items: List[ProgramItem]) -> None:
-        self.table.populate(items)
-        self.lbl_view_subtitle.config(text=f"Found {len(items)} catalog packages")
+    def _on_catalog_results(self, items: List[ProgramItem], query: str = "") -> None:
+        self.catalog_items = items
+        self.apply_filter()
+        q_label = f" matching '{query}'" if query else ""
+        self.lbl_view_subtitle.config(text=f"Found {len(items)} catalog packages{q_label}")
         self.status_lbl.config(text=f"Catalog ready: {len(items)} packages found.")
 
     def start_scan(self) -> None:
@@ -1160,10 +1201,17 @@ class MainWindow(tk.Tk):
                         match_key = next((k for k in pkg_candidates if k in secondary_updates[src]), None)
                         if match_key:
                             info = secondary_updates[src][match_key]
-                            item.latest_version = info.get("latest_version") or item.latest_version
-                            item.action = UpdateAction.AVAILABLE
-                            item.is_verified_winget = True
-                            item.notes = f"Update available via {src.upper()}"
+                            target_v = info.get("latest_version") or item.latest_version
+                            comp = compare_versions(item.installed_version, target_v)
+                            if comp is not None and comp < 0:
+                                item.latest_version = target_v
+                                item.action = UpdateAction.AVAILABLE
+                                item.is_verified_winget = True
+                                item.notes = f"Update available via {src.upper()}"
+                            elif comp is not None and comp >= 0:
+                                item.latest_version = target_v
+                                item.action = UpdateAction.UP_TO_DATE
+                                item.notes = f"Up to date via {src.upper()} ({item.installed_version})"
             except Exception as e:
                 logger.error(f"Error checking secondary package updates: {e}")
 
@@ -1230,14 +1278,53 @@ class MainWindow(tk.Tk):
         filter_mode = self.active_filter
         cat_mode = self.active_category
 
+        # Handle Software Catalog mode without polluting from installed programs
+        if filter_mode == "Software Catalog":
+            raw_catalog = getattr(self, "catalog_items", None)
+            if not raw_catalog:
+                self.catalog_items = get_popular_catalog(self.all_programs)
+                raw_catalog = self.catalog_items
+
+            filtered = []
+            terms = keyword.split() if keyword else []
+            for item in raw_catalog:
+                if terms:
+                    searchable = f"{item.name} {item.id or ''} {item.publisher or ''} {item.source or ''} {item.notes or ''}".lower()
+                    if not all(tok in searchable for tok in terms):
+                        continue
+
+                # Category Filter for catalog
+                if cat_mode == "Win32 Applications":
+                    if item.package_type not in (PackageType.WIN32_EXE, PackageType.WIN32_MSI):
+                        continue
+                elif cat_mode == "Microsoft Store / MSIX":
+                    if item.package_type != PackageType.STORE_MSIX:
+                        continue
+                elif cat_mode == "WinGet Packages":
+                    if (item.source or "").lower() != "winget" and not item.is_verified_winget:
+                        continue
+                elif cat_mode == "Python (Pip)":
+                    if item.package_type != PackageType.PIP and (item.source or "").lower() != "pip":
+                        continue
+                elif cat_mode == "Node.js (Npm)":
+                    if item.package_type != PackageType.NPM and (item.source or "").lower() != "npm":
+                        continue
+
+                filtered.append(item)
+
+            self.filtered_programs = filtered
+            self.table.populate(filtered)
+            count = len(filtered)
+            self.lbl_view_subtitle.config(text=f"Found {count} packages available in catalog")
+            return
+
         filtered = []
+        terms = keyword.split() if keyword else []
         for item in self.all_programs:
-            # 1. Search Query filter (by name or publisher)
-            if keyword:
-                name_match = keyword in item.name.lower()
-                pub_match = item.publisher and keyword in item.publisher.lower()
-                id_match = item.id and keyword in item.id.lower()
-                if not (name_match or pub_match or id_match):
+            # 1. Search Query filter (by all keywords across name, publisher, id, source, version, notes)
+            if terms:
+                searchable = f"{item.name} {item.id or ''} {item.publisher or ''} {item.source or ''} {item.package_type.value if hasattr(item.package_type, 'value') else ''} {item.installed_version or ''} {item.latest_version or ''} {item.notes or ''}".lower()
+                if not all(tok in searchable for tok in terms):
                     continue
 
             # 2. Sidebar Navigation Filter
@@ -1946,8 +2033,9 @@ class MainWindow(tk.Tk):
 
     def _shortcut_focus_search(self) -> str:
         """Focuses the sidebar search input via shortcut key (Ctrl+F or /)."""
-        if hasattr(self.sidebar, "entry_search"):
-            self.sidebar.entry_search.focus_set()
-            self.sidebar.entry_search.select_range(0, tk.END)
+        entry = getattr(self.sidebar, "search_entry", None) or getattr(self.sidebar, "entry_search", None)
+        if entry:
+            entry.focus_set()
+            entry.select_range(0, tk.END)
             self._show_floating_toast("Quick search active (Type to filter)", "🔍")
         return "break"

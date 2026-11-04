@@ -251,7 +251,8 @@ class UpdateEngine:
             running = ProcessLockDetector.find_running_processes_for_item(item)
             if running:
                 logger.info(f"Closing {len(running)} active processes locking '{item.name}'...")
-                ProcessLockDetector.terminate_processes([p[0] for p in running], force=False)
+                ProcessLockDetector.terminate_processes([p[0] for p in running], force=True)
+                import time; time.sleep(0.5)
 
         # 4. Record start in reboot-safe state manager
         self.state_mgr.record_package_start(pkg_id, item.name)
@@ -312,20 +313,49 @@ class UpdateEngine:
                         item_complete_callback(item, True, item.notes)
                 elif verified_version and orig_version and verified_version == orig_version:
                     # THE INSTALLER EXITED BUT THE VERSION NEVER CHANGED!
-                    # Do NOT falsely report "Updated"!
-                    item.installed_version = orig_version
-                    item.outcome = UpdateOutcome.FAILED
-                    err_msg = (
-                        f"Update failed to apply: {item.name} is still on version {orig_version} "
-                        f"(target was {target_version}). The installer exited without upgrading installed files. "
-                        f"An active process or missing administrator rights may have blocked file replacement."
-                    )
-                    item.notes = err_msg
-                    logger.error(err_msg)
-                    self.state_mgr.record_package_end(pkg_id, "failed", err_msg)
-                    summary.failed_count += 1
-                    if item_complete_callback:
-                        item_complete_callback(item, False, err_msg)
+                    # Attempt automated elevated retry to bypass file locks and permission restrictions
+                    reverified = None
+                    try:
+                        from winget_updater.elevation import is_elevated
+                        if not is_elevated():
+                            logger.info(f"Retrying '{item.name}' with elevated privileges to bypass locked files...")
+                            if item.source == "npm":
+                                elev_arg = f"Start-Process cmd -ArgumentList '/c npm install -g --no-audit --no-fund --loglevel=error {item.name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
+                                silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=180)
+                            elif item.source == "pip":
+                                elev_arg = f"Start-Process cmd -ArgumentList '/c py -m pip install --upgrade --no-warn-script-location {item.name}' -Verb RunAs -Wait -WindowStyle Hidden"
+                                silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=180)
+                            elif item.source in ("winget", "msstore"):
+                                elev_arg = f"Start-Process winget -ArgumentList 'upgrade --id \"{item.id}\" --exact --accept-source-agreements --accept-package-agreements --silent' -Verb RunAs -Wait -WindowStyle Hidden"
+                                silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=240)
+
+                            reverified = self.query_real_installed_version(item)
+                    except Exception as e:
+                        logger.debug(f"Elevated retry error for {item.name}: {e}")
+
+                    if reverified and reverified != orig_version:
+                        item.installed_version = reverified
+                        item.action = UpdateAction.UP_TO_DATE
+                        item.outcome = UpdateOutcome.UPDATED
+                        item.notes = f"Verified update (elevated recovery): {item.name} successfully updated to {reverified}"
+                        self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        summary.updated_count += 1
+                        if item_complete_callback:
+                            item_complete_callback(item, True, item.notes)
+                    else:
+                        item.installed_version = orig_version
+                        item.outcome = UpdateOutcome.FAILED
+                        err_msg = (
+                            f"Update failed to apply: {item.name} is still on version {orig_version} "
+                            f"(target was {target_version}). The installer exited without upgrading installed files. "
+                            f"An active process or missing administrator rights may have blocked file replacement."
+                        )
+                        item.notes = err_msg
+                        logger.error(err_msg)
+                        self.state_mgr.record_package_end(pkg_id, "failed", err_msg)
+                        summary.failed_count += 1
+                        if item_complete_callback:
+                            item_complete_callback(item, False, err_msg)
                 else:
                     # Verified version couldn't be queried directly; check reboot status
                     is_reb = False

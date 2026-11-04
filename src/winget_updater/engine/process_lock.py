@@ -78,8 +78,12 @@ class ProcessLockDetector:
             candidates.add("notepad++.exe")
         elif "visual studio code" in raw_name or "vscode" in raw_name:
             candidates.add("code.exe")
-        elif "node.js" in raw_name or "nodejs" in raw_name:
+        elif "node.js" in raw_name or "nodejs" in raw_name or "npm" in raw_name or (item.source and item.source.lower() == "npm"):
             candidates.add("node.exe")
+            candidates.add("npm.cmd")
+        elif "pip" in raw_name or (item.source and item.source.lower() == "pip"):
+            candidates.add("python.exe")
+            candidates.add("pythonw.exe")
 
         # Generic name simplification: first word + .exe
         first_word = raw_name.split()[0].replace(".", "").replace("-", "")
@@ -112,7 +116,7 @@ class ProcessLockDetector:
         return matched
 
     @staticmethod
-    def terminate_processes(pids: List[int], force: bool = False) -> Tuple[bool, str]:
+    def terminate_processes(pids: List[int], force: bool = True) -> Tuple[bool, str]:
         """Terminates specified process IDs (gracefully first, then forcibly if requested)."""
         if not pids:
             return True, "No processes to terminate"

@@ -143,3 +143,4 @@ class TestSpeedOptimizations:
             adapter.uninstall_package("curl")
             cmd_un = mock_run.call_args[0][0]
             assert "--no-progress" in cmd_un
+
