@@ -13,6 +13,7 @@ def build_uninstaller() -> bool:
 
     print("=== Building Uninstall.exe for Windows 11 ===")
 
+    workpath = Path(os.environ.get("TEMP", "C:/Temp")) / "pyinstaller_uninstaller"
     cmd = [
         sys.executable,
         "-m", "PyInstaller",
@@ -21,6 +22,7 @@ def build_uninstaller() -> bool:
         "--windowed",
         "--name", "Uninstall",
         "--paths", str(root_dir / "src"),
+        "--workpath", str(workpath),
         "--uac-admin",  # Embeds Windows UAC administrator manifest for registry and shortcut cleanup
         str(root_dir / "uninstall.py"),
     ]

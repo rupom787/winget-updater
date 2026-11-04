@@ -29,6 +29,7 @@ def build():
         return False
 
     print("\n--- Step 2: Compiling WingetUpdater.exe (with embedded Uninstaller) ---")
+    workpath = Path(os.environ.get("TEMP", "C:/Temp")) / "pyinstaller_winget"
     cmd = [
         sys.executable,
         "-m", "PyInstaller",
@@ -37,6 +38,7 @@ def build():
         "--windowed",
         "--name", "WingetUpdater",
         "--paths", str(root_dir / "src"),
+        "--workpath", str(workpath),
         "--uac-admin",  # Embeds Windows UAC administrator manifest directly into EXE
         "--add-data", f"{root_dir / 'exclusions.json'};.",
         "--add-data", f"{root_dir / 'sources.json'};.",
