@@ -921,16 +921,34 @@ class SettingsDialog(tk.Toplevel):
         on_theme_changed: Optional[Callable[[str], None]] = None,
         on_font_scale_changed: Optional[Callable[[str], None]] = None,
         on_settings_saved: Optional[Callable[[], None]] = None,
+        on_backup_stack: Optional[Callable[[], None]] = None,
+        on_restore_stack: Optional[Callable[[], None]] = None,
+        on_refresh_sources: Optional[Callable[[], None]] = None,
+        on_open_exclusions: Optional[Callable[[], None]] = None,
+        on_open_sources: Optional[Callable[[], None]] = None,
+        on_open_schedule: Optional[Callable[[], None]] = None,
+        on_export_inventory: Optional[Callable[[], None]] = None,
+        on_uninstall_app: Optional[Callable[[], None]] = None,
+        scheduler=None,
         theme: Optional[ThemeColors] = None,
     ):
         super().__init__(parent)
         self.title("Settings & Preferences")
-        self.geometry("680x560")
-        self.minsize(580, 480)
+        self.geometry("740x620")
+        self.minsize(640, 520)
         self.config = config
         self.on_theme_changed = on_theme_changed
         self.on_font_scale_changed = on_font_scale_changed
         self.on_settings_saved = on_settings_saved
+        self.on_backup_stack = on_backup_stack
+        self.on_restore_stack = on_restore_stack
+        self.on_refresh_sources = on_refresh_sources
+        self.on_open_exclusions = on_open_exclusions
+        self.on_open_sources = on_open_sources
+        self.on_open_schedule = on_open_schedule
+        self.on_export_inventory = on_export_inventory
+        self.on_uninstall_app = on_uninstall_app
+        self.scheduler = scheduler
         self.theme = theme or LIGHT_THEME
         self.configure(bg=self.theme.bg_root)
 
@@ -978,15 +996,30 @@ class SettingsDialog(tk.Toplevel):
         self.notebook.add(self.tab_appearance, text="🎨 Appearance & Text")
         self._build_appearance_tab()
 
-        # Tab 2: Package Ecosystems
+        # Tab 2: Package Ecosystems & Sources
         self.tab_managers = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
         self.notebook.add(self.tab_managers, text="📦 Package Managers")
         self._build_managers_tab()
 
-        # Tab 3: Safety & Automation
+        # Tab 3: Safety & Exclusions
         self.tab_safety = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_safety, text="🛡️ Safety & Automation")
+        self.notebook.add(self.tab_safety, text="🛡️ Safety & Exclusions")
         self._build_safety_tab()
+
+        # Tab 4: Schedule & Automation
+        self.tab_schedule = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_schedule, text="🕒 Schedule & Automation")
+        self._build_schedule_tab()
+
+        # Tab 5: Backup & Export
+        self.tab_backup = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_backup, text="💾 Backup & Export")
+        self._build_backup_tab()
+
+        # Tab 6: Application Maintenance & Uninstaller
+        self.tab_maintenance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_maintenance, text="🗑️ Maintenance")
+        self._build_maintenance_tab()
 
         # Bottom Action Bar
         bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
@@ -1161,6 +1194,54 @@ class SettingsDialog(tk.Toplevel):
             lbl_sub = tk.Label(m_row, text=desc, bg=t.bg_card, fg=t.fg_muted, font=("Segoe UI", 8))
             lbl_sub.pack(anchor=tk.W, padx=(24, 0))
 
+        # Repository & Source Actions
+        card_sources = tk.Frame(self.tab_managers, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_sources.pack(fill=tk.X, pady=(10, 0))
+
+        lbl_shead = tk.Label(card_sources, text="Repository Indices & Custom Sources", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_shead.pack(anchor=tk.W)
+
+        lbl_sdesc = tk.Label(
+            card_sources,
+            text="Update local package manager database indices or configure custom download URLs for unsupported software.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_sdesc.pack(anchor=tk.W, pady=(2, 8))
+
+        s_btn_row = tk.Frame(card_sources, bg=t.bg_card)
+        s_btn_row.pack(fill=tk.X)
+
+        btn_ref_src = RoundedButton(
+            s_btn_row,
+            text="🔄 Refresh Package Sources",
+            command=self._do_refresh_sources,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=30,
+            font=("Segoe UI", 9),
+            padding=(12, 4),
+        )
+        btn_ref_src.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_cust_src = RoundedButton(
+            s_btn_row,
+            text="🌐 Manage Vendor Sources",
+            command=self._do_open_sources,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=30,
+            font=("Segoe UI", 9),
+            padding=(12, 4),
+        )
+        btn_cust_src.pack(side=tk.LEFT)
+
     def _build_safety_tab(self) -> None:
         t = self.theme
         card = tk.Frame(self.tab_safety, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
@@ -1219,6 +1300,37 @@ class SettingsDialog(tk.Toplevel):
         )
         chk_ac.pack(anchor=tk.W, pady=(4, 0))
 
+        # Exclusions management card
+        card_excl = tk.Frame(self.tab_safety, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_excl.pack(fill=tk.X, pady=(10, 0))
+
+        lbl_ehead = tk.Label(card_excl, text="Application Exclusions", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_ehead.pack(anchor=tk.W)
+
+        lbl_edesc = tk.Label(
+            card_excl,
+            text="Prevent specific software or package IDs from appearing in update scans or receiving automated updates.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_edesc.pack(anchor=tk.W, pady=(2, 8))
+
+        btn_manage_excl = RoundedButton(
+            card_excl,
+            text="⊘ Manage Application Exclusions",
+            command=self._do_open_exclusions,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=30,
+            font=("Segoe UI", 9),
+            padding=(14, 4),
+        )
+        btn_manage_excl.pack(anchor=tk.W)
+
         self.cleanup_var = tk.BooleanVar(value=getattr(self.config, "cleanup_temp_cache", True))
         chk_cl = tk.Checkbutton(
             card,
@@ -1246,6 +1358,181 @@ class SettingsDialog(tk.Toplevel):
             font=("Segoe UI", 9, "bold"),
         )
         chk_as.pack(anchor=tk.W, pady=(4, 0))
+
+
+    def _build_schedule_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_schedule, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=14)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        lbl_head = tk.Label(card, text="Windows Task Scheduler Daily Updates", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Configure automated daily background checks. Automatically verifies AC power and safe CPU load before running.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 12))
+
+        btn_config_sched = RoundedButton(
+            card,
+            text="🕒 Configure Daily Update Schedule",
+            command=self._do_open_schedule,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9, "bold"),
+            padding=(16, 6),
+        )
+        btn_config_sched.pack(anchor=tk.W, pady=(0, 10))
+
+    def _build_backup_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_backup, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=14)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        lbl_head = tk.Label(card, text="Software Backup & Machine Provisioning", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Save a complete snapshot manifest of all installed software to restore on new PCs, or export spreadsheets.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 12))
+
+        b_row = tk.Frame(card, bg=t.bg_card)
+        b_row.pack(fill=tk.X, pady=(0, 10))
+
+        btn_bk = RoundedButton(
+            b_row,
+            text="📤 Backup Apps Manifest",
+            command=self._do_backup_stack,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(14, 6),
+        )
+        btn_bk.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_rs = RoundedButton(
+            b_row,
+            text="📥 Restore Backup Manifest",
+            command=self._do_restore_stack,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(14, 6),
+        )
+        btn_rs.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_exp = RoundedButton(
+            b_row,
+            text="📋 Export Inventory Report",
+            command=self._do_export_inventory,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(14, 6),
+        )
+        btn_exp.pack(side=tk.LEFT)
+
+    def _build_maintenance_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_maintenance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=14)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        lbl_head = tk.Label(card, text="Complete Application Uninstaller", bg=t.bg_card, fg=t.accent_crimson, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Permanently remove Software & Package Updater, shortcuts, registry keys, and cache files with nothing left behind.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 12))
+
+        btn_uninst = RoundedButton(
+            card,
+            text="🗑️ Launch Complete Uninstaller (Uninstall.exe)",
+            command=self._do_uninstall_app,
+            bg_color="#fee2e2",
+            fg_color="#b91c1c",
+            border_color="#fca5a5",
+            radius=6,
+            height=34,
+            font=("Segoe UI", 9, "bold"),
+            padding=(16, 6),
+        )
+        btn_uninst.pack(anchor=tk.W)
+
+    def _do_refresh_sources(self) -> None:
+        if self.on_refresh_sources:
+            self.on_refresh_sources()
+        elif hasattr(self.master, "_refresh_sources_dialog"):
+            self.master._refresh_sources_dialog()
+
+    def _do_open_sources(self) -> None:
+        if self.on_open_sources:
+            self.on_open_sources()
+        elif hasattr(self.master, "_open_sources_dialog"):
+            self.master._open_sources_dialog()
+
+    def _do_open_exclusions(self) -> None:
+        if self.on_open_exclusions:
+            self.on_open_exclusions()
+        elif hasattr(self.master, "_open_exclusions_dialog"):
+            self.master._open_exclusions_dialog()
+
+    def _do_open_schedule(self) -> None:
+        if self.on_open_schedule:
+            self.on_open_schedule()
+        elif hasattr(self.master, "_open_schedule_dialog"):
+            self.master._open_schedule_dialog()
+
+    def _do_backup_stack(self) -> None:
+        if self.on_backup_stack:
+            self.on_backup_stack()
+        elif hasattr(self.master, "_export_software_backup"):
+            self.master._export_software_backup()
+
+    def _do_restore_stack(self) -> None:
+        if self.on_restore_stack:
+            self.on_restore_stack()
+        elif hasattr(self.master, "_import_software_backup"):
+            self.master._import_software_backup()
+
+    def _do_export_inventory(self) -> None:
+        if self.on_export_inventory:
+            self.on_export_inventory()
+        elif hasattr(self.master, "_export_report_dialog"):
+            self.master._export_report_dialog()
+
+    def _do_uninstall_app(self) -> None:
+        if self.on_uninstall_app:
+            self.on_uninstall_app()
+        elif hasattr(self.master, "_launch_app_uninstaller"):
+            self.master._launch_app_uninstaller()
 
     def _save_and_close(self) -> None:
         # Save font scale

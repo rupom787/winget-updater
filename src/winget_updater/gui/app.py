@@ -175,110 +175,28 @@ class MainWindow(tk.Tk):
         self.top_controls = tk.Frame(self.top_bar, bg="#ffffff")
         self.top_controls.pack(side=tk.RIGHT, padx=(0, 2))
 
-        self.btn_restore = RoundedButton(
-            self.top_controls,
-            text="Restore Backup",
-            command=self._import_software_backup,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#eff6ff",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_restore.pack(side=tk.LEFT, padx=(2, 0))
-
-        self.btn_backup = RoundedButton(
-            self.top_controls,
-            text="Backup Apps",
-            command=self._export_software_backup,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#ecfdf5",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_backup.pack(side=tk.LEFT, padx=(2, 0))
-
-        self.btn_sources = RoundedButton(
-            self.top_controls,
-            text="Refresh Sources",
-            command=self._refresh_sources_dialog,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_sources.pack(side=tk.LEFT, padx=(2, 0))
-
-        self.btn_exclusions = RoundedButton(
-            self.top_controls,
-            text="Exclusions",
-            command=self._open_exclusions,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_exclusions.pack(side=tk.LEFT, padx=(2, 0))
-
-        self.btn_schedule = RoundedButton(
-            self.top_controls,
-            text="🕒 Schedule",
-            command=self._open_schedule,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_schedule.pack(side=tk.LEFT, padx=(2, 0))
-
+        # Settings Button (Primary Top Control)
         self.btn_settings = RoundedButton(
             self.top_controls,
             text="⚙️ Settings",
             command=self._open_settings,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
+            bg_color="#881337",
+            fg_color="#ffffff",
+            hover_bg="#9f1239",
             radius=6,
             height=28,
             font=("Segoe UI", 8, "bold"),
-            padding=(6, 4),
+            padding=(10, 4),
         )
-        self.btn_settings.pack(side=tk.LEFT, padx=(2, 0))
+        self.btn_settings.pack(side=tk.LEFT, padx=(4, 0))
 
-        self.btn_export = RoundedButton(
-            self.top_controls,
-            text="Export Inventory",
-            command=self._export_report_dialog,
-            bg_color="#f8fafc",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=6,
-            height=28,
-            font=("Segoe UI", 8),
-            padding=(6, 4),
-        )
-        self.btn_export.pack(side=tk.LEFT, padx=(2, 0))
+        # Retain secondary button references for programmatic compatibility (housed in Settings)
+        self.btn_restore = RoundedButton(self.top_controls, text="Restore Backup", command=self._import_software_backup)
+        self.btn_backup = RoundedButton(self.top_controls, text="Backup Apps", command=self._export_software_backup)
+        self.btn_sources = RoundedButton(self.top_controls, text="Refresh Sources", command=self._refresh_sources_dialog)
+        self.btn_exclusions = RoundedButton(self.top_controls, text="Exclusions", command=self._open_exclusions)
+        self.btn_schedule = RoundedButton(self.top_controls, text="🕒 Schedule", command=self._open_schedule)
+        self.btn_export = RoundedButton(self.top_controls, text="Export Inventory", command=self._export_report_dialog)
 
         # iOS-style Light / Dark Mode Switch
         self.theme_box = tk.Frame(self.top_controls, bg="#ffffff")
@@ -821,6 +739,17 @@ class MainWindow(tk.Tk):
         """Opens the App Update Tracker dialog."""
         AppUpdateTrackerDialog(self, tracker=self.update_tracker, theme=self.theme)
 
+    def _launch_app_uninstaller(self) -> None:
+        """Launches the standalone complete uninstaller executable or script."""
+        import subprocess, sys
+        uninst_exe = Path.cwd() / "dist" / "Uninstall.exe"
+        if uninst_exe.exists():
+            subprocess.Popen([str(uninst_exe)])
+        else:
+            uninst_py = Path.cwd() / "uninstall.py"
+            if uninst_py.exists():
+                subprocess.Popen([sys.executable, str(uninst_py)])
+
     def _open_settings(self) -> None:
         """Opens the Settings & System Configuration modal."""
         SettingsDialog(
@@ -829,6 +758,14 @@ class MainWindow(tk.Tk):
             on_theme_changed=self.set_theme,
             on_font_scale_changed=self.set_font_scale,
             on_settings_saved=self._on_settings_saved,
+            on_backup_stack=self._export_software_backup,
+            on_restore_stack=self._import_software_backup,
+            on_refresh_sources=self._refresh_sources_dialog,
+            on_open_exclusions=self._open_exclusions,
+            on_open_schedule=self._open_schedule,
+            on_export_inventory=self._export_report_dialog,
+            on_uninstall_app=self._launch_app_uninstaller,
+            scheduler=self.scheduler,
             theme=self.current_theme,
         )
 
