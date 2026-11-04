@@ -638,28 +638,28 @@
 
     const isInitialDream = document.documentElement.classList.contains("dream-mode");
     const fluidColor = isInitialDream
-      ? { r: 0.55, g: 2.2, b: 3.8 }
-      : { r: 0.22, g: 0.9, b: 1.6 };
+      ? { r: 0.35, g: 1.4, b: 2.5 }
+      : { r: 0.20, g: 0.65, b: 1.3 };
 
     WebGLFluid(canvas, {
       IMMEDIATE: false,
       TRIGGER: "hover",
       SIM_RESOLUTION: 128,
       DYE_RESOLUTION: 1024,
-      DENSITY_DISSIPATION: 2.5,   // Natural wind dissipation
+      DENSITY_DISSIPATION: 2.6,   // Natural wind dissipation
       VELOCITY_DISSIPATION: 1.0,  // Aerodynamic breeze decay
       PRESSURE: 0.8,
       PRESSURE_ITERATIONS: 20,
       CURL: 36,                   // Swirling wind vortices and curling eddies
-      SPLAT_RADIUS: 0.11,         // Refined, aerodynamic wind stream
-      SPLAT_FORCE: 5500,
+      SPLAT_RADIUS: 0.10,         // Refined, aerodynamic wind stream
+      SPLAT_FORCE: 5200,
       SHADING: true,              // Atmospheric fluid depth and lighting
       COLORFUL: false,            // Pure atmospheric wind blue
       SPLAT_COLOR: fluidColor,
       TRANSPARENT: true,
       BLOOM: true,
-      BLOOM_INTENSITY: 0.28,      // Ethereal breeze radiance without overpowering text
-      BLOOM_THRESHOLD: 0.45,
+      BLOOM_INTENSITY: 0.12,      // Subtle airy halo (gentle, no harsh white glow)
+      BLOOM_THRESHOLD: 0.65,      // High threshold keeps dye rich and deep
       SUNRAYS: false
     });
 
@@ -682,13 +682,13 @@
     // Support theme switching for Wake / Dream mode
     window.syncFluidPalette = function (isDream) {
       if (isDream) {
-        fluidColor.r = 0.55;
-        fluidColor.g = 2.2;
-        fluidColor.b = 3.8;
+        fluidColor.r = 0.35;
+        fluidColor.g = 1.4;
+        fluidColor.b = 2.5;
       } else {
-        fluidColor.r = 0.22;
-        fluidColor.g = 0.9;
-        fluidColor.b = 1.6;
+        fluidColor.r = 0.20;
+        fluidColor.g = 0.65;
+        fluidColor.b = 1.3;
       }
     };
   }
