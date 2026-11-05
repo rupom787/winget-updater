@@ -54,8 +54,8 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.22 MB | `CEF828C3A882366BB905D2E7FDC61303D4AD50F8BF66CE930AB6EA85E08D34D4` |
-| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `E3A753B525C344BF2B19A9EE024AF7E740C7C798A6786DC03BDF0545AB9486F0` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `DE43F08F9E01EE21AE6174E30FCC94365B7D65BF2C8A69C47BF644104AC62DDA` |
+| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `046CDA3CEEF0F4EDF9941E9C6EC163B1AE82ABF7AAB51C15A91564FF0C2AE86B` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
 1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
@@ -102,7 +102,16 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **DirectComposition & Double-Buffering:** Activates Windows 11 DWM hardware composition (`SetProcessDpiAwarenessContext(-4)` and `WS_EX_COMPOSITED`), eliminating canvas tearing and rendering lag.
 - **Real-Time Telemetry:** Live GPU model, VRAM capacity, and driver version are displayed directly in the header and status bar.
 
-### 🛡️ 4. Enterprise Safety & Reliability
+### 🎮 4. Gaming & System Runtimes Manager (All-in-One Prerequisite Suite)
+- **Automated System Scan:** Deep-scans Windows Registry hives and file systems to analyze 17 critical gaming and application runtimes:
+  - **Microsoft Visual C++ Redistributables:** Complete suite from 2005, 2008, 2010, 2012, 2013, up to unified 2015–2022 (both 32-bit `x86` and 64-bit `x64`).
+  - **Microsoft .NET Desktop Runtimes:** .NET 8.0 (LTS standard for modern game tools & emulators), .NET 9.0 (Latest), and .NET 6.0 (Legacy LTS).
+  - **DirectX End-User Runtimes (June 2010):** Resolves classic missing `d3dx9_43.dll`, `d3dx10_43.dll`, `d3dx11_43.dll`, and `xinput1_3.dll` game errors on clean Windows 11 systems.
+  - **OpenAL 3D Audio & Vulkan Runtime:** Required for 3D positional audio (Minecraft, Source engine) and modern Vulkan emulation.
+- **One-Click Auto-Repair:** Click **"⚡ Install All Missing Runtimes"** to silently download and install all missing prerequisites sequentially via Winget in the background.
+- **Instant Access:** Launch via the top dock **`🎮 Game Runtimes`** button, sidebar **`🎮 Game Runtimes Doctor`** button, Settings Safety tab, or keyboard shortcut `Ctrl+G`.
+
+### 🛡️ 5. Enterprise Safety & Reliability
 - **Process Lock Detection & Auto-Close:** Identifies running applications that would lock files during installation and gracefully closes them before updating.
 - **System Restore Point Creation:** Optionally creates a Windows System Restore Point prior to commencing batch update routines.
 - **Automatic Post-Update Cleanup:** Purges temporary downloaded installer packages and setup caches automatically upon completion.

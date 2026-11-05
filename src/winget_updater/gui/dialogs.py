@@ -939,6 +939,7 @@ class SettingsDialog(tk.Toplevel):
         on_open_exclusions: Optional[Callable[[], None]] = None,
         on_open_sources: Optional[Callable[[], None]] = None,
         on_open_schedule: Optional[Callable[[], None]] = None,
+        on_open_runtimes: Optional[Callable[[], None]] = None,
         on_export_inventory: Optional[Callable[[], None]] = None,
         on_uninstall_app: Optional[Callable[[], None]] = None,
         scheduler=None,
@@ -958,6 +959,7 @@ class SettingsDialog(tk.Toplevel):
         self.on_open_exclusions = on_open_exclusions
         self.on_open_sources = on_open_sources
         self.on_open_schedule = on_open_schedule
+        self.on_open_runtimes = on_open_runtimes
         self.on_export_inventory = on_export_inventory
         self.on_uninstall_app = on_uninstall_app
         self.scheduler = scheduler
@@ -1287,7 +1289,22 @@ class SettingsDialog(tk.Toplevel):
             fg=t.fg_muted,
             font=("Segoe UI", 8),
         )
-        lbl_vc_sub.pack(anchor=tk.W, padx=(24, 0), pady=(0, 8))
+        lbl_vc_sub.pack(anchor=tk.W, padx=(24, 0), pady=(0, 4))
+
+        btn_launch_runtimes = RoundedButton(
+            card,
+            text="🎮 Open Gaming & System Runtimes Manager",
+            command=self._do_open_runtimes,
+            bg_color=t.bg_button,
+            fg_color=t.accent_burgundy,
+            hover_bg=t.bg_button_hover,
+            border_color=t.border,
+            radius=6,
+            font=("Segoe UI", 8, "bold"),
+            height=26,
+            parent_bg=t.bg_card,
+        )
+        btn_launch_runtimes.pack(anchor=tk.W, padx=(24, 0), pady=(0, 8))
 
         self.restore_var = tk.BooleanVar(value=getattr(self.config, "create_restore_point", False))
         chk_rp = tk.Checkbutton(
@@ -1662,6 +1679,12 @@ class SettingsDialog(tk.Toplevel):
             self.on_open_schedule()
         elif hasattr(self.master, "_open_schedule_dialog"):
             self.master._open_schedule_dialog()
+
+    def _do_open_runtimes(self) -> None:
+        if self.on_open_runtimes:
+            self.on_open_runtimes()
+        elif hasattr(self.master, "_open_runtimes_manager"):
+            self.master._open_runtimes_manager()
 
     def _do_backup_stack(self) -> None:
         if self.on_backup_stack:
@@ -2180,4 +2203,510 @@ class AppUpdateTrackerDialog(tk.Toplevel):
         count = self.tracker.clear_resolved()
         self._refresh_data()
         self.lbl_status.config(text=f"Cleared {count} resolved records.")
+
+
+
+class GameRuntimesDialog(tk.Toplevel):
+    """Interactive Gaming & System Runtimes Manager.
+    Automatically scans the Windows registry and file system for all essential Visual C++,
+    .NET Desktop, DirectX, and media runtimes, allowing one-click batch installation of missing dependencies.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        theme: Optional[ThemeColors] = None,
+        on_runtime_installed: Optional[Callable[[], None]] = None,
+    ):
+        super().__init__(parent)
+        self.title("Gaming & System Runtimes Manager — Windows 11")
+        self.geometry("860x640")
+        self.minsize(740, 520)
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
+
+        self.on_runtime_installed = on_runtime_installed
+        self.current_filter = "all"
+        self.scan_results: List[Any] = []
+        self._is_busy = False
+
+        from winget_updater.engine.runtimes import RuntimesManager
+        self.runtimes_mgr = RuntimesManager()
+
+        self.configure(bg=self.theme.bg_root)
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+        self._start_async_scan()
+
+    def _build_ui(self) -> None:
+        t = self.theme
+        root_frame = tk.Frame(self, bg=t.bg_root, padx=20, pady=16)
+        root_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Header Title Area
+        header = tk.Frame(root_frame, bg=t.bg_root)
+        header.pack(fill=tk.X, pady=(0, 12))
+
+        lbl_title = tk.Label(
+            header,
+            text="🎮 Gaming & System Runtimes Manager",
+            bg=t.bg_root,
+            fg=t.fg_primary,
+            font=("Segoe UI", 16, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_sub = tk.Label(
+            header,
+            text="Automated scan & repair for Microsoft Visual C++, .NET Desktop, DirectX, and OpenAL gaming prerequisites.",
+            bg=t.bg_root,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_sub.pack(anchor=tk.W, pady=(2, 0))
+
+        # Metrics Overview Row
+        self.metrics_frame = tk.Frame(root_frame, bg=t.bg_root)
+        self.metrics_frame.pack(fill=tk.X, pady=(0, 12))
+
+        self.card_total = self._create_metric_card(self.metrics_frame, "Analyzed", "0", t.fg_primary)
+        self.card_healthy = self._create_metric_card(self.metrics_frame, "Healthy", "0", "#10b981")
+        self.card_missing = self._create_metric_card(self.metrics_frame, "Missing", "0", "#ef4444")
+        self.card_updates = self._create_metric_card(self.metrics_frame, "Updatable", "0", "#f59e0b")
+
+        # Category Filter Pills
+        filter_bar = tk.Frame(root_frame, bg=t.bg_root)
+        filter_bar.pack(fill=tk.X, pady=(0, 8))
+
+        self.filter_buttons: Dict[str, tk.Button] = {}
+        filters = [
+            ("all", "All Runtimes"),
+            ("vcredist", "Visual C++ (2005-2022)"),
+            ("dotnet", ".NET Desktop"),
+            ("directx_media", "DirectX & Multimedia"),
+            ("missing_only", "Missing / Required"),
+        ]
+
+        for fid, flabel in filters:
+            btn = tk.Button(
+                filter_bar,
+                text=flabel,
+                command=lambda f=fid: self._set_filter(f),
+                bg=t.accent_burgundy if fid == self.current_filter else t.bg_card,
+                fg="#ffffff" if fid == self.current_filter else t.fg_secondary,
+                activebackground=t.accent_burgundy_hover,
+                activeforeground="#ffffff",
+                relief=tk.FLAT,
+                bd=0,
+                padx=10,
+                pady=4,
+                font=("Segoe UI", 8, "bold" if fid == self.current_filter else "normal"),
+                cursor="hand2",
+            )
+            btn.pack(side=tk.LEFT, padx=(0, 6))
+            self.filter_buttons[fid] = btn
+
+        # Data Treeview inside Framed Card
+        tree_card = tk.Frame(
+            root_frame,
+            bg=t.bg_card,
+            highlightbackground=t.border,
+            highlightthickness=1,
+            padx=2,
+            pady=2,
+        )
+        tree_card.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        cols = ("name", "arch", "category", "installed", "status", "winget_id")
+        self.tree = ttk.Treeview(
+            tree_card,
+            columns=cols,
+            show="headings",
+            selectmode="browse",
+        )
+
+        self.tree.heading("name", text="Runtime Dependency")
+        self.tree.heading("arch", text="Arch")
+        self.tree.heading("category", text="Component Class")
+        self.tree.heading("installed", text="Installed Build")
+        self.tree.heading("status", text="Health Status")
+        self.tree.heading("winget_id", text="Winget Identifier")
+
+        self.tree.column("name", width=260, anchor=tk.W)
+        self.tree.column("arch", width=60, anchor=tk.CENTER)
+        self.tree.column("category", width=140, anchor=tk.W)
+        self.tree.column("installed", width=100, anchor=tk.CENTER)
+        self.tree.column("status", width=170, anchor=tk.W)
+        self.tree.column("winget_id", width=180, anchor=tk.W)
+
+        tree_scroll = ttk.Scrollbar(tree_card, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=tree_scroll.set)
+
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.bind("<<TreeviewSelect>>", self._on_item_selected)
+
+        # Bottom Details Card
+        self.desc_card = tk.Frame(
+            root_frame,
+            bg=t.bg_card,
+            highlightbackground=t.border,
+            highlightthickness=1,
+            padx=12,
+            pady=8,
+        )
+        self.desc_card.pack(fill=tk.X, pady=(0, 10))
+
+        self.lbl_selected_title = tk.Label(
+            self.desc_card,
+            text="Select a runtime component above to view gaming compatibility details.",
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            font=("Segoe UI", 9, "bold"),
+            anchor="w",
+        )
+        self.lbl_selected_title.pack(anchor=tk.W)
+
+        self.lbl_selected_desc = tk.Label(
+            self.desc_card,
+            text="Microsoft Visual C++ and .NET runtimes allow games, emulators, and 3D applications to execute without missing DLL crashes.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+            wraplength=800,
+            justify=tk.LEFT,
+        )
+        self.lbl_selected_desc.pack(anchor=tk.W, pady=(2, 0))
+
+        # Live Progress & Action Footer
+        footer = tk.Frame(root_frame, bg=t.bg_root)
+        footer.pack(fill=tk.X)
+
+        self.progress_bar = ttk.Progressbar(footer, orient=tk.HORIZONTAL, mode="determinate")
+        self.progress_bar.pack(fill=tk.X, pady=(0, 6))
+
+        action_row = tk.Frame(footer, bg=t.bg_root)
+        action_row.pack(fill=tk.X)
+
+        self.lbl_status = tk.Label(
+            action_row,
+            text="Initializing runtime scan...",
+            bg=t.bg_root,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        self.lbl_status.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.btn_rescan = tk.Button(
+            action_row,
+            text="🔄 Re-Scan",
+            command=self._start_async_scan,
+            bg=t.bg_card,
+            fg=t.fg_secondary,
+            activebackground=t.border,
+            relief=tk.FLAT,
+            bd=0,
+            padx=12,
+            pady=6,
+            font=("Segoe UI", 9),
+            cursor="hand2",
+        )
+        self.btn_rescan.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_install_selected = tk.Button(
+            action_row,
+            text="Install Selected",
+            command=self._install_selected,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.border,
+            relief=tk.FLAT,
+            bd=0,
+            padx=14,
+            pady=6,
+            font=("Segoe UI", 9, "bold"),
+            cursor="hand2",
+            state="disabled",
+        )
+        self.btn_install_selected.pack(side=tk.RIGHT, padx=(6, 0))
+
+        self.btn_batch_install = tk.Button(
+            action_row,
+            text="⚡ Install All Missing Runtimes",
+            command=self._install_all_missing,
+            bg=t.accent_burgundy,
+            fg="#ffffff",
+            activebackground=t.accent_burgundy_hover,
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            bd=0,
+            padx=16,
+            pady=6,
+            font=("Segoe UI", 9, "bold"),
+            cursor="hand2",
+        )
+        self.btn_batch_install.pack(side=tk.RIGHT)
+
+    def _create_metric_card(self, parent: tk.Widget, title: str, init_val: str, val_color: str) -> Dict[str, Any]:
+        t = self.theme
+        card = tk.Frame(
+            parent,
+            bg=t.bg_card,
+            highlightbackground=t.border,
+            highlightthickness=1,
+            padx=12,
+            pady=8,
+        )
+        card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+
+        lbl_val = tk.Label(card, text=init_val, bg=t.bg_card, fg=val_color, font=("Segoe UI", 16, "bold"))
+        lbl_val.pack()
+
+        lbl_t = tk.Label(card, text=title, bg=t.bg_card, fg=t.fg_muted, font=("Segoe UI", 8, "bold"))
+        lbl_t.pack()
+
+        return {"frame": card, "val": lbl_val, "title": lbl_t}
+
+    def _set_filter(self, fid: str) -> None:
+        self.current_filter = fid
+        t = self.theme
+        for f, btn in self.filter_buttons.items():
+            if f == fid:
+                btn.config(bg=t.accent_burgundy, fg="#ffffff", font=("Segoe UI", 8, "bold"))
+            else:
+                btn.config(bg=t.bg_card, fg=t.fg_secondary, font=("Segoe UI", 8, "normal"))
+        self._render_tree()
+
+    def _start_async_scan(self) -> None:
+        if self._is_busy:
+            return
+        self._is_busy = True
+        self.lbl_status.config(text="Scanning system registry and file system for runtime prerequisites...")
+        self.progress_bar.config(mode="indeterminate")
+        self.progress_bar.start(15)
+        self.btn_rescan.config(state="disabled")
+        self.btn_batch_install.config(state="disabled")
+
+        def worker():
+            try:
+                results = self.runtimes_mgr.scan_all_runtimes()
+                self.after(0, lambda: self._on_scan_completed(results))
+            except Exception as e:
+                self.after(0, lambda: self._on_scan_failed(str(e)))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_scan_completed(self, results: List[Any]) -> None:
+        self._is_busy = False
+        self.scan_results = results
+        self.progress_bar.stop()
+        self.progress_bar.config(mode="determinate", value=0)
+        self.btn_rescan.config(state="normal")
+        self.btn_batch_install.config(state="normal")
+
+        # Update metric cards
+        total = len(results)
+        healthy = len([r for r in results if not r.is_missing and not r.is_upgradable])
+        missing = len([r for r in results if r.is_missing])
+        upgradable = len([r for r in results if r.is_upgradable])
+
+        self.card_total["val"].config(text=str(total))
+        self.card_healthy["val"].config(text=str(healthy))
+        self.card_missing["val"].config(text=str(missing))
+        self.card_updates["val"].config(text=str(upgradable))
+
+        self.lbl_status.config(
+            text=f"Scan complete: {healthy} runtimes healthy, {missing} missing, {upgradable} updates available."
+        )
+
+        if missing == 0 and upgradable == 0:
+            self.btn_batch_install.config(text="✓ All Runtimes Healthy", state="disabled")
+        else:
+            self.btn_batch_install.config(
+                text=f"⚡ Install All Missing ({missing + upgradable})",
+                state="normal"
+            )
+
+        self._render_tree()
+
+    def _on_scan_failed(self, err: str) -> None:
+        self._is_busy = False
+        self.progress_bar.stop()
+        self.btn_rescan.config(state="normal")
+        self.lbl_status.config(text=f"Scan failed: {err}")
+
+    def _render_tree(self) -> None:
+        for it in self.tree.get_children():
+            self.tree.delete(it)
+
+        from winget_updater.engine.runtimes import RuntimeCategory
+
+        filtered: List[Any] = []
+        for r in self.scan_results:
+            if self.current_filter == "vcredist" and r.definition.category != RuntimeCategory.VCREDIST:
+                continue
+            elif self.current_filter == "dotnet" and r.definition.category != RuntimeCategory.DOTNET:
+                continue
+            elif self.current_filter == "directx_media" and r.definition.category not in (
+                RuntimeCategory.DIRECTX_GRAPHICS, RuntimeCategory.AUDIO_MEDIA
+            ):
+                continue
+            elif self.current_filter == "missing_only" and not (r.is_missing or r.is_upgradable):
+                continue
+            filtered.append(r)
+
+        for r in filtered:
+            status_text = "✅ Installed" if not r.is_missing and not r.is_upgradable else (
+                "❌ Missing from System" if r.is_missing else "🟡 Update Available"
+            )
+            item_id = self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    r.definition.name,
+                    r.definition.architecture.upper(),
+                    r.definition.category.value,
+                    r.installed_version or "—",
+                    status_text,
+                    r.definition.winget_id,
+                ),
+            )
+            # Store object reference on item
+            self.tree.item(item_id, tags=(r.definition.id,))
+
+    def _on_item_selected(self, event) -> None:
+        selected = self.tree.selection()
+        if not selected:
+            self.btn_install_selected.config(state="disabled")
+            return
+
+        item_vals = self.tree.item(selected[0], "values")
+        if not item_vals:
+            return
+
+        name = item_vals[0]
+        r_item = next((r for r in self.scan_results if r.definition.name == name), None)
+        if not r_item:
+            return
+
+        self.lbl_selected_title.config(text=f"{r_item.definition.name} ({r_item.definition.winget_id})")
+        self.lbl_selected_desc.config(text=f"{r_item.definition.description}\nStatus: {r_item.status_message}")
+
+        if r_item.is_missing or r_item.is_upgradable:
+            btn_text = "Install Selected" if r_item.is_missing else "Update Selected"
+            self.btn_install_selected.config(text=btn_text, state="normal")
+        else:
+            self.btn_install_selected.config(text="Already Installed", state="disabled")
+
+    def _install_selected(self) -> None:
+        selected = self.tree.selection()
+        if not selected or self._is_busy:
+            return
+
+        item_vals = self.tree.item(selected[0], "values")
+        name = item_vals[0]
+        r_item = next((r for r in self.scan_results if r.definition.name == name), None)
+        if not r_item:
+            return
+
+        if not messagebox.askyesno(
+            "Confirm Runtime Installation",
+            f"Install runtime package '{r_item.definition.name}'?\n\n"
+            f"Package Identifier: {r_item.definition.winget_id}\n\n"
+            f"Winget will download and execute the official signed Microsoft / vendor installer silently.",
+            parent=self,
+        ):
+            return
+
+        self._run_install_job([r_item])
+
+    def _install_all_missing(self) -> None:
+        if self._is_busy:
+            return
+
+        missing_items = [r for r in self.scan_results if r.is_missing or r.is_upgradable]
+        if not missing_items:
+            messagebox.showinfo(
+                "All Runtimes Healthy",
+                "All essential gaming runtimes (Visual C++, .NET, DirectX) are already installed and healthy on this PC!",
+                parent=self,
+            )
+            return
+
+        names_preview = "\n".join(f"• {r.definition.name}" for r in missing_items[:8])
+        if len(missing_items) > 8:
+            names_preview += f"\n... and {len(missing_items) - 8} more."
+
+        if not messagebox.askyesno(
+            "Batch Runtime Installation",
+            f"Found {len(missing_items)} missing or upgradable gaming prerequisites:\n\n"
+            f"{names_preview}\n\n"
+            f"Would you like to install all recommended gaming runtimes now in the background?",
+            parent=self,
+        ):
+            return
+
+        self._run_install_job(missing_items)
+
+    def _run_install_job(self, items: List[Any]) -> None:
+        self._is_busy = True
+        self.btn_batch_install.config(state="disabled")
+        self.btn_install_selected.config(state="disabled")
+        self.btn_rescan.config(state="disabled")
+
+        total = len(items)
+        self.progress_bar.config(mode="determinate", maximum=total, value=0)
+
+        def worker():
+            successes = 0
+            failures = 0
+            for idx, it in enumerate(items, 1):
+                name = it.definition.name
+                pkg_id = it.definition.winget_id
+                self.after(0, lambda n=name, i=idx: self.lbl_status.config(text=f"Installing {n} ({i}/{total})..."))
+                self.after(0, lambda v=idx - 1: self.progress_bar.config(value=v))
+
+                success, msg = self.runtimes_mgr.install_runtime(pkg_id)
+                if success:
+                    successes += 1
+                else:
+                    failures += 1
+
+            self.after(0, lambda: self._on_install_job_done(successes, failures, total))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_install_job_done(self, successes: int, failures: int, total: int) -> None:
+        self._is_busy = False
+        self.progress_bar.config(value=total)
+        self.btn_rescan.config(state="normal")
+
+        if failures == 0:
+            messagebox.showinfo(
+                "Runtime Installation Succeeded",
+                f"Successfully installed all {successes} runtime prerequisites!\n\n"
+                f"Your PC is now fully configured with the recommended Visual C++, .NET, and DirectX gaming libraries.",
+                parent=self,
+            )
+        else:
+            messagebox.showwarning(
+                "Installation Completed with Warnings",
+                f"Installed {successes} of {total} runtimes.\n{failures} packages reported warnings or require manual confirmation.",
+                parent=self,
+            )
+
+        if self.on_runtime_installed:
+            self.on_runtime_installed()
+
+        self._start_async_scan()
+
 

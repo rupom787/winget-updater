@@ -55,6 +55,7 @@ from winget_updater.gui.dialogs import (
     AppUpdateTrackerDialog,
     CannotUpdateHelpDialog,
     ExclusionManagerDialog,
+    GameRuntimesDialog,
     ScheduleConfigDialog,
     SettingsDialog,
     UpdateSummaryDialog,
@@ -329,6 +330,7 @@ class MainWindow(tk.Tk):
             on_search_changed=self._on_sidebar_search_changed,
             on_category_changed=self._on_sidebar_category_changed,
             on_open_tracker=self._open_update_tracker,
+            on_open_runtimes=self._open_runtimes_manager,
             sys_info=self.sys_info,
         )
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=(12, 6), pady=12)
@@ -532,6 +534,21 @@ class MainWindow(tk.Tk):
         self.btn_export = RoundedButton(self.top_dock_bar, text="Export", command=self._export_report_dialog, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
         self.btn_export.pack(side=tk.LEFT, padx=(0, 4))
 
+        self.btn_runtimes = RoundedButton(
+            self.top_dock_bar,
+            text="🎮 Game Runtimes",
+            command=self._open_runtimes_manager,
+            bg_color="#3b1120" if self.current_theme.name == "dark" else "#fff1f2",
+            fg_color="#f43f5e" if self.current_theme.name == "dark" else "#e11d48",
+            border_color="#7c1e38" if self.current_theme.name == "dark" else "#fda4af",
+            radius=10,
+            height=26,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 2),
+            parent_bg=self.current_theme.bg_root,
+        )
+        self.btn_runtimes.pack(side=tk.LEFT, padx=(0, 4))
+
         # 3. Unified Center Card: Frosted Glass container housing All Software header and Data Table
         self.table_card = tk.Frame(
             self.right_container,
@@ -712,6 +729,8 @@ class MainWindow(tk.Tk):
         self.bind("<Control-e>", lambda e: self._open_exclusions_dialog())
         self.bind("<Control-t>", lambda e: self._open_update_tracker())
         self.bind("<Control-T>", lambda e: self._open_update_tracker())
+        self.bind("<Control-g>", lambda e: self._open_runtimes_manager())
+        self.bind("<Control-G>", lambda e: self._open_runtimes_manager())
         self.bind("<Control-Shift-U>", lambda e: self._open_complete_system_update())
         self.bind("<Control-Shift-u>", lambda e: self._open_complete_system_update())
 
@@ -975,6 +994,14 @@ class MainWindow(tk.Tk):
         """Opens the App Update Tracker dialog."""
         AppUpdateTrackerDialog(self, tracker=self.update_tracker, theme=self.theme)
 
+    def _open_runtimes_manager(self) -> None:
+        """Opens the Gaming & System Runtimes Manager modal."""
+        GameRuntimesDialog(
+            self,
+            theme=self.theme,
+            on_runtime_installed=self.start_scan,
+        )
+
     def _launch_app_uninstaller(self) -> None:
         """Launches the standalone complete uninstaller executable or script."""
         import subprocess, sys
@@ -999,6 +1026,7 @@ class MainWindow(tk.Tk):
             on_refresh_sources=self._refresh_sources_dialog,
             on_open_exclusions=self._open_exclusions,
             on_open_schedule=self._open_schedule,
+            on_open_runtimes=self._open_runtimes_manager,
             on_export_inventory=self._export_report_dialog,
             on_uninstall_app=self._launch_app_uninstaller,
             scheduler=self.scheduler,
@@ -1546,7 +1574,11 @@ class MainWindow(tk.Tk):
                         continue
 
                 # Category Filter for catalog
-                if cat_mode == "Win32 Applications":
+                if cat_mode == "Gaming & Runtimes":
+                    lower_search = f"{item.name} {item.id or ''} {item.notes or ''}".lower()
+                    if not any(k in lower_search for k in ("runtime", "vcredist", "visual c++", "directx", "openal", "vulkan", ".net desktop", "framework")):
+                        continue
+                elif cat_mode == "Win32 Applications":
                     if item.package_type not in (PackageType.WIN32_EXE, PackageType.WIN32_MSI):
                         continue
                 elif cat_mode == "Microsoft Store / MSIX":
@@ -1599,7 +1631,11 @@ class MainWindow(tk.Tk):
                     continue
 
             # 3. Category Filter
-            if cat_mode == "Win32 Applications":
+            if cat_mode == "Gaming & Runtimes":
+                lower_search = f"{item.name} {item.id or ''} {item.notes or ''}".lower()
+                if not any(k in lower_search for k in ("runtime", "vcredist", "visual c++", "directx", "openal", "vulkan", ".net desktop", "framework", "redistributable")):
+                    continue
+            elif cat_mode == "Win32 Applications":
                 if item.package_type not in (PackageType.WIN32_EXE, PackageType.WIN32_MSI):
                     continue
             elif cat_mode == "Microsoft Store / MSIX":

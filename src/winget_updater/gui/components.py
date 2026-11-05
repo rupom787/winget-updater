@@ -192,6 +192,7 @@ class SidebarNavigation(tk.Frame):
         on_search_changed: Callable[[str], None],
         on_category_changed: Callable[[str], None],
         on_open_tracker: Optional[Callable[[], None]] = None,
+        on_open_runtimes: Optional[Callable[[], None]] = None,
         sys_info=None,
     ):
         super().__init__(
@@ -208,6 +209,7 @@ class SidebarNavigation(tk.Frame):
         self.on_search_changed = on_search_changed
         self.on_category_changed = on_category_changed
         self.on_open_tracker = on_open_tracker
+        self.on_open_runtimes = on_open_runtimes
         self.sys_info = sys_info
         self.theme: ThemeColors = DREAM_THEME
 
@@ -304,7 +306,23 @@ class SidebarNavigation(tk.Frame):
             font=("Segoe UI", 9, "bold"),
             padding=(6, 2),
         )
-        self.btn_open_tracker.pack(fill=tk.X, pady=(6, 0))
+        self.btn_open_tracker.pack(fill=tk.X, pady=(6, 4))
+
+        # Quick Gaming & System Runtimes Manager Button
+        self.btn_open_runtimes = RoundedButton(
+            self,
+            text="🎮 Game Runtimes Doctor",
+            command=self._on_runtimes_click,
+            bg_color="#ffffff",
+            fg_color="#881337",
+            hover_bg="#fff1f2",
+            border_color="#f3d5d9",
+            radius=8,
+            height=30,
+            font=("Segoe UI", 9, "bold"),
+            padding=(6, 2),
+        )
+        self.btn_open_runtimes.pack(fill=tk.X, pady=(0, 0))
 
         # Separator line
         self.sep1 = tk.Frame(self, bg="#f3d5d9", height=1)
@@ -383,6 +401,7 @@ class SidebarNavigation(tk.Frame):
             state="readonly",
             values=[
                 "All Categories",
+                "Gaming & Runtimes",
                 "Win32 Applications",
                 "Microsoft Store / MSIX",
                 "WinGet Packages",
@@ -659,6 +678,10 @@ class SidebarNavigation(tk.Frame):
         if self.on_open_tracker:
             self.on_open_tracker()
 
+    def _on_runtimes_click(self) -> None:
+        if self.on_open_runtimes:
+            self.on_open_runtimes()
+
     def _on_filter_click(self, filter_name: str) -> None:
         self.current_filter = filter_name
         self._render_navigation_items()
@@ -776,6 +799,13 @@ class SidebarNavigation(tk.Frame):
                 self.lbl_tele_managers.config(bg=theme.bg_card, fg="#b45309")
         if hasattr(self, "btn_open_tracker"):
             self.btn_open_tracker.config(
+                bg=theme.bg_button,
+                fg=theme.fg_primary,
+                border_color=theme.border,
+                parent_bg=theme.bg_sidebar,
+            )
+        if hasattr(self, "btn_open_runtimes"):
+            self.btn_open_runtimes.config(
                 bg=theme.bg_button,
                 fg=theme.fg_primary,
                 border_color=theme.border,
