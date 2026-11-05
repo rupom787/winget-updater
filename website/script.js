@@ -985,65 +985,7 @@
         backTexture.needsUpdate = true;
       }
 
-      // --- 1. PROCEDURAL TEXTURES: DREAM PORTAL, ORBITING RING, CAUSTICS, PIXEL BADGE ---
-      
-      // A. Cosmic Purple Dream Portal Texture
-      function createPortalTexture() {
-        const size = 512;
-        const pCanvas = document.createElement("canvas");
-        pCanvas.width = size;
-        pCanvas.height = size;
-        const ctx = pCanvas.getContext("2d");
-
-        // Cosmic Nebula Radial Glow
-        const grad = ctx.createRadialGradient(size / 2, size / 2, 10, size / 2, size / 2, size / 2);
-        grad.addColorStop(0.0, "rgba(230, 200, 255, 0.95)");
-        grad.addColorStop(0.2, "rgba(147, 51, 234, 0.92)");
-        grad.addColorStop(0.55, "rgba(88, 28, 135, 0.88)");
-        grad.addColorStop(0.82, "rgba(59, 7, 100, 0.5)");
-        grad.addColorStop(1.0, "rgba(30, 3, 50, 0)");
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Concentric Luminous Ripple Rings (Pure Celestial Starlight)
-        ctx.strokeStyle = "rgba(224, 242, 254, 0.75)";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size * 0.35, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.strokeStyle = "rgba(186, 230, 253, 0.45)";
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size * 0.22, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Center Pulsing Orb (Pure Diamond Core)
-        const centerGrad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.12);
-        centerGrad.addColorStop(0, "rgba(255, 255, 255, 1)");
-        centerGrad.addColorStop(0.4, "rgba(240, 249, 255, 0.85)");
-        centerGrad.addColorStop(1, "rgba(186, 230, 253, 0)");
-        ctx.fillStyle = centerGrad;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size * 0.12, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Typography: ENTER THE DREAM
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 26px 'Space Grotesk', -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.letterSpacing = "0.15em";
-        ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
-        ctx.shadowBlur = 10;
-        ctx.fillText("ENTER", size / 2, size / 2 - 16);
-        ctx.font = "bold 24px 'Space Grotesk', -apple-system, sans-serif";
-        ctx.fillText("THE DREAM", size / 2, size / 2 + 18);
-
-        return new THREE.CanvasTexture(pCanvas);
-      }
+      // --- 1. PROCEDURAL TEXTURES: CAUSTICS (PORTAL & PURPLE DISCS REMOVED) ---
 
       // C. Pure Quartz Caustic Floor Light Pool
       function createCausticTexture() {
@@ -1096,22 +1038,13 @@
 
       updateRockPlacement();
 
-      // --- 4. CELESTIAL ZERO-G GRAVITATIONAL SINGULARITY (SILVER / WHITE) ---
+      // --- 4. CELESTIAL ZERO-G GRAVITATIONAL SINGULARITY (WHITE LIGHT ONLY, PURPLE DISC REMOVED) ---
       portalGroup = new THREE.Group();
       portalGroup.position.set(0, 0, -0.35);
       portalGroup.scale.set(0, 0, 0); // hidden until shattered
       rockGroup.add(portalGroup);
 
-      const portalGeo = new THREE.PlaneGeometry(2.8, 2.8);
-      portalMat = new THREE.MeshBasicMaterial({
-        map: createPortalTexture(),
-        transparent: true,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      });
-      const portalDisc = new THREE.Mesh(portalGeo, portalMat);
-      portalGroup.add(portalDisc);
-
+      // Purple portal disc removed per user request for pure optical quartz crystal aesthetic
       portalLight = new THREE.PointLight(0xffffff, 0, 8);
       portalLight.position.set(0, 0, 0.1);
       portalGroup.add(portalLight);
@@ -1385,7 +1318,7 @@
               setTimeout(() => audio.playBlip(1600, 0.08, 0.06), 35);
             }
           }
-          if (gemStatusEl) gemStatusEl.textContent = "COSMIC PURPLE DREAM PORTAL [FRACTURED]";
+          if (gemStatusEl) gemStatusEl.textContent = "OPTICAL QUARTZ SHARDS [FRACTURED]";
           if (gemHintEl) gemHintEl.textContent = "SHATTERED — MAGNETIC REASSEMBLY ARMED";
 
           // Inject initial kinetic impulse into all solid shards
@@ -1502,9 +1435,6 @@
           return;
         }
         if (isShatteredState) {
-          // If dream portal is open, clicking it triggers dream mode!
-          const dreamBtn = document.getElementById("fixed-theme-btn");
-          if (dreamBtn) dreamBtn.click();
           triggerReassemble();
         } else {
           triggerShatter(1.8);
