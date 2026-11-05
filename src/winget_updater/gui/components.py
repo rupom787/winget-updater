@@ -16,7 +16,7 @@ from winget_updater.gui.animations import (
     VectorIconDrawer,
 )
 from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge, draw_rounded_rect
-from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
+from winget_updater.gui.theme import DARK_THEME, DREAM_THEME, LIGHT_THEME, ThemeColors
 from winget_updater.models import CompatibilityStatus, PackageType, ProgramItem, UpdateAction, UpdateOutcome
 
 
@@ -209,7 +209,7 @@ class SidebarNavigation(tk.Frame):
         self.on_category_changed = on_category_changed
         self.on_open_tracker = on_open_tracker
         self.sys_info = sys_info
-        self.theme: ThemeColors = LIGHT_THEME
+        self.theme: ThemeColors = DREAM_THEME
 
         self.current_filter = "All Software"
         self.hovered_filter: Optional[str] = None
@@ -803,7 +803,7 @@ class DetailsDrawer(tk.Frame):
         self.on_pin_item = on_pin_item
         self.on_skip_version = on_skip_version
         self.current_item: Optional[ProgramItem] = None
-        self.theme: ThemeColors = LIGHT_THEME
+        self.theme: ThemeColors = DREAM_THEME
 
         # Left / Details Container
         self.details_container = tk.Frame(self, bg="#faf6f6")
@@ -911,125 +911,123 @@ class DetailsDrawer(tk.Frame):
         self.actions_container = tk.Frame(self, bg="#faf6f6")
         self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
 
-        # Rounded Primary Action Button
-        self.btn_update = RoundedButton(
-            self.actions_container,
-            text="Update application",
-            command=self._on_update_click,
-            bg_color="#881337",
-            fg_color="#ffffff",
-            hover_bg="#9f1239",
-            radius=8,
-            font=("Segoe UI", 9, "bold"),
-            height=30,
-            parent_bg="#faf6f6",
-        )
-        self.btn_update.pack(fill=tk.X, pady=(0, 4))
-        self.btn_update.config(state="disabled")
-
-        # Row 2: Secondary Quick Actions (Row A: Folder, Copy ID, Pin)
-        self.secondary_actions = tk.Frame(self.actions_container, bg="#faf6f6")
-        self.secondary_actions.pack(fill=tk.X, pady=(0, 3))
-
-        self.btn_open_folder = RoundedButton(
-            self.secondary_actions,
-            text="Folder",
-            command=self._on_open_folder_click,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
-            font=("Segoe UI", 8),
-            height=24,
-            parent_bg="#faf6f6",
-        )
-        self.btn_open_folder.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.btn_open_folder.config(state="disabled")
-
-        self.btn_copy_id = RoundedButton(
-            self.secondary_actions,
-            text="Copy ID",
-            command=self._on_copy_id_click,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
-            font=("Segoe UI", 8),
-            height=24,
-            parent_bg="#faf6f6",
-        )
-        self.btn_copy_id.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
-        self.btn_copy_id.config(state="disabled")
-
-        self.btn_pin = RoundedButton(
-            self.secondary_actions,
-            text="📌 Pin",
-            command=self._on_pin_click,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
-            font=("Segoe UI", 8),
-            height=24,
-            parent_bg="#faf6f6",
-        )
-        self.btn_pin.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
-        self.btn_pin.config(state="disabled")
-
-        # Row 3: Secondary State Actions (Row B: Exclude, Skip, Uninstall)
-        self.secondary_row_b = tk.Frame(self.actions_container, bg="#faf6f6")
-        self.secondary_row_b.pack(fill=tk.X, pady=(0, 3))
+        # 3 Rows of Action Pills matching crop_mockup_right.png exactly:
+        # Row 1: [ Exclude ] [ Folder ]
+        self.row_act1 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act1.pack(fill=tk.X, anchor=tk.E, pady=(0, 3))
 
         self.btn_exclude = RoundedButton(
-            self.secondary_row_b,
+            self.row_act1,
             text="Exclude",
             command=self._on_exclude_click,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
+            bg_color="#141d30",
+            fg_color="#f8fafc",
+            hover_bg="#1e2c45",
+            border_color="#1e2c45",
+            radius=8,
             font=("Segoe UI", 8),
             height=24,
-            parent_bg="#faf6f6",
+            parent_bg="#10182b",
         )
-        self.btn_exclude.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.btn_exclude.config(state="disabled")
+        self.btn_exclude.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_open_folder = RoundedButton(
+            self.row_act1,
+            text="Folder",
+            command=self._on_open_folder_click,
+            bg_color="#141d30",
+            fg_color="#f8fafc",
+            hover_bg="#1e2c45",
+            border_color="#1e2c45",
+            radius=8,
+            font=("Segoe UI", 8),
+            height=24,
+            parent_bg="#10182b",
+        )
+        self.btn_open_folder.pack(side=tk.LEFT)
+
+        # Row 2: [ Copy ID ] [ Pin ] [ Skip ]
+        self.row_act2 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act2.pack(fill=tk.X, anchor=tk.E, pady=(0, 3))
+
+        self.btn_copy_id = RoundedButton(
+            self.row_act2,
+            text="Copy ID",
+            command=self._on_copy_id_click,
+            bg_color="#141d30",
+            fg_color="#f8fafc",
+            hover_bg="#1e2c45",
+            border_color="#1e2c45",
+            radius=8,
+            font=("Segoe UI", 8),
+            height=24,
+            parent_bg="#10182b",
+        )
+        self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_pin = RoundedButton(
+            self.row_act2,
+            text="Pin",
+            command=self._on_pin_click,
+            bg_color="#141d30",
+            fg_color="#f8fafc",
+            hover_bg="#1e2c45",
+            border_color="#1e2c45",
+            radius=8,
+            font=("Segoe UI", 8),
+            height=24,
+            parent_bg="#10182b",
+        )
+        self.btn_pin.pack(side=tk.LEFT, padx=(0, 4))
 
         self.btn_skip = RoundedButton(
-            self.secondary_row_b,
-            text="⏭️ Skip",
+            self.row_act2,
+            text="Skip",
             command=self._on_skip_click,
-            bg_color="#ffffff",
+            bg_color="#141d30",
             fg_color="#64748b",
-            hover_bg="#fff1f2",
-            border_color="#e2e8f0",
-            radius=6,
+            hover_bg="#1e2c45",
+            border_color="#1e2c45",
+            radius=8,
             font=("Segoe UI", 8),
             height=24,
-            parent_bg="#faf6f6",
+            parent_bg="#10182b",
         )
-        self.btn_skip.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
-        self.btn_skip.config(state="disabled")
+        self.btn_skip.pack(side=tk.LEFT)
+
+        # Row 3: [ Uninstall ] [ Update application ]
+        self.row_act3 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act3.pack(fill=tk.X, anchor=tk.E, pady=(0, 1))
 
         self.btn_uninstall = RoundedButton(
-            self.secondary_row_b,
-            text="🗑️ Uninstall",
+            self.row_act3,
+            text="Uninstall",
             command=self._on_uninstall_click,
-            bg_color="#ffffff",
-            fg_color="#b91c1c",
-            hover_bg="#fef2f2",
-            border_color="#fecaca",
-            radius=6,
+            bg_color="#141d30",
+            fg_color="#f87171",
+            hover_bg="#2e0b17",
+            border_color="#450a0a",
+            radius=8,
             font=("Segoe UI", 8),
-            height=24,
-            parent_bg="#faf6f6",
+            height=26,
+            parent_bg="#10182b",
         )
-        self.btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
-        self.btn_uninstall.config(state="disabled")
+        self.btn_uninstall.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_update = RoundedButton(
+            self.row_act3,
+            text="Update application",
+            command=self._on_update_click,
+            bg_color="#680b26",
+            fg_color="#ffffff",
+            hover_bg="#881337",
+            border_color="#9f1239",
+            radius=8,
+            font=("Segoe UI", 8, "bold"),
+            height=26,
+            parent_bg="#10182b",
+        )
+        self.btn_update.pack(side=tk.LEFT)
 
         # Row 3: Extended Package Resolution & Fallback Actions
         self.resolution_actions = tk.Frame(self.actions_container, bg="#faf6f6")
@@ -1092,16 +1090,22 @@ class DetailsDrawer(tk.Frame):
             self.lbl_notes.config(text="")
             self.avatar_canvas.pack_forget()
             self.status_pill.pack_forget()
-            self.actions_container.pack_forget()
-            self.btn_update.config(state="disabled", text="Update application")
-            self.btn_exclude.config(state="disabled")
-            self.btn_open_folder.config(state="disabled")
-            self.btn_copy_id.config(state="disabled")
+            self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
+            is_dark = (self.theme.name == "dark")
+            dis_bg = "#141d30" if is_dark else "#f1f5f9"
+            dis_fg = "#64748b" if is_dark else "#94a3b8"
+            self.btn_update.config(state="disabled", text="Update application", bg=dis_bg, fg=dis_fg)
+            self.btn_exclude.config(state="disabled", text="Exclude", bg=dis_bg, fg=dis_fg)
+            self.btn_open_folder.config(state="disabled", text="Folder", bg=dis_bg, fg=dis_fg)
+            self.btn_copy_id.config(state="disabled", text="Copy ID", bg=dis_bg, fg=dis_fg)
+            self.btn_pin.config(state="disabled", text="Pin", bg=dis_bg, fg=dis_fg)
+            self.btn_skip.config(state="disabled", text="Skip", bg=dis_bg, fg=dis_fg)
+            self.btn_uninstall.config(state="disabled", text="Uninstall", bg=dis_bg, fg=dis_fg)
             self.btn_bind.config(state="disabled")
-            self.btn_uninstall.config(state="disabled")
             self.diagnostic_box.pack_forget()
             self.btn_allow_unverified.pack_forget()
             self.btn_website.pack_forget()
+            self.resolution_actions.pack_forget()
             return
 
         # Restore widgets for selected item
@@ -1177,7 +1181,7 @@ class DetailsDrawer(tk.Frame):
                 txt = "Update unavailable"
             self.btn_update.config(state="disabled", text=txt)
 
-        is_ignored = item.action == UpdateAction.EXCLUDED
+        is_ignored = (item.action == UpdateAction.EXCLUDED)
         self.btn_exclude.config(state="normal", text="Un-exclude" if is_ignored else "Exclude")
         self.btn_open_folder.config(state="normal" if item.install_location else "disabled")
         self.btn_copy_id.config(state="normal")
@@ -1188,7 +1192,7 @@ class DetailsDrawer(tk.Frame):
         self.btn_pin.config(
             state="normal",
             text="Unpin" if item.is_pinned else "📌 Pin",
-            fg_color="#059669" if item.is_pinned else "#334155",
+            fg_color="#059669" if item.is_pinned else ("#f8fafc" if self.theme.name == "dark" else "#334155"),
         )
 
         # Skip / Unskip Button state
@@ -1318,9 +1322,9 @@ class DetailsDrawer(tk.Frame):
         self.lbl_id_path.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
         self.lbl_notes.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
         self.actions_container.config(bg=theme.bg_sidebar)
-        self.secondary_actions.config(bg=theme.bg_sidebar)
-        if hasattr(self, "secondary_row_b"):
-            self.secondary_row_b.config(bg=theme.bg_sidebar)
+        for r_act in (getattr(self, "row_act1", None), getattr(self, "row_act2", None), getattr(self, "row_act3", None), getattr(self, "secondary_actions", None), getattr(self, "secondary_row_b", None)):
+            if r_act:
+                r_act.config(bg=theme.bg_sidebar)
         self.resolution_actions.config(bg=theme.bg_sidebar)
         self.status_pill.config(bg=theme.bg_sidebar)
         if hasattr(self, "diagnostic_box"):
@@ -1528,8 +1532,8 @@ class ProgramTableView(tk.Frame):
         on_batch_exclude: Optional[Callable[[List[ProgramItem]], None]] = None,
         on_batch_allow: Optional[Callable[[List[ProgramItem]], None]] = None,
     ):
-        super().__init__(parent, bg="#ffffff")
-        self.theme: ThemeColors = LIGHT_THEME
+        super().__init__(parent, bg="#10182b")
+        self.theme: ThemeColors = DREAM_THEME
         self.on_double_click = on_double_click
         self.on_select_item = on_select_item
         self.on_exclude_item = on_exclude_item
@@ -1617,13 +1621,13 @@ class ProgramTableView(tk.Frame):
         self.tree.tag_configure("tag_nosource", background="#ffffff", foreground="#475569")
         self.tree.tag_configure("tag_nosource_alt", background="#fdfafa", foreground="#475569")
 
-        # Scrollbars
-        vsb = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview)
-        hsb = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.tree.xview)
-        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        # Clean Frosted Scrollbars
+        self.vsb = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview, style="CleanWine.Vertical.TScrollbar")
+        self.hsb = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.tree.xview)
+        self.tree.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
 
         self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
+        self.vsb.grid(row=0, column=1, sticky="ns")
 
         # Shimmering Skeleton Loader Screen
         self.skeleton = AnimatedSkeletonOverlay(self)
@@ -1650,22 +1654,51 @@ class ProgramTableView(tk.Frame):
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
-        self.config(bg=theme.bg_root)
+        self.config(bg=theme.bg_card)
         style = ttk.Style()
+        is_dark = (theme.name == "dark")
         style.configure(
             "CleanWine.Treeview",
             background=theme.bg_table,
             foreground=theme.fg_primary,
             fieldbackground=theme.bg_table,
+            borderwidth=0,
+            relief="flat",
         )
-        is_dark = (theme.name == "dark")
         style.configure(
             "CleanWine.Treeview.Heading",
             background=theme.bg_header,
-            foreground="#f8fafc" if is_dark else theme.accent_burgundy,
+            foreground="#94a3b8" if is_dark else theme.accent_burgundy,
+            borderwidth=0,
+            relief="flat",
+            font=("Segoe UI", 9, "bold"),
         )
+        try:
+            style.layout("CleanWine.Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
+        except Exception:
+            pass
+        if is_dark:
+            style.configure(
+                "CleanWine.Vertical.TScrollbar",
+                background="#1e2c45",
+                troughcolor="#0c1220",
+                bordercolor="#0c1220",
+                arrowcolor="#94a3b8",
+                relief="flat",
+                borderwidth=0,
+            )
+        else:
+            style.configure(
+                "CleanWine.Vertical.TScrollbar",
+                background="#f1f5f9",
+                troughcolor="#faf7f2",
+                bordercolor="#e2e8f0",
+                arrowcolor="#64748b",
+                relief="flat",
+                borderwidth=0,
+            )
         is_dark = (theme.name == "dark")
-        sel_bg = "#064e3b" if is_dark else theme.bg_card_selected
+        sel_bg = "#065f46" if is_dark else theme.bg_card_selected
         sel_fg = "#ffffff" if is_dark else theme.accent_burgundy
         style.map(
             "CleanWine.Treeview",
@@ -1673,17 +1706,21 @@ class ProgramTableView(tk.Frame):
             foreground=[("selected", sel_fg)],
         )
 
-        self.tree.tag_configure("tag_catalog", background="#ecfdf5", foreground="#065f46")
-        self.tree.tag_configure("tag_available", background=theme.tag_available_bg, foreground=theme.tag_available_fg)
-        self.tree.tag_configure("tag_uptodate", background=theme.tag_uptodate_bg, foreground=theme.tag_uptodate_fg)
-        self.tree.tag_configure("tag_uptodate_alt", background=theme.tag_uptodate_alt_bg, foreground=theme.tag_uptodate_alt_fg)
-        self.tree.tag_configure("tag_downgrade", background=theme.tag_downgrade_bg, foreground=theme.tag_downgrade_fg)
-        self.tree.tag_configure("tag_fallback", background=theme.tag_fallback_bg, foreground=theme.tag_fallback_fg)
-        self.tree.tag_configure("tag_unverified", background=theme.tag_unverified_bg, foreground=theme.tag_unverified_fg)
-        self.tree.tag_configure("tag_ignored", background=theme.tag_ignored_bg, foreground=theme.tag_ignored_fg)
-        self.tree.tag_configure("tag_incompat", background=theme.tag_incompat_bg, foreground=theme.tag_incompat_fg)
-        self.tree.tag_configure("tag_nosource", background=theme.bg_table, foreground=theme.tag_listed_fg)
-        self.tree.tag_configure("tag_nosource_alt", background=theme.bg_table_alt, foreground=theme.tag_listed_fg)
+        # Subtle alternating dark glass rows so icons and text pop cleanly
+        bg_even = "#0b1220" if is_dark else "#ffffff"
+        bg_odd = "#0e1626" if is_dark else "#fdfcf9"
+
+        self.tree.tag_configure("tag_catalog", background=bg_even, foreground="#34d399" if is_dark else "#065f46")
+        self.tree.tag_configure("tag_available", background="#180c16" if is_dark else "#fff1f2", foreground="#fda4af" if is_dark else "#991b1b")
+        self.tree.tag_configure("tag_uptodate", background=bg_even, foreground="#34d399" if is_dark else "#166534")
+        self.tree.tag_configure("tag_uptodate_alt", background=bg_odd, foreground="#34d399" if is_dark else "#166534")
+        self.tree.tag_configure("tag_downgrade", background=bg_even, foreground="#fbbf24" if is_dark else "#92400e")
+        self.tree.tag_configure("tag_fallback", background=bg_odd, foreground="#a5b4fc" if is_dark else "#1e40af")
+        self.tree.tag_configure("tag_unverified", background=bg_even, foreground="#fbbf24" if is_dark else "#92400e")
+        self.tree.tag_configure("tag_ignored", background=bg_odd, foreground="#c084fc" if is_dark else "#5b21b6")
+        self.tree.tag_configure("tag_incompat", background="#180c16" if is_dark else "#fff1f2", foreground="#f87171" if is_dark else "#991b1b")
+        self.tree.tag_configure("tag_nosource", background=bg_even, foreground="#94a3b8" if is_dark else "#475569")
+        self.tree.tag_configure("tag_nosource_alt", background=bg_odd, foreground="#94a3b8" if is_dark else "#475569")
 
         self.skeleton.apply_theme(theme)
         self.context_menu.config(bg=theme.bg_card, fg=theme.fg_primary, activebackground=theme.bg_card_hover, activeforeground=theme.accent_burgundy)
@@ -2175,7 +2212,7 @@ class FloatingGlassBatchDock(tk.Frame):
         self.on_batch_exclude = on_batch_exclude
         self.on_clear_selection = on_clear_selection
         self.selected_items: List[ProgramItem] = []
-        self.theme: ThemeColors = LIGHT_THEME
+        self.theme: ThemeColors = DREAM_THEME
 
         # Left Info Stack
         self.info_stack = tk.Frame(self, bg="#faf6f6")
@@ -2346,7 +2383,7 @@ class ElevationBanner(tk.Frame):
         super().__init__(parent, bg="#ffffff", padx=16, pady=6, highlightbackground="#f3d5d9", highlightthickness=1)
         self.sys_info = sys_info
         self.on_toggle_theme = on_toggle_theme
-        self.theme: ThemeColors = LIGHT_THEME
+        self.theme: ThemeColors = DREAM_THEME
         self.pack(fill=tk.X)
 
         self.lbl_logo = tk.Label(self, text="Software & Package Updater", font=("Segoe UI", 11, "bold"), bg="#ffffff", fg="#881337")
@@ -2369,7 +2406,7 @@ class ElevationBanner(tk.Frame):
 
 class StatCard(tk.Frame):
     def __init__(self, parent, tag_num, title, subtitle, accent_color, filter_name, on_click, icon_type="cpu"):
-        super().__init__(parent, bg="#ffffff")
+        super().__init__(parent, bg="#10182b")
         self.title = title
         self.lbl = tk.Label(self, text=title, bg="#ffffff", fg="#0f172a")
         self.lbl.pack()
@@ -2390,7 +2427,7 @@ class StatCardDeck(tk.Frame):
         pass
 
     def apply_theme(self, theme):
-        self.config(bg=theme.bg_root)
+        self.config(bg=theme.bg_card)
 
 
 class SearchFilterBar(tk.Frame):

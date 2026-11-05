@@ -464,32 +464,7 @@ class MainWindow(tk.Tk):
         )
         self.btn_scan.pack(fill=tk.X)
 
-        # 2c. Bottom Section: Selected App Action Pills
-        self.right_selected_card = tk.Frame(self.right_action_sidebar, bg=self.current_theme.bg_card)
-        self.right_selected_card.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
-
-        self.row_p1 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
-        self.row_p1.pack(fill=tk.X, pady=2)
-        self.p_btn_exclude = RoundedButton(self.row_p1, text="Exclude", command=lambda: self._handle_context_exclude(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
-        self.p_btn_exclude.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_folder = RoundedButton(self.row_p1, text="Folder", command=lambda: self._open_app_folder(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
-        self.p_btn_folder.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
-
-        self.row_p2 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
-        self.row_p2.pack(fill=tk.X, pady=2)
-        self.p_btn_copy = RoundedButton(self.row_p2, text="Copy ID", command=lambda: self._copy_package_id(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
-        self.p_btn_copy.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_pin = RoundedButton(self.row_p2, text="Pin", command=lambda: self._handle_pin_item(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
-        self.p_btn_pin.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
-        self.p_btn_skip = RoundedButton(self.row_p2, text="Skip", command=lambda: self._handle_skip_version(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
-        self.p_btn_skip.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
-
-        self.row_p3 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
-        self.row_p3.pack(fill=tk.X, pady=(3, 0))
-        self.p_btn_uninstall = RoundedButton(self.row_p3, text="Uninstall", command=lambda: self._handle_context_uninstall(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8), bg_color="#2e0b17" if self.current_theme.name == "dark" else "#fef2f2", fg_color="#f87171" if self.current_theme.name == "dark" else "#dc2626", parent_bg=self.current_theme.bg_card)
-        self.p_btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_update = RoundedButton(self.row_p3, text="Update App", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color=self.current_theme.accent_burgundy, fg_color="#ffffff", parent_bg=self.current_theme.bg_card)
-        self.p_btn_update.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
+        # 2c. Clean Right Sidebar Bottom Spacer (Action buttons are cleanly housed in bottom drawer)
 
         # Center Column: Main Content Container (expands)
         self.right_container = tk.Frame(self.main_body, bg=self.current_theme.bg_root)
@@ -499,43 +474,53 @@ class MainWindow(tk.Tk):
         self.top_dock_bar = tk.Frame(self.right_container, bg=self.current_theme.bg_root, pady=4)
         self.top_dock_bar.pack(fill=tk.X, padx=16, pady=(6, 2))
 
-        self.btn_restore = RoundedButton(self.top_dock_bar, text="Restore Backup", command=self._import_software_backup, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_restore = RoundedButton(self.top_dock_bar, text="Restore Backup", command=self._import_software_backup, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_restore.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_backup = RoundedButton(self.top_dock_bar, text="Backup Apps", command=self._export_software_backup, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_backup = RoundedButton(self.top_dock_bar, text="Backup Apps", command=self._export_software_backup, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_backup.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_sources = RoundedButton(self.top_dock_bar, text="Refresh Sources", command=self._refresh_sources_dialog, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_sources = RoundedButton(self.top_dock_bar, text="Refresh Sources", command=self._refresh_sources_dialog, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_sources.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_exclusions = RoundedButton(self.top_dock_bar, text="Exclusions", command=self._open_exclusions, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_exclusions = RoundedButton(self.top_dock_bar, text="Exclusions", command=self._open_exclusions, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_exclusions.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_schedule = RoundedButton(self.top_dock_bar, text="🕒 Schedule", command=self._open_schedule, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_schedule = RoundedButton(self.top_dock_bar, text="🕒 Schedule", command=self._open_schedule, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_schedule.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_export = RoundedButton(self.top_dock_bar, text="Export Inventory", command=self._export_report_dialog, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_export = RoundedButton(self.top_dock_bar, text="Export Inventory", command=self._export_report_dialog, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_export.pack(side=tk.LEFT, padx=(0, 6))
 
-        # 3. Center Title Header Bar above the table
-        self.action_header = tk.Frame(
+        # 3. Unified Center Card: Frosted Glass container housing All Software header and Data Table
+        self.table_card = tk.Frame(
             self.right_container,
-            bg="#ffffff",
+            bg=self.current_theme.bg_card,
+            highlightbackground=self.current_theme.border,
+            highlightthickness=1,
+            padx=2,
+            pady=2,
+        )
+        self.table_card.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 8))
+
+        # Title Header directly inside the frosted card
+        self.action_header = tk.Frame(
+            self.table_card,
+            bg=self.current_theme.bg_card,
             padx=16,
             pady=10,
-            highlightbackground="#f3d5d9",
-            highlightthickness=1,
+            highlightthickness=0,
         )
         self.action_header.pack(fill=tk.X)
 
-        self.header_title_box = tk.Frame(self.action_header, bg="#ffffff")
+        self.header_title_box = tk.Frame(self.action_header, bg=self.current_theme.bg_card)
         self.header_title_box.pack(side=tk.LEFT)
 
         self.lbl_view_title = tk.Label(
             self.header_title_box,
             text="All Software",
-            bg="#ffffff",
-            fg="#111827",
+            bg=self.current_theme.bg_card,
+            fg=self.current_theme.fg_primary,
             font=("Segoe UI", 14, "bold"),
             anchor="w",
         )
@@ -544,24 +529,24 @@ class MainWindow(tk.Tk):
         self.lbl_view_subtitle = tk.Label(
             self.header_title_box,
             text="Loading discovered software...",
-            bg="#ffffff",
-            fg="#6b7280",
+            bg=self.current_theme.bg_card,
+            fg=self.current_theme.fg_muted,
             font=("Segoe UI", 9),
             anchor="w",
         )
         self.lbl_view_subtitle.pack(anchor=tk.W, pady=(2, 0))
 
-        self.header_btn_box = tk.Frame(self.action_header, bg="#ffffff")
+        self.header_btn_box = tk.Frame(self.action_header, bg=self.current_theme.bg_card)
         self.header_btn_box.pack(side=tk.RIGHT)
 
         # 4. Progress bar frame for scanning / updates (hidden when idle to match clean table layout)
-        self.progress_frame = tk.Frame(self.right_container, bg=self.current_theme.bg_card, padx=16, pady=2)
+        self.progress_frame = tk.Frame(self.table_card, bg=self.current_theme.bg_card, padx=16, pady=2)
 
         self.status_lbl = tk.Label(
             self.progress_frame,
             text="Ready.",
-            bg="#ffffff",
-            fg="#6b7280",
+            bg=self.current_theme.bg_card,
+            fg=self.current_theme.fg_muted,
             font=("Segoe UI", 8),
             anchor="w",
             cursor="hand2",
@@ -575,8 +560,8 @@ class MainWindow(tk.Tk):
         self.lbl_gpu_badge = tk.Label(
             self.progress_frame,
             text=f"DirectX 12 GPU: {self.primary_gpu.name}",
-            bg="#ffffff",
-            fg="#059669",
+            bg=self.current_theme.bg_card,
+            fg="#10b981" if self.current_theme.name == "dark" else "#059669",
             font=("Segoe UI", 8, "bold"),
             anchor="e",
         )
@@ -586,7 +571,7 @@ class MainWindow(tk.Tk):
         self.scan_animator = ScanningPulseAnimator(self.status_lbl, "Scanning software and repositories...")
 
         # 5. Installed-Software Table (4 Columns: Name, Current Version, Latest Version, Status)
-        self.table_container = tk.Frame(self.right_container, bg="#ffffff", padx=16, pady=4)
+        self.table_container = tk.Frame(self.table_card, bg=self.current_theme.bg_card, padx=8, pady=4, highlightthickness=0)
         self.table_container.pack(fill=tk.BOTH, expand=True)
 
         # Frosted glass banner for review & unverified software
@@ -651,6 +636,15 @@ class MainWindow(tk.Tk):
             on_skip_version=self._handle_skip_version,
         )
         self.drawer.pack(fill=tk.X)
+
+        # Seamless aliases for test compatibility & unified single-point action control
+        self.p_btn_exclude = self.drawer.btn_exclude
+        self.p_btn_folder = self.drawer.btn_open_folder
+        self.p_btn_copy = self.drawer.btn_copy_id
+        self.p_btn_pin = self.drawer.btn_pin
+        self.p_btn_skip = self.drawer.btn_skip
+        self.p_btn_uninstall = self.drawer.btn_uninstall
+        self.p_btn_update = self.drawer.btn_update
 
         # Backwards-compatibility helper references
         self.inspector = self.drawer
@@ -736,7 +730,8 @@ class MainWindow(tk.Tk):
 
         self.main_body.config(bg=t.bg_root)
         self.right_container.config(bg=t.bg_root)
-        self.action_header.config(bg=t.bg_card, highlightbackground=t.border)
+        if hasattr(self, "table_card"): self.table_card.config(bg=t.bg_card, highlightbackground=t.border)
+        self.action_header.config(bg=t.bg_card, highlightthickness=0)
         self.header_title_box.config(bg=t.bg_card)
         self.header_btn_box.config(bg=t.bg_card)
         self.lbl_view_title.config(bg=t.bg_card, fg=t.fg_primary)
@@ -767,15 +762,22 @@ class MainWindow(tk.Tk):
             self.app_update_banner.apply_theme(t)
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
+        for act_b in (getattr(self, "btn_update_selected", None), getattr(self, "btn_update", None), getattr(self, "btn_complete_system", None), getattr(self, "btn_scan", None), getattr(self, "btn_select_updates", None)):
+            if act_b:
+                act_b.parent_bg = t.bg_card
+                act_b.disabled_bg = "#141d30" if t.name == "dark" else "#f1f5f9"
+                act_b.disabled_fg = "#475569" if t.name == "dark" else "#9ca3af"
+                act_b.config(parent_bg=t.bg_card, disabled_bg=act_b.disabled_bg, disabled_fg=act_b.disabled_fg)
+
         if hasattr(self, "btn_complete_system"):
-            cs_bg = "#680b26" if t.name == "dark" else t.accent_burgundy
-            self.btn_complete_system.config(bg=cs_bg, fg="#ffffff", hover_bg=t.accent_burgundy_hover, border_color="#9f1239")
+            cs_bg = "#7c122e" if t.name == "dark" else t.accent_burgundy
+            self.btn_complete_system.config(bg=cs_bg, fg="#ffffff", hover_bg="#941838", border_color="#a81b40" if t.name == "dark" else "#9f1239")
         if hasattr(self, "btn_update"):
-            up_bg = "#3b0d1e" if t.name == "dark" else t.accent_burgundy
-            self.btn_update.config(bg=up_bg, fg="#ffffff", hover_bg=t.accent_burgundy_hover, border_color="#e11d48")
+            up_bg = "#541528" if t.name == "dark" else t.accent_burgundy
+            self.btn_update.config(bg=up_bg, fg="#ffffff", hover_bg="#6b1a33", border_color="#7c1e38" if t.name == "dark" else "#e11d48")
         if hasattr(self, "btn_scan"):
-            sc_bg = "#e11d48" if t.name == "dark" else t.accent_burgundy
-            self.btn_scan.config(bg=sc_bg, fg="#ffffff", hover_bg=t.accent_burgundy_hover)
+            sc_bg = "#b91c47" if t.name == "dark" else t.accent_burgundy
+            self.btn_scan.config(bg=sc_bg, fg="#ffffff", hover_bg="#d92455", border_color="#e11d48")
         if hasattr(self, "reboot_badge"):
             is_reb, _ = WindowsUpdateManager.is_reboot_pending()
             if is_reb:
