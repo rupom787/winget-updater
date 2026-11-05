@@ -37,9 +37,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        voices: resolve(__dirname, 'voices.html'),
-        motion: resolve(__dirname, 'motion.html')
+        main: resolve(__dirname, 'index.html')
       }
     }
   }

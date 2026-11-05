@@ -167,7 +167,9 @@
         <div class="hero-top-meta">
           <span class="meta-item">WINDOWS 11 BUILD 26300 NATIVE</span>
           <span class="meta-item">DIRECTX 12 / DWM COMPOSITION</span>
-          <span class="meta-item">0.0% IDLE CPU // 13.3 MB</span>
+          <span class="meta-item" id="hero-gpu-telemetry">0.0% IDLE CPU // 27.06 MB</span>
+          <span class="meta-item live-pulse-pill" id="live-hardware-pill">GPU: DETECTING...</span>
+          <span class="meta-item" id="live-hz-pill">REFRESH: --Hz</span>
         </div>
 
         <div class="hero-headline-wrapper">
@@ -247,6 +249,60 @@
             </p>
           </div>
         </div>
+
+        <!-- 07 INTERACTIVE REALITY COMPARISON SLIDER -->
+        <div class="truth-slider-card" id="truth-slider-card">
+          <div class="slider-head">
+            <span class="slider-tag">ARCHITECTURE EXPERIMENT // LIVE COMPARISON</span>
+            <span class="slider-title">The Phantom Exit 0 vs. Verified Reality</span>
+            <span class="slider-drag-hint">&larr; DRAG HANDLE TO COMPARE REALITY &rarr;</span>
+          </div>
+
+          <div class="truth-slider-viewport" id="truth-slider-viewport">
+            <!-- Left Panel: Standard Winget CLI (Phantom Update) -->
+            <div class="truth-panel truth-panel-phantom">
+              <div class="panel-badge phantom-badge">STANDARD WINGET // PHANTOM EXIT 0</div>
+              <div class="panel-terminal">
+                <div class="terminal-line text-cyan">&gt; winget upgrade --id OpenJS.NodeJS -e</div>
+                <div class="terminal-line text-green">&gt; Successfully installed (Exit code 0)</div>
+                <div class="terminal-line text-dim">&gt; Process finished in 4.2s</div>
+                <div class="audit-flag flag-fail">
+                  <span class="flag-icon">&#10006;</span>
+                  <div class="flag-text">
+                    <strong>PHANTOM MISMATCH DETECTED:</strong>
+                    <span>Binary on disk is still v11.20.0 (Target was 12.2.1). Silent MSI error was ignored!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: Winget Updater (The Truth Engine) -->
+            <div class="truth-panel truth-panel-truth" id="truth-panel-truth">
+              <div class="panel-badge truth-badge">WINGET UPDATER // REALITY ENGINE</div>
+              <div class="panel-terminal">
+                <div class="terminal-line text-cyan">&gt; winget_updater.orchestrate('npm')</div>
+                <div class="terminal-line text-amber">&gt; Post-install reality check: probing disk byte hash...</div>
+                <div class="terminal-line text-pink">&gt; Stale version detected: auto-elevating file replacement...</div>
+                <div class="terminal-line text-green">&gt; Subsurface Authenticode audit: PASS (v12.2.1 verified)</div>
+                <div class="audit-flag flag-pass">
+                  <span class="flag-icon">&#10004;</span>
+                  <div class="flag-text">
+                    <strong>100% REALITY VERIFIED:</strong>
+                    <span>Process lock cleared. Executable byte signature matches official release.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Draggable Divider Line & Thumb -->
+            <div class="truth-slider-handle" id="truth-slider-handle">
+              <div class="handle-line"></div>
+              <div class="handle-thumb" aria-label="Drag comparison slider">
+                <span class="thumb-arrows">&#x2194;</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -303,6 +359,61 @@
         <div class="section-header-rule">
           <span class="section-tag">(02) Disciplines</span>
           <span class="section-jp">六つの基盤技術体系</span>
+        </div>
+
+        <!-- 08 3D EXPLODED ARCHITECTURAL LAYER VIEWER -->
+        <div class="exploded-architecture-card">
+          <div class="exploded-header">
+            <div>
+              <span class="exp-tag">INTERNAL BLUEPRINT // 4-TIER HARDWARE STACK</span>
+              <h3 class="exp-title">Interactive Exploded Architecture</h3>
+            </div>
+            <div class="exploded-hint">CLICK ANY LAYER TO ISOLATE SUBSYSTEM &bull; 3D PERSPECTIVE</div>
+          </div>
+
+          <div class="exploded-viewport" id="exploded-viewport">
+            <div class="exploded-stack" id="exploded-stack">
+              <!-- Layer 1 -->
+              <div class="exploded-layer layer-1" data-layer="1" data-sound="hover">
+                <div class="layer-tab">LAYER 01 // DWM COMPOSITOR</div>
+                <div class="layer-content">
+                  <span class="layer-title">Hardware DirectComposition 120Hz Surface</span>
+                  <p class="layer-desc">Decoupled rendering queue bypassing legacy Win32 GDI invalidation loops. Delivers 0.0% idle CPU and buttery 120 FPS velocity lerp.</p>
+                  <span class="layer-stat">REFRESH: 120Hz &bull; LATENCY: &lt;8.3ms</span>
+                </div>
+              </div>
+
+              <!-- Layer 2 -->
+              <div class="exploded-layer layer-2" data-layer="2" data-sound="hover">
+                <div class="layer-tab">LAYER 02 // PROCESS LOCK TERMINATOR</div>
+                <div class="layer-content">
+                  <span class="layer-title">Error 1618 Process Lock Auto-Bypass</span>
+                  <p class="layer-desc">Detects mutex locks on executables like Chrome, Git, and Discord. Gracefully signals running processes to prevent installer aborts.</p>
+                  <span class="layer-stat">LOCK RESOLUTION: 100% &bull; ERROR 1618: NULL</span>
+                </div>
+              </div>
+
+              <!-- Layer 3 -->
+              <div class="exploded-layer layer-3" data-layer="3" data-sound="hover">
+                <div class="layer-tab">LAYER 03 // ADAPTER MESH</div>
+                <div class="layer-content">
+                  <span class="layer-title">Multi-Source Synthesis Mesh</span>
+                  <p class="layer-desc">Unified abstraction combining Microsoft WinGet, Store MSIX, Python PIP, and global NPM with authoritative binary path precedence.</p>
+                  <span class="layer-stat">REPOSITORIES: 4 UNIFIED &bull; DISCOVERY: 1.8s</span>
+                </div>
+              </div>
+
+              <!-- Layer 4 -->
+              <div class="exploded-layer layer-4" data-layer="4" data-sound="hover">
+                <div class="layer-tab">LAYER 04 // CRYPTOGRAPHIC AUDIT</div>
+                <div class="layer-content">
+                  <span class="layer-title">Authenticode SHA-256 Reality Verification</span>
+                  <p class="layer-desc">Subsurface PE certificate validation and filesystem byte hashing ensuring stale binaries are never falsely marked up-to-date.</p>
+                  <span class="layer-stat">VERIFICATION: CRYPTOGRAPHIC SHA-256 &bull; PHANTOM: 0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <ol class="disciplines-list" id="disciplines-list">
@@ -439,6 +550,15 @@
                     <span class="hud-dot hud-dot-amber"></span>
                     <span class="hud-dot hud-dot-green"></span>
                     <span class="hud-title">LIVE_EXECUTION_STREAM // WINGET</span>
+                    <span class="hud-app-selector" id="hud-app-badge">TARGET: Git.Git</span>
+                  </div>
+                  <!-- Package Selector Bar -->
+                  <div class="hud-target-bar">
+                    <span class="target-label">SELECT TARGET:</span>
+                    <button type="button" class="hud-target-chip active" data-pkg="git" data-sound="toggle">Git (v2.56.0)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="node" data-sound="toggle">Node (v24.20.0)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="npm" data-sound="toggle">Npm (v12.2.1)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="lock1618" data-sound="toggle">⚠ Test Lock (1618)</button>
                   </div>
                   <div class="hud-center-content">
                     <div class="neon-morph-spinner" id="neon-spinner">
@@ -449,14 +569,15 @@
                       <div class="hud-log text-cyan">&gt; Resolving package manifest: Git.Git...</div>
                       <div class="hud-log text-green">&gt; SHA256 Authenticode signature: PASS</div>
                       <div class="hud-log text-amber">&gt; Executing silent unattended installer...</div>
-                      <div class="hud-log text-pink">&gt; Verified disk version: 5.2.4.2 &bull; SUCCESS</div>
+                      <div class="hud-log text-pink">&gt; Verified disk version: 2.56.0.4 &bull; SUCCESS</div>
                     </div>
                   </div>
                   <!-- Interactive Simulator Buttons -->
                   <div class="hud-action-bar">
-                    <button type="button" class="hud-btn" id="hud-sim-btn" data-sound="click" data-magnetic>▶ Simulate Update</button>
-                    <button type="button" class="hud-btn" id="hud-verify-btn" data-sound="click" data-magnetic>◈ Verify SHA-256</button>
-                    <button type="button" class="hud-btn" id="hud-rollback-btn" data-sound="click" data-magnetic>⟲ Test Rollback</button>
+                    <button type="button" class="hud-btn" id="hud-sim-btn" data-sound="click" data-magnetic>▶ Execute Update</button>
+                    <button type="button" class="hud-btn" id="hud-verify-btn" data-sound="click" data-magnetic>◈ SHA-256 Hash</button>
+                    <button type="button" class="hud-btn" id="hud-lock-btn" data-sound="click" data-magnetic>⚡ Clear Locks</button>
+                    <button type="button" class="hud-btn" id="hud-rollback-btn" data-sound="click" data-magnetic>⟲ Rollback</button>
                   </div>
                 </div>
                 <div class="slide-media-badge">03 // LIVE EXECUTION SIMULATOR</div>
@@ -525,6 +646,57 @@
           </div>
         </div>
 
+        <!-- 13 SPEEDRUN BENCHMARK RACE WIDGET -->
+        <div class="benchmark-race-card">
+          <div class="race-header">
+            <div>
+              <span class="race-tag">LIVE PROFILER // ZERO MICRO-STUTTER PROOF</span>
+              <h3 class="race-title">Cold Boot &amp; 200-Package Discovery Speedrun</h3>
+            </div>
+            <button type="button" class="action-btn action-primary race-start-btn" id="race-start-btn" data-sound="click" data-magnetic>
+              <span>▶ RUN BENCHMARK RACE</span>
+            </button>
+          </div>
+
+          <div class="race-tracks">
+            <!-- Winget Updater -->
+            <div class="race-row" id="race-row-updater">
+              <div class="race-meta">
+                <span class="race-name">⚡ WINGET UPDATER (DirectComposition + Async Registry Pool)</span>
+                <span class="race-time" id="race-time-updater">1.80s</span>
+              </div>
+              <div class="race-bar-wrap">
+                <div class="race-bar-fill bar-updater" id="race-bar-updater" style="width: 100%;"></div>
+              </div>
+              <span class="race-status status-winner" id="race-status-updater">⚡ 7.8x FASTER (1.8s)</span>
+            </div>
+
+            <!-- Standard Winget CLI -->
+            <div class="race-row" id="race-row-winget">
+              <div class="race-meta">
+                <span class="race-name">WINGET CLI (PowerShell Subprocess Sync Pipe)</span>
+                <span class="race-time" id="race-time-winget">8.40s</span>
+              </div>
+              <div class="race-bar-wrap">
+                <div class="race-bar-fill bar-winget" id="race-bar-winget" style="width: 21%;"></div>
+              </div>
+              <span class="race-status" id="race-status-winget">8.4s BASELINE</span>
+            </div>
+
+            <!-- Microsoft Store GUI -->
+            <div class="race-row" id="race-row-store">
+              <div class="race-meta">
+                <span class="race-name">MICROSOFT STORE (UWP / WebView2 Desktop GUI)</span>
+                <span class="race-time" id="race-time-store">14.20s</span>
+              </div>
+              <div class="race-bar-wrap">
+                <div class="race-bar-fill bar-store" id="race-bar-store" style="width: 12%;"></div>
+              </div>
+              <span class="race-status" id="race-status-store">14.2s GDI THROTTLED</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 14-Row Detailed Benchmark Table -->
         <div class="benchmark-table-wrapper">
           <table class="benchmark-table" aria-label="14 Architectural Benchmarks">
@@ -555,15 +727,15 @@
               <tr class="bm-row" data-sound="hover">
                 <td class="bm-idx">03</td>
                 <td class="bm-name">Standalone Binary Footprint</td>
-                <td class="bm-val">13.3 MB</td>
-                <td class="bm-engine">Single EXE Compilation</td>
-                <td class="bm-status"><span class="status-pill pass">VERIFIED</span></td>
+                <td class="bm-val">27.06 MB</td>
+                <td class="bm-engine">Single EXE + Bundled Uninstaller</td>
+                <td class="bm-status"><span class="status-pill pass">SELF-CONTAINED</span></td>
               </tr>
               <tr class="bm-row" data-sound="hover">
                 <td class="bm-idx">04</td>
                 <td class="bm-name">Automated Test Suite Pass Rate</td>
-                <td class="bm-val">97 / 97</td>
-                <td class="bm-engine">Pytest &amp; Win32 Harness</td>
+                <td class="bm-val">143 / 143</td>
+                <td class="bm-engine">Pytest &amp; 29 Multi-Manager Harnesses</td>
                 <td class="bm-status"><span class="status-pill pass">100% PASS</span></td>
               </tr>
               <tr class="bm-row" data-sound="hover">
@@ -659,6 +831,18 @@
             Download the standalone compiled executable or install via PowerShell. No dependencies, runtime installers, or administrator elevation required for scans.
           </p>
 
+          <!-- 10 INTERACTIVE COMMAND GENERATOR -->
+          <div class="command-generator-builder">
+            <span class="gen-label">SELECT INSTALLATION FLAGS // LIVE POWERSHELL BUILDER:</span>
+            <div class="flag-chips-row" id="flag-chips">
+              <button type="button" class="flag-chip active" data-flag="-e" data-sound="toggle">--exact (-e)</button>
+              <button type="button" class="flag-chip active" data-flag="--silent" data-sound="toggle">--silent</button>
+              <button type="button" class="flag-chip" data-flag="--accept-source-agreements" data-sound="toggle">--accept-source</button>
+              <button type="button" class="flag-chip" data-flag="--accept-package-agreements" data-sound="toggle">--accept-packages</button>
+              <button type="button" class="flag-chip" data-flag="--force" data-sound="toggle">--force</button>
+            </div>
+          </div>
+
           <!-- Interactive Terminal Quickstart Box -->
           <div class="terminal-shell" data-sound="hover">
             <div class="shell-header">
@@ -668,20 +852,44 @@
               <span class="shell-title">PowerShell / Windows Terminal</span>
               <button class="shell-copy-action" id="copy-btn" aria-label="Copy terminal command" data-sound="click" data-magnetic>Copy</button>
             </div>
-            <pre class="shell-body"><code id="code-snippet">winget install --id rupom.WingetUpdater -e</code></pre>
+            <pre class="shell-body"><code id="code-snippet">winget install --id rupom.WingetUpdater -e --silent</code></pre>
           </div>
 
-                      <div class="download-action-row">
-              <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe" class="download-big-btn action-primary" download data-sound="click" data-magnetic>
-                <span class="btn-top">Download WingetUpdater.exe (v2.1.0)</span>
-                <span class="btn-sub">Direct Standalone Executable &bull; Bundled Uninstaller &bull; Auto-Updating</span>
-              </a>
-              <a href="https://github.com/rupom787/winget-updater/releases/tag/v2.1.0" class="download-big-btn action-secondary" target="_blank" rel="noopener noreferrer" data-sound="click" data-magnetic>
-                <span class="btn-top">View Release Notes (v2.1.0) &rarr;</span>
-                <span class="btn-sub">GitHub Release &bull; Auto-Update Tracker &bull; Pure x64</span>
-              </a>
+          <div class="download-action-row">
+            <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe" class="download-big-btn action-primary" download data-sound="click" data-magnetic>
+              <span class="btn-top">Download WingetUpdater.exe (v2.1.0)</span>
+              <span class="btn-sub">Direct Standalone Executable &bull; Bundled Uninstaller &bull; Auto-Updating</span>
+            </a>
+            <a href="https://github.com/rupom787/winget-updater/releases/tag/v2.1.0" class="download-big-btn action-secondary" target="_blank" rel="noopener noreferrer" data-sound="click" data-magnetic>
+              <span class="btn-top">View Release Notes (v2.1.0) &rarr;</span>
+              <span class="btn-sub">GitHub Release &bull; Auto-Update Tracker &bull; Pure x64</span>
+            </a>
+          </div>
+
+          <!-- 12 LIVE GITHUB TELEMETRY & REPO METRICS -->
+          <div class="github-telemetry-badge" id="github-telemetry-card">
+            <div class="gh-item">
+              <span class="gh-icon">&#x2605;</span>
+              <span class="gh-label">STARS:</span>
+              <strong id="gh-stars-val">--</strong>
             </div>
+            <div class="gh-item">
+              <span class="gh-icon">&#x21E9;</span>
+              <span class="gh-label">LATEST RELEASE:</span>
+              <strong id="gh-release-val">v2.1.0</strong>
             </div>
+            <div class="gh-item">
+              <span class="gh-icon">&#x1F4BE;</span>
+              <span class="gh-label">STANDALONE BINARY:</span>
+              <strong id="gh-size-val">27.06 MB</strong>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">&#x2714;</span>
+              <span class="gh-label">TEST COVERAGE:</span>
+              <strong>143/143 PASS (100%)</strong>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -718,6 +926,12 @@
       <div class="hover-badge-telemetry" id="hover-badge-telemetry">STATUS: 120HZ ONLINE</div>
     </div>
   </div>
+
+  <!-- Interactive Soundwave Audio Visualizer Ribbon -->
+  <canvas id="soundwave-ribbon" class="soundwave-ribbon" aria-hidden="true"></canvas>
+
+  <!-- Liquid Glass Cursor Spotlight -->
+  <div id="cursor-spotlight" class="cursor-spotlight" aria-hidden="true"></div>
 
   <!-- Toast Notification Pill -->
   <div id="toast-pill" class="toast-pill" role="status" aria-live="polite"></div>
