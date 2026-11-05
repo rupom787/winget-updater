@@ -21,22 +21,35 @@ class SchedulerManager:
         self.task_name = task_name
         self.sys = sys_info or SystemInfoProvider()
 
-    def check_safety_guards(self) -> Tuple[bool, str]:
+    def check_safety_guards(self, allow_battery: bool = False) -> Tuple[bool, str]:
         """Validates all safety prerequisites before starting a scheduled run.
         
         Checks:
-        1. PC must be connected to AC power (not running on battery).
+        1. PC must be connected to AC power (unless battery mode explicitly allowed).
         2. PC must not be heavily loaded (CPU < 90%).
+        3. Sufficient disk space on system drive (>= 1.5 GB free).
         """
-        is_ac, pwr_msg = self.sys.is_on_ac_power()
-        if not is_ac:
-            logger.warning(f"Scheduled run aborted: {pwr_msg}")
-            return False, f"Safety check failed: {pwr_msg}. Scheduled runs require AC power."
+        if not allow_battery:
+            is_ac, pwr_msg = self.sys.is_on_ac_power()
+            if not is_ac:
+                logger.warning(f"Scheduled run aborted: {pwr_msg}")
+                return False, f"Safety check failed: {pwr_msg}. Scheduled runs require AC power."
 
         cpu_load = self.sys.get_cpu_load_percent()
         if cpu_load > 90.0:
             logger.warning(f"Scheduled run delayed: PC is heavily loaded (CPU: {cpu_load:.1f}%)")
             return False, f"Safety check failed: PC is heavily loaded ({cpu_load:.1f}% CPU)."
+
+        # Check free disk space on system drive
+        try:
+            sys_drive = os.environ.get("SystemDrive", "C:")
+            free_bytes = shutil.disk_usage(sys_drive).free
+            free_gb = free_bytes / (1024 ** 3)
+            if free_gb < 1.5:
+                logger.warning(f"Scheduled run aborted: Low system disk space ({free_gb:.2f} GB free)")
+                return False, f"Safety check failed: System drive low on space ({free_gb:.2f} GB free, requires >= 1.5 GB)."
+        except Exception:
+            pass
 
         return True, "Safety checks passed: AC power verified and CPU load within safe operational limits."
 
@@ -109,4 +122,31 @@ class SchedulerManager:
             return None
         except Exception:
             return None
+
+    def is_scheduled_task_enabled(self) -> bool:
+        """Checks if the scheduled task is actively registered in Windows Task Scheduler."""
+        out = self.query_task()
+        return out is not None and self.task_name.lower() in out.lower()
+
+    def is_task_scheduled(self) -> Tuple[bool, str]:
+        """Queries if task exists and returns (exists, details_string)."""
+        info = self.query_task()
+        if info and self.task_name.lower() in info.lower():
+            return True, info
+        return False, "No automated schedule configured"
+
+    def delete_daily_task(self) -> Tuple[bool, str]:
+        """Alias for delete_task to maintain compatibility."""
+        return self.delete_task()
+
+    def get_scheduled_time(self) -> Optional[str]:
+        """Extracts the scheduled run time from task query output."""
+        out = self.query_task()
+        if not out:
+            return None
+        import re
+        m = re.search(r"(?:Start Time|Schedule Time)\s*:\s*(\d{1,2}:\d{2})", out, re.IGNORECASE)
+        if m:
+            return m.group(1)
+        return None
 

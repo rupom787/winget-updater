@@ -1379,34 +1379,170 @@ class SettingsDialog(tk.Toplevel):
 
     def _build_schedule_tab(self) -> None:
         t = self.theme
-        card = tk.Frame(self.tab_schedule, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=14)
+        card = tk.Frame(self.tab_schedule, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=16, pady=16)
         card.pack(fill=tk.BOTH, expand=True)
 
-        lbl_head = tk.Label(card, text="Windows Task Scheduler Daily Updates", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_head = tk.Label(card, text="Windows Task Scheduler Daily Updates & Automation", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 11, "bold"), anchor="w")
         lbl_head.pack(anchor=tk.W)
 
         lbl_desc = tk.Label(
             card,
-            text="Configure automated daily background checks. Automatically verifies AC power and safe CPU load before running.",
+            text="Configure automated background updates via Windows Task Scheduler. Safety guards automatically pause execution on battery power or heavy CPU load.",
             bg=t.bg_card,
             fg=t.fg_muted,
             font=("Segoe UI", 8),
             anchor="w",
+            justify=tk.LEFT,
         )
         lbl_desc.pack(anchor=tk.W, pady=(2, 12))
 
-        btn_config_sched = RoundedButton(
-            card,
-            text="🕒 Configure Daily Update Schedule",
-            command=self._do_open_schedule,
+        # Status & Time Box
+        box = tk.Frame(card, bg=t.bg_root, padx=12, pady=10, highlightbackground=t.border, highlightthickness=1)
+        box.pack(fill=tk.X, pady=(0, 12))
+
+        # Check current status
+        sched_mgr = self.scheduler
+        is_active = False
+        sched_time = "12:00"
+        if sched_mgr:
+            try:
+                is_active = sched_mgr.is_scheduled_task_enabled()
+                extracted = sched_mgr.get_scheduled_time()
+                if extracted:
+                    sched_time = extracted
+            except Exception:
+                pass
+
+        status_text = f"● Active Daily Schedule ({sched_time})" if is_active else "○ Daily Schedule: Inactive (Disabled)"
+        status_color = "#059669" if is_active else t.fg_muted
+
+        self.lbl_sched_status = tk.Label(
+            box,
+            text=status_text,
+            bg=t.bg_root,
+            fg=status_color,
+            font=("Segoe UI", 9, "bold"),
+            anchor="w",
+        )
+        self.lbl_sched_status.pack(anchor=tk.W, pady=(0, 6))
+
+        time_row = tk.Frame(box, bg=t.bg_root)
+        time_row.pack(fill=tk.X)
+
+        tk.Label(
+            time_row,
+            text="Scheduled execution time (HH:MM 24-hr):",
+            bg=t.bg_root,
+            fg=t.fg_primary,
+            font=("Segoe UI", 9),
+        ).pack(side=tk.LEFT, padx=(0, 8))
+
+        self.sched_time_entry = tk.Entry(
+            time_row,
+            width=8,
+            bg=t.bg_input,
+            fg=t.fg_primary,
+            font=("Segoe UI", 9, "bold"),
+            relief=tk.SOLID,
+            bd=1,
+            justify=tk.CENTER,
+        )
+        self.sched_time_entry.insert(0, sched_time)
+        self.sched_time_entry.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Automation Safety Options
+        opt_box = tk.Frame(card, bg=t.bg_card)
+        opt_box.pack(fill=tk.X, pady=(0, 12))
+
+        self.sched_battery_guard = tk.BooleanVar(value=True)
+        chk_bat = tk.Checkbutton(
+            opt_box,
+            text="AC Power Safety Guard: Pause scheduled run if laptop is on battery power",
+            variable=self.sched_battery_guard,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9),
+        )
+        chk_bat.pack(anchor=tk.W, pady=(2, 2))
+
+        self.sched_cpu_guard = tk.BooleanVar(value=True)
+        chk_cpu = tk.Checkbutton(
+            opt_box,
+            text="CPU Utilization Guard: Delay update if CPU load exceeds 90%",
+            variable=self.sched_cpu_guard,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9),
+        )
+        chk_cpu.pack(anchor=tk.W, pady=(2, 2))
+
+        # Action Buttons row
+        btn_row = tk.Frame(card, bg=t.bg_card)
+        btn_row.pack(fill=tk.X, pady=(4, 0))
+
+        def _apply_schedule_direct():
+            t_val = self.sched_time_entry.get().strip()
+            if sched_mgr:
+                ok, msg = sched_mgr.create_daily_task(t_val)
+                if ok:
+                    self.lbl_sched_status.config(text=f"● Active Daily Schedule ({t_val})", fg="#059669")
+                    messagebox.showinfo("Schedule Applied", msg, parent=self)
+                else:
+                    messagebox.showerror("Schedule Error", msg, parent=self)
+
+        def _disable_schedule_direct():
+            if sched_mgr:
+                ok, msg = sched_mgr.delete_task()
+                if ok:
+                    self.lbl_sched_status.config(text="○ Daily Schedule: Inactive (Disabled)", fg=t.fg_muted)
+                    messagebox.showinfo("Schedule Disabled", msg, parent=self)
+                else:
+                    messagebox.showerror("Schedule Error", msg, parent=self)
+
+        btn_enable = RoundedButton(
+            btn_row,
+            text="✓ Apply Daily Schedule",
+            command=_apply_schedule_direct,
             bg_color=t.accent_burgundy,
             fg_color="#ffffff",
             radius=6,
             height=32,
             font=("Segoe UI", 9, "bold"),
-            padding=(16, 6),
+            padding=(14, 6),
         )
-        btn_config_sched.pack(anchor=tk.W, pady=(0, 10))
+        btn_enable.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_disable = RoundedButton(
+            btn_row,
+            text="Disable Schedule",
+            command=_disable_schedule_direct,
+            bg_color="#ffffff",
+            fg_color="#b91c1c",
+            border_color="#fca5a5",
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(12, 6),
+        )
+        btn_disable.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_modal = RoundedButton(
+            btn_row,
+            text="Open Advanced View...",
+            command=self._do_open_schedule,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=32,
+            font=("Segoe UI", 9),
+            padding=(12, 6),
+        )
+        btn_modal.pack(side=tk.LEFT)
 
     def _build_backup_tab(self) -> None:
         t = self.theme

@@ -41,7 +41,7 @@ class GpuAccelerationManager:
 
     @classmethod
     def detect_gpus(cls) -> List[GpuDeviceInfo]:
-        """Queries installed GPU hardware adapters via Win32_VideoController."""
+        """Queries installed GPU hardware adapters via high-speed native Windows Registry (fallback: Win32_VideoController)."""
         if cls._cached_gpus is not None:
             return cls._cached_gpus
 
@@ -51,6 +51,79 @@ class GpuAccelerationManager:
             cls._cached_gpus = gpus
             return gpus
 
+        # 1. Fast Path: Native Windows Registry enumeration (< 1ms vs ~1500ms powershell process)
+        try:
+            reg_path = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as class_key:
+                idx = 0
+                while True:
+                    try:
+                        subkey_name = winreg.EnumKey(class_key, idx)
+                        idx += 1
+                        if not subkey_name.isdigit():
+                            continue
+                        with winreg.OpenKey(class_key, subkey_name) as dev_key:
+                            try:
+                                name, _ = winreg.QueryValueEx(dev_key, "DriverDesc")
+                                if not name or not str(name).strip():
+                                    continue
+                                name = str(name).strip()
+
+                                driver = "Unknown"
+                                try:
+                                    raw_driver, _ = winreg.QueryValueEx(dev_key, "DriverVersion")
+                                    if raw_driver:
+                                        driver = str(raw_driver).strip()
+                                except Exception:
+                                    pass
+
+                                vram_mb = 0
+                                for v_name in ("HardwareInformation.qwMemorySize", "HardwareInformation.MemorySize"):
+                                    try:
+                                        raw_mem, _ = winreg.QueryValueEx(dev_key, v_name)
+                                        if raw_mem and int(raw_mem) > 0:
+                                            vram_mb = int(int(raw_mem) / (1024 * 1024))
+                                            break
+                                    except Exception:
+                                        pass
+
+                                lower_name = name.lower()
+                                if "nvidia" in lower_name:
+                                    vendor = "NVIDIA"
+                                    is_dedicated = True
+                                elif "radeon" in lower_name or "amd" in lower_name:
+                                    vendor = "AMD"
+                                    is_dedicated = True
+                                elif "intel" in lower_name and ("arc" in lower_name or "iris" in lower_name):
+                                    vendor = "Intel"
+                                    is_dedicated = "arc" in lower_name
+                                else:
+                                    vendor = "Generic"
+                                    is_dedicated = False
+
+                                gpus.append(
+                                    GpuDeviceInfo(
+                                        name=name,
+                                        vram_mb=vram_mb,
+                                        driver_version=driver,
+                                        vendor=vendor,
+                                        is_dedicated=is_dedicated,
+                                        status="Active",
+                                    )
+                                )
+                            except Exception:
+                                pass
+                    except OSError:
+                        break
+        except Exception as reg_err:
+            logger.debug(f"Fast registry GPU query fallback note: {reg_err}")
+
+        # If fast registry path found display adapters, cache and return immediately!
+        if gpus:
+            cls._cached_gpus = gpus
+            return gpus
+
+        # 2. Slow Fallback: PowerShell WMI (only if registry was unreadable)
         try:
             cmd = [
                 "powershell",

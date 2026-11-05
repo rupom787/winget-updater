@@ -18,7 +18,7 @@ class EditorialStartupSplashScreen(tk.Toplevel):
         self,
         parent: Optional[tk.Tk] = None,
         on_complete: Optional[Callable[[], None]] = None,
-        duration_ms: int = 2400,
+        duration_ms: int = 450,
     ):
         super().__init__(parent)
         self.on_complete = on_complete
@@ -30,6 +30,10 @@ class EditorialStartupSplashScreen(tk.Toplevel):
         self.overrideredirect(True)
         self.configure(bg="#08090d")
         self.attributes("-topmost", True)
+
+        # Allow immediate click-to-skip or key-to-skip
+        self.bind("<Button-1>", lambda e: self._finish_and_close())
+        self.bind("<Key>", lambda e: self._finish_and_close())
 
         w, h = 760, 460
         sw = self.winfo_screenwidth()
@@ -203,7 +207,7 @@ class EditorialStartupSplashScreen(tk.Toplevel):
         if t < 1.0:
             self.after(16, self._animate_loading)
         else:
-            self.after(200, self._finish_and_close)
+            self.after(30, self._finish_and_close)
 
     def _finish_and_close(self) -> None:
         if self.on_complete:

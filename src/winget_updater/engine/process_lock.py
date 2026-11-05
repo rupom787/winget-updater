@@ -16,9 +16,17 @@ logger = get_logger()
 class ProcessLockDetector:
     """Detects and gracefully manages running processes associated with software packages."""
 
-    @staticmethod
-    def get_all_running_processes() -> List[Tuple[int, str]]:
-        """Returns a list of (pid, process_name) currently active on Windows."""
+    _cached_proc_time: float = 0.0
+    _cached_proc_list: List[Tuple[int, str]] = []
+
+    @classmethod
+    def get_all_running_processes(cls, force: bool = False) -> List[Tuple[int, str]]:
+        """Returns a list of (pid, process_name) currently active on Windows with TTL caching."""
+        import time
+        now = time.time()
+        if not force and (now - cls._cached_proc_time < 2.5) and cls._cached_proc_list:
+            return cls._cached_proc_list
+
         processes = []
         try:
             # Run tasklist in CSV format: "Image Name","PID","Session Name","Session#","Mem Usage"
@@ -40,6 +48,8 @@ class ProcessLockDetector:
                             processes.append((pid, p_name))
                         except ValueError:
                             pass
+                cls._cached_proc_time = now
+                cls._cached_proc_list = processes
         except Exception as e:
             logger.debug(f"Error querying tasklist: {e}")
         return processes

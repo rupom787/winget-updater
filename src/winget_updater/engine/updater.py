@@ -49,6 +49,19 @@ class UpdateEngine:
         self.state_mgr = state_manager or StateManager()
         self.source_mgr = source_manager or SourceManager()
 
+    def _record_tracker_result(self, pkg_id: str, success: bool, version: str, notes: str) -> None:
+        """Records package update results into the persistent update tracker."""
+        try:
+            from winget_updater.engine.tracker import UpdateTracker
+            UpdateTracker().record_update_attempt(
+                package_id=pkg_id,
+                success=success,
+                current_version=version,
+                message=notes,
+            )
+        except Exception:
+            pass
+
     def execute_batch_update(
         self,
         items: List[ProgramItem],
@@ -308,6 +321,7 @@ class UpdateEngine:
                     item.outcome = UpdateOutcome.UPDATED
                     item.notes = f"Verified update: {item.name} successfully updated to {verified_version}"
                     self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                    self._record_tracker_result(pkg_id, True, verified_version, item.notes)
                     summary.updated_count += 1
                     if item_complete_callback:
                         item_complete_callback(item, True, item.notes)
@@ -339,6 +353,7 @@ class UpdateEngine:
                         item.outcome = UpdateOutcome.UPDATED
                         item.notes = f"Verified update (elevated recovery): {item.name} successfully updated to {reverified}"
                         self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        self._record_tracker_result(pkg_id, True, reverified, item.notes)
                         summary.updated_count += 1
                         if item_complete_callback:
                             item_complete_callback(item, True, item.notes)
@@ -353,6 +368,7 @@ class UpdateEngine:
                         item.notes = err_msg
                         logger.error(err_msg)
                         self.state_mgr.record_package_end(pkg_id, "failed", err_msg)
+                        self._record_tracker_result(pkg_id, False, orig_version, err_msg)
                         summary.failed_count += 1
                         if item_complete_callback:
                             item_complete_callback(item, False, err_msg)
@@ -371,6 +387,7 @@ class UpdateEngine:
                         item.outcome = UpdateOutcome.UPDATED
                         item.notes = f"Update completed; system restart required to finalize {item.name}."
                         self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        self._record_tracker_result(pkg_id, True, item.installed_version, item.notes)
                         summary.updated_count += 1
                         if item_complete_callback:
                             item_complete_callback(item, True, item.notes)
@@ -380,6 +397,7 @@ class UpdateEngine:
                         item.outcome = UpdateOutcome.UPDATED
                         item.notes = f"Update command finished for {item.name} ({target_version})."
                         self.state_mgr.record_package_end(pkg_id, "completed", item.notes)
+                        self._record_tracker_result(pkg_id, True, item.installed_version, item.notes)
                         summary.updated_count += 1
                         if item_complete_callback:
                             item_complete_callback(item, True, item.notes)
@@ -387,6 +405,7 @@ class UpdateEngine:
                 item.outcome = UpdateOutcome.FAILED
                 item.notes = f"Update failed: {message}"
                 self.state_mgr.record_package_end(pkg_id, "failed", message)
+                self._record_tracker_result(pkg_id, False, orig_version, message)
                 summary.failed_count += 1
                 if item_complete_callback:
                     item_complete_callback(item, False, item.notes)
@@ -396,6 +415,7 @@ class UpdateEngine:
             item.outcome = UpdateOutcome.FAILED
             item.notes = err_msg
             self.state_mgr.record_package_end(pkg_id, "failed", str(e))
+            self._record_tracker_result(pkg_id, False, orig_version, err_msg)
             summary.failed_count += 1
             if item_complete_callback:
                 item_complete_callback(item, False, err_msg)

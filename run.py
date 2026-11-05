@@ -47,7 +47,8 @@ from winget_updater.cli import main
 
 def _extract_bundled_uninstaller() -> None:
     """Extract the bundled Uninstall.exe from the PyInstaller bundle to the app directory
-    and register the application in Windows Add/Remove Programs (registry)."""
+    and register the application in Windows Add/Remove Programs (registry).
+    Runs asynchronously in the background so main application startup is never blocked."""
     if not getattr(sys, "frozen", False):
         return  # Only runs when packaged as .exe
 
@@ -61,11 +62,19 @@ def _extract_bundled_uninstaller() -> None:
         app_dir = Path(sys.executable).parent
         target_uninstaller = app_dir / "Uninstall.exe"
 
-        # Always overwrite to keep uninstaller in sync with the main exe version
+        # Check if uninstaller already exists with matching size to skip redundant disk write
+        if target_uninstaller.exists():
+            try:
+                if target_uninstaller.stat().st_size == bundled_uninstaller.stat().st_size:
+                    _register_add_remove_programs(app_dir, target_uninstaller)
+                    return
+            except Exception:
+                pass
+
         import shutil
         shutil.copy2(str(bundled_uninstaller), str(target_uninstaller))
 
-        # Register in Windows Add/Remove Programs (HKLM\...\Uninstall\WingetUpdater)
+        # Register in Windows Add/Remove Programs (HKLM/HKCU...\Uninstall\WingetUpdater)
         _register_add_remove_programs(app_dir, target_uninstaller)
     except Exception:
         pass  # Non-critical — app works fine without registry entry
@@ -114,5 +123,7 @@ def _register_add_remove_programs(app_dir: Path, uninstaller_path: Path) -> None
 
 
 if __name__ == "__main__":
-    _extract_bundled_uninstaller()
+    import threading
+    # Launch uninstaller extraction in a background thread for zero-millisecond startup delay
+    threading.Thread(target=_extract_bundled_uninstaller, daemon=True).start()
     sys.exit(main())

@@ -66,6 +66,13 @@ def run_cli_scan(
     matcher = PackageMatcher(config)
     items = matcher.match_all(discovered, upgrades, installed)
 
+    # Automatically track updates in persistent history tracker
+    try:
+        from winget_updater.engine.tracker import UpdateTracker
+        UpdateTracker().track_scan_results(items)
+    except Exception:
+        pass
+
     candidates = [item for item in items if item.can_auto_update()]
     print(f"[INFO] Analysis complete: {len(candidates)} packages qualify for automatic update.")
 
@@ -105,6 +112,9 @@ def run_cli_scan(
         items,
         dry_run=dry_run,
         is_scheduled=is_scheduled,
+        create_restore_point=getattr(config, "create_restore_point", False),
+        auto_close_apps=getattr(config, "auto_close_apps", True),
+        cleanup_after=getattr(config, "cleanup_temp_cache", True),
         elevation_warning_callback=lambda it: print(f"  [ADMIN RIGHTS WARNING] Updating '{it.name}' ({it.id})..."),
         progress_callback=lambda it, cur, tot: print(f"  [{cur}/{tot}] Processing {it.name}..."),
     )
@@ -181,7 +191,7 @@ def main() -> int:
     if args.update or args.no_gui:
         return run_cli_scan(scan_only=False, dry_run=args.dry_run, auto_approve=args.yes, is_scheduled=False)
 
-    # Launch GUI with luxury editorial startup splash screen
+    # Launch GUI with luxury editorial startup splash screen (optimized for fast launch)
     from winget_updater.gui.app import MainWindow
     from winget_updater.gui.splash import EditorialStartupSplashScreen
     app = MainWindow()
@@ -189,7 +199,7 @@ def main() -> int:
     splash = EditorialStartupSplashScreen(
         parent=app,
         on_complete=app.deiconify,
-        duration_ms=1600,
+        duration_ms=450,
     )
     app.mainloop()
     return 0
