@@ -19,6 +19,7 @@ htmlcov/
 # Local state & logs
 run_state.json
 config.json
+update_tracker.json
 dist/run_state.json
 dist/config.json
 dist/*.json
