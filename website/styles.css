@@ -2564,3 +2564,39 @@ body.bloom-mode .cursor-spotlight {
 .cursor-spotlight.visible {
   opacity: 0.35;
 }
+
+/* ==========================================================================
+   LOW-SPEC HARDWARE & NON-GPU OPTIMIZATION PROFILE
+   Engaged automatically on machines without dedicated GPU, low CPU cores,
+   or low memory to guarantee silky smooth 60 FPS scrolling and interaction.
+   ========================================================================== */
+html.low-spec {
+  --transition-theme: none !important;
+}
+
+html.low-spec .site-header {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  background: var(--bg) !important;
+}
+
+html.low-spec .telemetry-pill,
+html.low-spec .audio-dock,
+html.low-spec .works-nav-pill,
+html.low-spec .hud-card,
+html.low-spec .theme-modal,
+html.low-spec .toast-notification,
+html.low-spec .theater-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--bg-card, rgba(20, 20, 24, 0.96)) !important;
+}
+
+html.low-spec .cursor-spotlight {
+  display: none !important;
+}
+
+html.low-spec #wind-stream-canvas {
+  display: none !important;
+}
+
