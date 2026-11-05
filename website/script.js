@@ -8,19 +8,30 @@
 (function () {
   "use strict";
 
-  // Pre-initialize top-level Three.js references to prevent TDZ ReferenceErrors during initial scroll
-  let rockGroup = null;
-  let shardMeshes = [];
-  let shardData = [];
-  let portalGroup = null;
-  let portalLight = null;
-  let causticMesh = null;
-  let dirLight1 = null;
-  let dirLight2 = null;
-  let dirLight3 = null;
-  let crystalMat = null;
-  let portalMat = null;
-  let particleSystem = null;
+  // Pre-initialize top-level Three.js references with var to prevent TDZ ReferenceErrors during initial scroll
+  var rockGroup = null;
+  var bloomGroup = null;
+  var amethystMesh = null;
+  var amethystMat = null;
+  var amethystLight = null;
+  var stardust = null;
+  var isCursorNearAmethyst = false;
+  var bloomResonanceBonus = 0.0;
+  var coinSpinVelocity = 0.0;
+  var coin1 = null, coin2 = null, coin3 = null;
+  var cloud1 = null, cloud2 = null, cloud3 = null, cloud4 = null;
+  var shardMeshes = [];
+  var shardData = [];
+  var portalGroup = null;
+  var portalLight = null;
+  var causticMesh = null;
+  var ambientLight = null;
+  var dirLight1 = null;
+  var dirLight2 = null;
+  var dirLight3 = null;
+  var crystalMat = null;
+  var portalMat = null;
+  var particleSystem = null;
 
   // ==========================================
   // 1. PROCEDURAL WEB AUDIO API SYNTHESIZER
@@ -752,27 +763,31 @@
       ? { r: 0.20, g: 0.75, b: 1.40 }
       : { r: 0.14, g: 0.42, b: 0.90 };
 
-    WebGLFluid(canvas, {
-      IMMEDIATE: false,
-      TRIGGER: "hover",
-      SIM_RESOLUTION: 128,
-      DYE_RESOLUTION: 1024,
-      DENSITY_DISSIPATION: 2.8,   // Slightly faster dissipation for lighter, softer feel
-      VELOCITY_DISSIPATION: 1.1,  // Natural aerodynamic breeze decay
-      PRESSURE: 0.8,
-      PRESSURE_ITERATIONS: 20,
-      CURL: 32,                   // Gentle wind vortices
-      SPLAT_RADIUS: 0.085,        // Sleek, refined, non-overpowering stream
-      SPLAT_FORCE: 4800,
-      SHADING: true,              // Atmospheric fluid depth
-      COLORFUL: false,            // Pure atmospheric wind tone
-      SPLAT_COLOR: fluidColor,
-      TRANSPARENT: true,
-      BLOOM: true,
-      BLOOM_INTENSITY: 0.05,      // Ultra-subtle airy halo (zero glare or white washout)
-      BLOOM_THRESHOLD: 0.82,      // High threshold preserves delicate, soft transparency
-      SUNRAYS: false
-    });
+    try {
+      WebGLFluid(canvas, {
+        IMMEDIATE: false,
+        TRIGGER: "hover",
+        SIM_RESOLUTION: 128,
+        DYE_RESOLUTION: 1024,
+        DENSITY_DISSIPATION: 2.8,   // Slightly faster dissipation for lighter, softer feel
+        VELOCITY_DISSIPATION: 1.1,  // Natural aerodynamic breeze decay
+        PRESSURE: 0.8,
+        PRESSURE_ITERATIONS: 20,
+        CURL: 32,                   // Gentle wind vortices
+        SPLAT_RADIUS: 0.085,        // Sleek, refined, non-overpowering stream
+        SPLAT_FORCE: 4800,
+        SHADING: true,              // Atmospheric fluid depth
+        COLORFUL: false,            // Pure atmospheric wind tone
+        SPLAT_COLOR: fluidColor,
+        TRANSPARENT: true,
+        BLOOM: true,
+        BLOOM_INTENSITY: 0.05,      // Ultra-subtle airy halo (zero glare or white washout)
+        BLOOM_THRESHOLD: 0.82,      // High threshold preserves delicate, soft transparency
+        SUNRAYS: false
+      });
+    } catch (fluidErr) {
+      console.warn("WebGLFluid stream initialization:", fluidErr);
+    }
 
     // Forward mouse movements from window to canvas so pointer-events: none works seamlessly!
     let lastX = 0, lastY = 0;
@@ -870,18 +885,35 @@
       rockGroup = new THREE.Group();
       scene.add(rockGroup);
 
+      bloomGroup = new THREE.Group();
+      scene.add(bloomGroup);
+
+      const isInitBloom = document.documentElement.classList.contains("bloom-mode");
+      bloomGroup.scale.set(isInitBloom ? 1 : 0, isInitBloom ? 1 : 0, isInitBloom ? 1 : 0);
+      rockGroup.scale.set(isInitBloom ? 0 : 1, isInitBloom ? 0 : 1, isInitBloom ? 0 : 1);
+
       function updateRockPlacement() {
-        if (!rockGroup) return;
         const w = window.innerWidth;
-        if (w > 1080) {
-          rockGroup.position.set(0.95, -0.05, 0);
-          if (causticMesh) causticMesh.position.set(0.95, -1.6, -0.2);
-        } else if (w > 768) {
-          rockGroup.position.set(0.65, -0.1, 0);
-          if (causticMesh) causticMesh.position.set(0.65, -1.6, -0.2);
-        } else {
-          rockGroup.position.set(0, -0.55, 0);
-          if (causticMesh) causticMesh.position.set(0, -2.1, -0.2);
+        if (rockGroup) {
+          if (w > 1080) {
+            rockGroup.position.set(0.95, -0.05, 0);
+            if (causticMesh) causticMesh.position.set(0.95, -1.6, -0.2);
+          } else if (w > 768) {
+            rockGroup.position.set(0.65, -0.1, 0);
+            if (causticMesh) causticMesh.position.set(0.65, -1.6, -0.2);
+          } else {
+            rockGroup.position.set(0, -0.55, 0);
+            if (causticMesh) causticMesh.position.set(0, -2.1, -0.2);
+          }
+        }
+        if (bloomGroup) {
+          if (w > 1080) {
+            bloomGroup.position.set(0.95, -0.16, 0);
+          } else if (w > 768) {
+            bloomGroup.position.set(0.65, -0.22, 0);
+          } else {
+            bloomGroup.position.set(0, -0.55, 0);
+          }
         }
       }
 
@@ -1032,7 +1064,7 @@
       }
 
       // --- 2. LUXURY STUDIO LIGHTING (PURE OPTICAL WHITE & SILVER) ---
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+      ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
       scene.add(ambientLight);
 
       dirLight1 = new THREE.DirectionalLight(0xffffff, 5.2); // Crisp diamond specular key
@@ -1304,6 +1336,252 @@
         console.warn("Could not load crystal rock binary:", err);
       });
 
+      // --- 7B. BLOOM 3D ARCHITECTURE (INTERACTIVE AMETHYST CRYSTAL & STEPPED PODIUM) ---
+      function initBloomArchitecture() {
+        if (!bloomGroup) return;
+
+        // 1. Porcelain Stepped Podium
+        const podiumMat = new THREE.MeshStandardMaterial({
+          color: 0xc8ceea,
+          roughness: 0.65,
+          metalness: 0.04,
+          envMapIntensity: 0.0
+        });
+
+        // Main cylindrical tiered podium
+        const mainCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.74, 0.78, 1.55, 64), podiumMat);
+        mainCyl.position.set(0, -0.85, 0);
+        bloomGroup.add(mainCyl);
+
+        // Right vertical architectural pillar (matches reference video)
+        const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 2.05, 0.42), podiumMat);
+        rightPillar.position.set(0.68, -0.62, -0.28);
+        bloomGroup.add(rightPillar);
+
+        // 4 Ascending Curved Spiral Stair Steps
+        const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.46), podiumMat);
+        s1.position.set(-0.50, -1.15, 0.45);
+        s1.rotation.y = -0.42;
+        bloomGroup.add(s1);
+
+        const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.20, 0.44), podiumMat);
+        s2.position.set(-0.62, -0.90, 0.20);
+        s2.rotation.y = -0.22;
+        bloomGroup.add(s2);
+
+        const s3 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.20, 0.42), podiumMat);
+        s3.position.set(-0.64, -0.65, -0.05);
+        s3.rotation.y = 0.02;
+        bloomGroup.add(s3);
+
+        const s4 = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.20, 0.40), podiumMat);
+        s4.position.set(-0.54, -0.40, -0.26);
+        s4.rotation.y = 0.25;
+        bloomGroup.add(s4);
+
+        // 2. Faceted Amethyst Gemstone (Multi-faceted natural crystal bipyramid)
+        const positions = [];
+        const segments = 8;
+        const topTip = [0.0, 1.25, 0.0];
+        const botTip = [0.0, -0.95, 0.0];
+        const rTop = 0.42, yTop = 0.58;
+        const rMid = 0.54, yMid = 0.00;
+        const rBot = 0.44, yBot = -0.52;
+
+        const ringTop = [], ringMid = [], ringBot = [];
+        const radOffsets = [1.03, 0.96, 1.05, 0.97, 1.04, 0.95, 1.06, 0.98];
+
+        for (let i = 0; i < segments; i++) {
+          const theta = (i / segments) * Math.PI * 2;
+          const off = radOffsets[i];
+          ringTop.push([Math.cos(theta) * rTop * off, yTop, Math.sin(theta) * rTop * off]);
+          ringMid.push([Math.cos(theta) * rMid * off, yMid, Math.sin(theta) * rMid * off]);
+          ringBot.push([Math.cos(theta) * rBot * off, yBot, Math.sin(theta) * rBot * off]);
+        }
+
+        // Crown facets: topTip -> ringTop
+        for (let i = 0; i < segments; i++) {
+          const next = (i + 1) % segments;
+          positions.push(...topTip, ...ringTop[i], ...ringTop[next]);
+        }
+        // Upper body facets: ringTop -> ringMid
+        for (let i = 0; i < segments; i++) {
+          const next = (i + 1) % segments;
+          positions.push(...ringTop[i], ...ringMid[i], ...ringTop[next]);
+          positions.push(...ringTop[next], ...ringMid[i], ...ringMid[next]);
+        }
+        // Lower body facets: ringMid -> ringBot
+        for (let i = 0; i < segments; i++) {
+          const next = (i + 1) % segments;
+          positions.push(...ringMid[i], ...ringBot[i], ...ringMid[next]);
+          positions.push(...ringMid[next], ...ringBot[i], ...ringBot[next]);
+        }
+        // Chisel tip facets: ringBot -> botTip
+        for (let i = 0; i < segments; i++) {
+          const next = (i + 1) % segments;
+          positions.push(...ringBot[next], ...ringBot[i], ...botTip);
+        }
+
+        const amethystGeo = new THREE.BufferGeometry();
+        amethystGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        amethystGeo.computeVertexNormals();
+
+        amethystMat = new THREE.MeshPhysicalMaterial({
+          color: 0x6d28d9,
+          emissive: 0x4c1d95,
+          emissiveIntensity: 0.85,
+          roughness: 0.03,
+          metalness: 0.22,
+          transmission: 0.65,
+          ior: 1.62,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.02,
+          transparent: true,
+          opacity: 0.98,
+          side: THREE.DoubleSide
+        });
+
+        amethystMesh = new THREE.Mesh(amethystGeo, amethystMat);
+        amethystMesh.scale.set(1.05, 1.05, 1.05);
+        amethystMesh.position.set(0, 1.15, 0);
+
+        amethystLight = new THREE.PointLight(0xc084fc, 3.8, 3.5);
+        amethystMesh.add(amethystLight);
+        bloomGroup.add(amethystMesh);
+
+        // Crystal base illuminated energy halo (radiant hotspot under the crystal)
+        const baseGlowGeo = new THREE.RingGeometry(0.02, 0.42, 32);
+        const baseGlowMat = new THREE.MeshBasicMaterial({
+          color: 0xa855f7,
+          transparent: true,
+          opacity: 0.85,
+          side: THREE.DoubleSide
+        });
+        const baseGlow = new THREE.Mesh(baseGlowGeo, baseGlowMat);
+        baseGlow.rotation.x = Math.PI / 2;
+        baseGlow.position.set(0, -0.05, 0);
+        bloomGroup.add(baseGlow);
+
+        const baseLight = new THREE.PointLight(0xd8b4fe, 3.2, 2.2);
+        baseLight.position.set(0, 0.02, 0);
+        bloomGroup.add(baseLight);
+
+        // 3. Holographic Chrome Coins
+        const coinMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          metalness: 0.98,
+          roughness: 0.08,
+          envMapIntensity: 2.2
+        });
+        const coinGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.04, 48);
+        const coinInnerGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.046, 32);
+
+        function makeCoin() {
+          const g = new THREE.Group();
+          const c1 = new THREE.Mesh(coinGeo, coinMat);
+          const c2 = new THREE.Mesh(coinInnerGeo, coinMat);
+          g.add(c1);
+          g.add(c2);
+          return g;
+        }
+
+        coin1 = makeCoin();
+        coin1.position.set(-0.42, -0.62, 0.52);
+        coin1.rotation.set(-0.15, 0.15, 0.08);
+        bloomGroup.add(coin1);
+
+        coin2 = makeCoin();
+        coin2.position.set(-0.68, -0.18, 0.12);
+        coin2.rotation.set(0.1, -0.4, 0.0);
+        bloomGroup.add(coin2);
+
+        coin3 = makeCoin();
+        coin3.position.set(0.62, 0.38, 0.12);
+        coin3.rotation.set(0.2, 0.45, -0.25);
+        bloomGroup.add(coin3);
+
+        // 4. Volumetric Clouds
+        function createCloudMesh(scale = 1.0) {
+          const cg = new THREE.Group();
+          const cmat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.95,
+            metalness: 0.0,
+            transparent: true,
+            opacity: 0.92,
+            envMapIntensity: 0.22
+          });
+          const sp = new THREE.SphereGeometry(0.18, 16, 16);
+          const m1 = new THREE.Mesh(sp, cmat);
+          m1.scale.set(1.4, 1.1, 1.2);
+          cg.add(m1);
+          const m2 = new THREE.Mesh(sp, cmat);
+          m2.position.set(-0.20, -0.04, 0.04);
+          m2.scale.set(1.0, 0.9, 0.9);
+          cg.add(m2);
+          const m3 = new THREE.Mesh(sp, cmat);
+          m3.position.set(0.20, -0.04, -0.03);
+          m3.scale.set(1.1, 0.95, 1.0);
+          cg.add(m3);
+          const m4 = new THREE.Mesh(sp, cmat);
+          m4.position.set(0.04, 0.12, 0.02);
+          m4.scale.set(0.9, 0.85, 0.85);
+          cg.add(m4);
+          cg.scale.set(scale, scale, scale);
+          return cg;
+        }
+
+        cloud1 = createCloudMesh(1.15);
+        cloud1.position.set(0.68, -0.38, 0.42);
+        bloomGroup.add(cloud1);
+
+        cloud2 = createCloudMesh(0.95);
+        cloud2.position.set(-0.88, -0.12, 0.35);
+        bloomGroup.add(cloud2);
+
+        cloud3 = createCloudMesh(0.85);
+        cloud3.position.set(0.85, 0.72, -0.22);
+        bloomGroup.add(cloud3);
+
+        cloud4 = createCloudMesh(0.90);
+        cloud4.position.set(-0.68, -1.08, 0.52);
+        bloomGroup.add(cloud4);
+
+        // 5. Sparkling Stardust Field
+        const starCount = 50;
+        const starPositions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+          starPositions[i * 3] = (Math.random() - 0.5) * 3.2;
+          starPositions[i * 3 + 1] = Math.random() * 2.8 - 0.8;
+          starPositions[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
+        }
+        const starGeo = new THREE.BufferGeometry();
+        starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+        const starMat = new THREE.PointsMaterial({
+          color: 0xc084fc,
+          size: 0.035,
+          transparent: true,
+          opacity: 0.75,
+          blending: THREE.AdditiveBlending
+        });
+        stardust = new THREE.Points(starGeo, starMat);
+        bloomGroup.add(stardust);
+      }
+      initBloomArchitecture();
+
+      function triggerBloomResonance() {
+        bloomResonanceBonus = 1.8;
+        coinSpinVelocity = 0.35;
+        if (amethystMesh) {
+          amethystMesh.position.y += 0.22;
+        }
+        if (audio && audio.playBlip) {
+          audio.playBlip(2400, 0.05, 0.08);
+          setTimeout(() => audio.playBlip(3600, 0.08, 0.06), 40);
+        }
+        showToast("AMETHYST RESONANCE // 432Hz HARMONIC");
+      }
+
       // --- 8. PHYSICS, MOUSE SHATTER & REASSEMBLE CONTROLLER ---
       let isShatteredState = false;
       let isReassembling = false;
@@ -1319,6 +1597,7 @@
       }
 
       function triggerShatter(impulseStrength = 1.0) {
+        if (document.documentElement.classList.contains("bloom-mode")) return;
         if (!isShatteredState) {
           isShatteredState = true;
           isReassembling = false;
@@ -1390,6 +1669,26 @@
         targetLeanY = nx * 0.9;
         targetLeanX = -ny * 0.6;
 
+        // Bloom Mode: calculate proximity to floating Amethyst crystal
+        if (document.documentElement.classList.contains("bloom-mode")) {
+          if (bloomGroup && amethystMesh && camera) {
+            const crystalWorld = amethystMesh.getWorldPosition(new THREE.Vector3());
+            const crystalScreen = crystalWorld.project(camera);
+            const crystalPixelX = (crystalScreen.x * 0.5 + 0.5) * w;
+            const crystalPixelY = (-(crystalScreen.y * 0.5) + 0.5) * h;
+            const distToAmethyst = Math.hypot(e.clientX - crystalPixelX, e.clientY - crystalPixelY);
+            isCursorNearAmethyst = distToAmethyst < Math.min(w, h) * 0.32;
+            if (gemHintEl) {
+              if (isCursorNearAmethyst) {
+                gemHintEl.textContent = "AMETHYST RESONANCE ARMED • CLICK TO RESONATE";
+              } else {
+                gemHintEl.textContent = "DRAG TO ROTATE 3D • HOVER TO LEAN";
+              }
+            }
+          }
+          return;
+        }
+
         // Calculate crystal rock screen position precisely in pixels
         if (rockGroup && camera) {
           const rockCenterWorld = rockGroup.position.clone();
@@ -1425,6 +1724,10 @@
       });
 
       canvasFrame.addEventListener("click", () => {
+        if (document.documentElement.classList.contains("bloom-mode")) {
+          triggerBloomResonance();
+          return;
+        }
         if (isShatteredState) {
           // If dream portal is open, clicking it triggers dream mode!
           const dreamBtn = document.getElementById("fixed-theme-btn");
@@ -1438,9 +1741,13 @@
       const telemetryBox = document.querySelector(".canvas-telemetry-fullscreen");
       if (telemetryBox) {
         telemetryBox.style.cursor = "pointer";
-        telemetryBox.title = "Click to toggle crystal shatter or reassemble";
+        telemetryBox.title = "Click to interact with 3D scene";
         telemetryBox.addEventListener("click", (e) => {
           e.stopPropagation();
+          if (document.documentElement.classList.contains("bloom-mode")) {
+            triggerBloomResonance();
+            return;
+          }
           if (isShatteredState) {
             triggerReassemble();
           } else {
@@ -1459,13 +1766,19 @@
       });
 
       window.addEventListener("pointermove", (e) => {
-        if (isDragging && rockGroup) {
+        if (isDragging) {
           const deltaX = e.clientX - previousPointerX;
           const deltaY = e.clientY - previousPointerY;
           dragVelocityX = deltaX * 0.008;
           dragVelocityY = deltaY * 0.008;
-          rockGroup.rotation.y += dragVelocityX;
-          rockGroup.rotation.x += dragVelocityY;
+          if (rockGroup && rockGroup.scale.x > 0.05) {
+            rockGroup.rotation.y += dragVelocityX;
+            rockGroup.rotation.x += dragVelocityY;
+          }
+          if (bloomGroup && bloomGroup.scale.x > 0.05) {
+            bloomGroup.rotation.y += dragVelocityX;
+            bloomGroup.rotation.x += dragVelocityY;
+          }
           previousPointerX = e.clientX;
           previousPointerY = e.clientY;
         }
@@ -1476,16 +1789,34 @@
       });
 
       // --- 9. THEME PALETTE SWITCHER ---
-      window.syncThreePalette = function (isDream) {
+      window.syncThreePalette = function (mode) {
+        const isBloom = mode === "bloom" || document.documentElement.classList.contains("bloom-mode");
+        const isDream = mode === "dream" || mode === true || (!isBloom && document.documentElement.classList.contains("dream-mode"));
+
         if (crystalMat && crystalMat.uniforms) {
           crystalMat.uniforms.uNight.value = isDream ? 1.0 : 0.0;
         }
         updateBackTexture(isDream);
-        if (pMat) pMat.color.setHex(isDream ? 0xe2e8f0 : 0x94a3b8);
-        if (dirLight1) dirLight1.color.setHex(0xffffff);
-        if (dirLight2) dirLight2.color.setHex(0xf1f5f9);
-        if (dirLight3) dirLight3.color.setHex(0xe2e8f0);
-        if (window.syncFluidPalette) window.syncFluidPalette(isDream);
+        if (pMat) pMat.color.setHex(isBloom ? 0xc084fc : isDream ? 0xe2e8f0 : 0x94a3b8);
+
+        if (isBloom) {
+          if (dirLight1) { dirLight1.color.setHex(0xffffff); dirLight1.intensity = 2.0; dirLight1.position.set(-3, 6, 5); }
+          if (dirLight2) { dirLight2.color.setHex(0xc084fc); dirLight2.intensity = 1.4; dirLight2.position.set(5, 2, -3); }
+          if (dirLight3) { dirLight3.color.setHex(0xe9d5ff); dirLight3.intensity = 0.8; dirLight3.position.set(0, -4, 2); }
+          if (ambientLight) { ambientLight.color.setHex(0xf5f3ff); ambientLight.intensity = 0.35; }
+        } else if (isDream) {
+          if (dirLight1) { dirLight1.color.setHex(0x00f0ff); dirLight1.intensity = 5.2; }
+          if (dirLight2) { dirLight2.color.setHex(0x0e0f2b); dirLight2.intensity = 2.4; }
+          if (dirLight3) { dirLight3.color.setHex(0xff2a6d); dirLight3.intensity = 3.0; }
+          if (ambientLight) { ambientLight.color.setHex(0x07081a); ambientLight.intensity = 0.8; }
+        } else {
+          if (dirLight1) { dirLight1.color.setHex(0xffffff); dirLight1.intensity = 5.2; }
+          if (dirLight2) { dirLight2.color.setHex(0xf1f5f9); dirLight2.intensity = 3.2; }
+          if (dirLight3) { dirLight3.color.setHex(0xe2e8f0); dirLight3.intensity = 2.8; }
+          if (ambientLight) { ambientLight.color.setHex(0xffffff); ambientLight.intensity = 1.4; }
+        }
+
+        if (window.syncFluidPalette) window.syncFluidPalette(mode);
       };
 
       window.syncThreePalette(document.documentElement.classList.contains("dream-mode"));
@@ -1523,18 +1854,92 @@
           crystalMat.uniforms.uTime.value = elapsed;
         }
 
-        // Inertia drag damping & idle rock rotation
-        if (!isDragging && rockGroup) {
+        // Inertia drag damping & idle rotation for both rockGroup and bloomGroup
+        if (!isDragging) {
           dragVelocityX *= 0.92;
           dragVelocityY *= 0.92;
-          rockGroup.rotation.y += dragVelocityX + 0.005;
-          rockGroup.rotation.x += dragVelocityY + 0.002;
+          if (rockGroup && rockGroup.scale.x > 0.05) {
+            rockGroup.rotation.y += dragVelocityX + 0.005;
+            rockGroup.rotation.x += dragVelocityY + 0.002;
+          }
+          if (bloomGroup && bloomGroup.scale.x > 0.05) {
+            bloomGroup.rotation.y += dragVelocityX + 0.004;
+            bloomGroup.rotation.x += dragVelocityY + 0.001;
+          }
+        }
+
+        // Smooth Mode Translation between Rock monolith and Amethyst Bloom podium
+        const isBloomActive = document.documentElement.classList.contains("bloom-mode");
+        const rockTargetScale = isBloomActive ? 0.0 : 1.0;
+        const bloomTargetScale = isBloomActive ? 1.0 : 0.0;
+
+        if (rockGroup) {
+          rockGroup.scale.lerp(new THREE.Vector3(rockTargetScale, rockTargetScale, rockTargetScale), 0.08);
+          rockGroup.visible = rockGroup.scale.x > 0.005;
+        }
+        if (bloomGroup) {
+          bloomGroup.scale.lerp(new THREE.Vector3(bloomTargetScale, bloomTargetScale, bloomTargetScale), 0.08);
+          bloomGroup.visible = bloomGroup.scale.x > 0.005;
+        }
+
+        // Bloom Mode Animations (Sinusoidal levitation, resonance, proximity & coin spin)
+        if (bloomGroup && bloomGroup.visible) {
+          if (bloomResonanceBonus > 0.005) {
+            bloomResonanceBonus *= 0.92;
+          } else {
+            bloomResonanceBonus = 0.0;
+          }
+
+          if (coinSpinVelocity > 0.002) {
+            coinSpinVelocity *= 0.90;
+          } else {
+            coinSpinVelocity = 0.0;
+          }
+
+          if (amethystMesh) {
+            amethystMesh.position.y = 1.18 + Math.sin(elapsed * 1.8) * 0.08;
+            amethystMesh.rotation.y += 0.006;
+          }
+
+          if (amethystMat) {
+            const targetEmissive = isCursorNearAmethyst ? 1.25 : 0.65;
+            amethystMat.emissiveIntensity = THREE.MathUtils.lerp(
+              amethystMat.emissiveIntensity,
+              targetEmissive + bloomResonanceBonus,
+              0.08
+            );
+          }
+
+          if (amethystLight) {
+            const targetLight = isCursorNearAmethyst ? 5.2 : 3.6;
+            amethystLight.intensity = THREE.MathUtils.lerp(
+              amethystLight.intensity,
+              targetLight + bloomResonanceBonus * 2.0,
+              0.08
+            );
+          }
+
+          if (coin1) coin1.rotation.y += coinSpinVelocity + 0.005;
+          if (coin2) {
+            coin2.position.y = -0.18 + Math.sin(elapsed * 1.6 + 1.0) * 0.035;
+            coin2.rotation.y += coinSpinVelocity + 0.008;
+          }
+          if (coin3) {
+            coin3.position.y = 0.38 + Math.sin(elapsed * 1.4 + 2.0) * 0.045;
+            coin3.rotation.y += coinSpinVelocity + 0.007;
+          }
+          if (cloud1) cloud1.position.y = -0.35 + Math.sin(elapsed * 1.1) * 0.025;
+          if (cloud2) cloud2.position.y = -0.05 + Math.cos(elapsed * 1.0 + 1.2) * 0.03;
+          if (cloud3) cloud3.position.y = 0.88 + Math.sin(elapsed * 0.9 + 2.5) * 0.025;
+          if (cloud4) cloud4.position.y = -0.98 + Math.cos(elapsed * 1.2 + 0.6) * 0.02;
+
+          if (stardust) stardust.rotation.y = elapsed * 0.035;
         }
 
 // Orbiting typography ring & floating pixel badge removed
 
-        // Portal scale lerp
-        const targetPScale = isShatteredState ? 1.05 : 0.0;
+        // Portal scale lerp (disabled in bloom mode)
+        const targetPScale = (isShatteredState && !isBloomActive) ? 1.05 : 0.0;
         portalScale += (targetPScale - portalScale) * (isShatteredState ? 0.08 : 0.12);
         if (portalScale < 0.005) portalScale = 0.0;
         if (portalGroup) {
@@ -1616,7 +2021,7 @@
           s.mesh.quaternion.copy(s.currQuat);
         }
 
-        if (!isShatteredState) {
+        if (!isShatteredState && !isBloomActive && !document.documentElement.classList.contains("dream-mode")) {
           if (allReassembled) {
             isReassembling = false;
             if (gemStatusEl && gemStatusEl.textContent !== "QUARTZ CRYSTAL ROCK [SOLID]") {
@@ -1640,10 +2045,12 @@
           particleSystem.rotation.y = elapsed * 0.02;
         }
 
-        // Camera lean toward mouse
-        if (isShatteredState && !isDragging) {
-          scene.rotation.y += (targetLeanY - scene.rotation.y) * 0.07;
-          scene.rotation.x += (targetLeanX - scene.rotation.x) * 0.07;
+        // Interactive 3D Camera / Object lean toward mouse
+        if ((isShatteredState || isBloomActive) && !isDragging) {
+          const leanY = isBloomActive ? targetLeanY * 0.45 : targetLeanY;
+          const leanX = isBloomActive ? targetLeanX * 0.35 : targetLeanX;
+          scene.rotation.y += (leanY - scene.rotation.y) * 0.07;
+          scene.rotation.x += (leanX - scene.rotation.x) * 0.07;
         } else if (!isDragging) {
           scene.rotation.y += (0 - scene.rotation.y) * 0.05;
           scene.rotation.x += (0 - scene.rotation.x) * 0.05;
@@ -1658,9 +2065,16 @@
   }
 
   function updateMonolithOnScroll() {
-    if (!rockGroup || prefersReducedMotion) return;
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
-    rockGroup.rotation.z = scrollY * 0.0015;
+    try {
+      if (typeof prefersReducedMotion !== "undefined" && prefersReducedMotion) return;
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      if (rockGroup && rockGroup.visible) {
+        rockGroup.rotation.z = scrollY * 0.0015;
+      }
+      if (bloomGroup && bloomGroup.visible) {
+        bloomGroup.rotation.y = scrollY * 0.0012;
+      }
+    } catch (_) {}
   }
 
   // ==========================================
@@ -1690,14 +2104,14 @@
     document.documentElement.classList.remove("wake-mode", "dream-mode", "bloom-mode");
     document.body.classList.remove("wake-mode", "dream-mode", "bloom-mode");
 
-    const bloomVid = document.getElementById("bloom-pedestal-video");
-
     if (mode === "bloom") {
       document.documentElement.classList.add("bloom-mode");
       document.body.classList.add("bloom-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [○] / BLOOM [●]";
       try { localStorage.setItem("color-scheme", "bloom"); } catch (e) {}
-      if (bloomVid) bloomVid.play().catch(() => {});
+      if (gemStatusEl) gemStatusEl.textContent = "AMETHYST PEDESTAL [SURREAL 3D]";
+      if (gemHintEl) gemHintEl.textContent = "DRAG TO ROTATE 3D • HOVER TO LEAN";
+      if (window.syncThreePalette) window.syncThreePalette("bloom");
       if (window.syncFluidPalette) window.syncFluidPalette("bloom");
       if (audio) audio.playChime(true);
     } else if (mode === "dream") {
@@ -1705,7 +2119,9 @@
       document.body.classList.add("dream-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [●] / BLOOM [○]";
       try { localStorage.setItem("color-scheme", "dark"); } catch (e) {}
-      if (window.syncThreePalette) window.syncThreePalette(true);
+      if (gemStatusEl) gemStatusEl.textContent = "OBSIDIAN SINGULARITY [ZERO-G]";
+      if (gemHintEl) gemHintEl.textContent = "GRAVITY WELL ACTIVE • CURSOR REPULSION";
+      if (window.syncThreePalette) window.syncThreePalette("dream");
       if (window.syncFluidPalette) window.syncFluidPalette("dream");
       if (audio) audio.playChime(true);
     } else {
@@ -1713,11 +2129,14 @@
       document.body.classList.add("wake-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [●] / DREAM [○] / BLOOM [○]";
       try { localStorage.setItem("color-scheme", "light"); } catch (e) {}
-      if (window.syncThreePalette) window.syncThreePalette(false);
+      if (gemStatusEl) gemStatusEl.textContent = "QUARTZ CRYSTAL ROCK [SOLID]";
+      if (gemHintEl) gemHintEl.textContent = "HOVER TO SHATTER • LEAVE TO REASSEMBLE";
+      if (window.syncThreePalette) window.syncThreePalette("wake");
       if (window.syncFluidPalette) window.syncFluidPalette("wake");
       if (audio) audio.playChime(false);
     }
   }
+  window.setMode = setMode;
 
   function cycleTheme(e) {
     const origin = e ? { x: e.clientX, y: e.clientY } : null;
