@@ -1336,236 +1336,9 @@
         console.warn("Could not load crystal rock binary:", err);
       });
 
-      // --- 7B. BLOOM 3D ARCHITECTURE (INTERACTIVE AMETHYST CRYSTAL & STEPPED PODIUM) ---
+      // --- 7B. BLOOM PREVIEW (CINEMATIC 60 FPS PEDESTAL VIDEO PREVIEW) ---
       function initBloomArchitecture() {
-        if (!bloomGroup) return;
-
-        // 1. Porcelain Stepped Podium
-        const podiumMat = new THREE.MeshStandardMaterial({
-          color: 0xc8ceea,
-          roughness: 0.65,
-          metalness: 0.04,
-          envMapIntensity: 0.0
-        });
-
-        // Main cylindrical tiered podium
-        const mainCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.74, 0.78, 1.55, 64), podiumMat);
-        mainCyl.position.set(0, -0.85, 0);
-        bloomGroup.add(mainCyl);
-
-        // Right vertical architectural pillar (matches reference video)
-        const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 2.05, 0.42), podiumMat);
-        rightPillar.position.set(0.68, -0.62, -0.28);
-        bloomGroup.add(rightPillar);
-
-        // 4 Ascending Curved Spiral Stair Steps
-        const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.46), podiumMat);
-        s1.position.set(-0.50, -1.15, 0.45);
-        s1.rotation.y = -0.42;
-        bloomGroup.add(s1);
-
-        const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.20, 0.44), podiumMat);
-        s2.position.set(-0.62, -0.90, 0.20);
-        s2.rotation.y = -0.22;
-        bloomGroup.add(s2);
-
-        const s3 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.20, 0.42), podiumMat);
-        s3.position.set(-0.64, -0.65, -0.05);
-        s3.rotation.y = 0.02;
-        bloomGroup.add(s3);
-
-        const s4 = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.20, 0.40), podiumMat);
-        s4.position.set(-0.54, -0.40, -0.26);
-        s4.rotation.y = 0.25;
-        bloomGroup.add(s4);
-
-        // 2. Faceted Amethyst Gemstone (Multi-faceted natural crystal bipyramid)
-        const positions = [];
-        const segments = 8;
-        const topTip = [0.0, 1.25, 0.0];
-        const botTip = [0.0, -0.95, 0.0];
-        const rTop = 0.42, yTop = 0.58;
-        const rMid = 0.54, yMid = 0.00;
-        const rBot = 0.44, yBot = -0.52;
-
-        const ringTop = [], ringMid = [], ringBot = [];
-        const radOffsets = [1.03, 0.96, 1.05, 0.97, 1.04, 0.95, 1.06, 0.98];
-
-        for (let i = 0; i < segments; i++) {
-          const theta = (i / segments) * Math.PI * 2;
-          const off = radOffsets[i];
-          ringTop.push([Math.cos(theta) * rTop * off, yTop, Math.sin(theta) * rTop * off]);
-          ringMid.push([Math.cos(theta) * rMid * off, yMid, Math.sin(theta) * rMid * off]);
-          ringBot.push([Math.cos(theta) * rBot * off, yBot, Math.sin(theta) * rBot * off]);
-        }
-
-        // Crown facets: topTip -> ringTop
-        for (let i = 0; i < segments; i++) {
-          const next = (i + 1) % segments;
-          positions.push(...topTip, ...ringTop[i], ...ringTop[next]);
-        }
-        // Upper body facets: ringTop -> ringMid
-        for (let i = 0; i < segments; i++) {
-          const next = (i + 1) % segments;
-          positions.push(...ringTop[i], ...ringMid[i], ...ringTop[next]);
-          positions.push(...ringTop[next], ...ringMid[i], ...ringMid[next]);
-        }
-        // Lower body facets: ringMid -> ringBot
-        for (let i = 0; i < segments; i++) {
-          const next = (i + 1) % segments;
-          positions.push(...ringMid[i], ...ringBot[i], ...ringMid[next]);
-          positions.push(...ringMid[next], ...ringBot[i], ...ringBot[next]);
-        }
-        // Chisel tip facets: ringBot -> botTip
-        for (let i = 0; i < segments; i++) {
-          const next = (i + 1) % segments;
-          positions.push(...ringBot[next], ...ringBot[i], ...botTip);
-        }
-
-        const amethystGeo = new THREE.BufferGeometry();
-        amethystGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        amethystGeo.computeVertexNormals();
-
-        amethystMat = new THREE.MeshPhysicalMaterial({
-          color: 0x6d28d9,
-          emissive: 0x4c1d95,
-          emissiveIntensity: 0.85,
-          roughness: 0.03,
-          metalness: 0.22,
-          transmission: 0.65,
-          ior: 1.62,
-          clearcoat: 1.0,
-          clearcoatRoughness: 0.02,
-          transparent: true,
-          opacity: 0.98,
-          side: THREE.DoubleSide
-        });
-
-        amethystMesh = new THREE.Mesh(amethystGeo, amethystMat);
-        amethystMesh.scale.set(1.05, 1.05, 1.05);
-        amethystMesh.position.set(0, 1.15, 0);
-
-        amethystLight = new THREE.PointLight(0xc084fc, 3.8, 3.5);
-        amethystMesh.add(amethystLight);
-        bloomGroup.add(amethystMesh);
-
-        // Crystal base illuminated energy halo (radiant hotspot under the crystal)
-        const baseGlowGeo = new THREE.RingGeometry(0.02, 0.42, 32);
-        const baseGlowMat = new THREE.MeshBasicMaterial({
-          color: 0xa855f7,
-          transparent: true,
-          opacity: 0.85,
-          side: THREE.DoubleSide
-        });
-        const baseGlow = new THREE.Mesh(baseGlowGeo, baseGlowMat);
-        baseGlow.rotation.x = Math.PI / 2;
-        baseGlow.position.set(0, -0.05, 0);
-        bloomGroup.add(baseGlow);
-
-        const baseLight = new THREE.PointLight(0xd8b4fe, 3.2, 2.2);
-        baseLight.position.set(0, 0.02, 0);
-        bloomGroup.add(baseLight);
-
-        // 3. Holographic Chrome Coins
-        const coinMat = new THREE.MeshStandardMaterial({
-          color: 0xffffff,
-          metalness: 0.98,
-          roughness: 0.08,
-          envMapIntensity: 2.2
-        });
-        const coinGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.04, 48);
-        const coinInnerGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.046, 32);
-
-        function makeCoin() {
-          const g = new THREE.Group();
-          const c1 = new THREE.Mesh(coinGeo, coinMat);
-          const c2 = new THREE.Mesh(coinInnerGeo, coinMat);
-          g.add(c1);
-          g.add(c2);
-          return g;
-        }
-
-        coin1 = makeCoin();
-        coin1.position.set(-0.42, -0.62, 0.52);
-        coin1.rotation.set(-0.15, 0.15, 0.08);
-        bloomGroup.add(coin1);
-
-        coin2 = makeCoin();
-        coin2.position.set(-0.68, -0.18, 0.12);
-        coin2.rotation.set(0.1, -0.4, 0.0);
-        bloomGroup.add(coin2);
-
-        coin3 = makeCoin();
-        coin3.position.set(0.62, 0.38, 0.12);
-        coin3.rotation.set(0.2, 0.45, -0.25);
-        bloomGroup.add(coin3);
-
-        // 4. Volumetric Clouds
-        function createCloudMesh(scale = 1.0) {
-          const cg = new THREE.Group();
-          const cmat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.95,
-            metalness: 0.0,
-            transparent: true,
-            opacity: 0.92,
-            envMapIntensity: 0.22
-          });
-          const sp = new THREE.SphereGeometry(0.18, 16, 16);
-          const m1 = new THREE.Mesh(sp, cmat);
-          m1.scale.set(1.4, 1.1, 1.2);
-          cg.add(m1);
-          const m2 = new THREE.Mesh(sp, cmat);
-          m2.position.set(-0.20, -0.04, 0.04);
-          m2.scale.set(1.0, 0.9, 0.9);
-          cg.add(m2);
-          const m3 = new THREE.Mesh(sp, cmat);
-          m3.position.set(0.20, -0.04, -0.03);
-          m3.scale.set(1.1, 0.95, 1.0);
-          cg.add(m3);
-          const m4 = new THREE.Mesh(sp, cmat);
-          m4.position.set(0.04, 0.12, 0.02);
-          m4.scale.set(0.9, 0.85, 0.85);
-          cg.add(m4);
-          cg.scale.set(scale, scale, scale);
-          return cg;
-        }
-
-        cloud1 = createCloudMesh(1.15);
-        cloud1.position.set(0.68, -0.38, 0.42);
-        bloomGroup.add(cloud1);
-
-        cloud2 = createCloudMesh(0.95);
-        cloud2.position.set(-0.88, -0.12, 0.35);
-        bloomGroup.add(cloud2);
-
-        cloud3 = createCloudMesh(0.85);
-        cloud3.position.set(0.85, 0.72, -0.22);
-        bloomGroup.add(cloud3);
-
-        cloud4 = createCloudMesh(0.90);
-        cloud4.position.set(-0.68, -1.08, 0.52);
-        bloomGroup.add(cloud4);
-
-        // 5. Sparkling Stardust Field
-        const starCount = 50;
-        const starPositions = new Float32Array(starCount * 3);
-        for (let i = 0; i < starCount; i++) {
-          starPositions[i * 3] = (Math.random() - 0.5) * 3.2;
-          starPositions[i * 3 + 1] = Math.random() * 2.8 - 0.8;
-          starPositions[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
-        }
-        const starGeo = new THREE.BufferGeometry();
-        starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-        const starMat = new THREE.PointsMaterial({
-          color: 0xc084fc,
-          size: 0.035,
-          transparent: true,
-          opacity: 0.75,
-          blending: THREE.AdditiveBlending
-        });
-        stardust = new THREE.Points(starGeo, starMat);
-        bloomGroup.add(stardust);
+        // Bloom mode utilizes the high-definition cinematic video preview container as preferred by user
       }
       initBloomArchitecture();
 
@@ -2104,17 +1877,22 @@
     document.documentElement.classList.remove("wake-mode", "dream-mode", "bloom-mode");
     document.body.classList.remove("wake-mode", "dream-mode", "bloom-mode");
 
+    const bloomVid = document.getElementById("bloom-pedestal-video");
+
     if (mode === "bloom") {
       document.documentElement.classList.add("bloom-mode");
       document.body.classList.add("bloom-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [○] / BLOOM [●]";
       try { localStorage.setItem("color-scheme", "bloom"); } catch (e) {}
-      if (gemStatusEl) gemStatusEl.textContent = "AMETHYST PEDESTAL [SURREAL 3D]";
-      if (gemHintEl) gemHintEl.textContent = "DRAG TO ROTATE 3D • HOVER TO LEAN";
+      if (bloomVid) {
+        bloomVid.currentTime = 0;
+        bloomVid.play().catch(() => {});
+      }
       if (window.syncThreePalette) window.syncThreePalette("bloom");
       if (window.syncFluidPalette) window.syncFluidPalette("bloom");
       if (audio) audio.playChime(true);
     } else if (mode === "dream") {
+      if (bloomVid) bloomVid.pause();
       document.documentElement.classList.add("dream-mode");
       document.body.classList.add("dream-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [●] / BLOOM [○]";
@@ -2125,6 +1903,7 @@
       if (window.syncFluidPalette) window.syncFluidPalette("dream");
       if (audio) audio.playChime(true);
     } else {
+      if (bloomVid) bloomVid.pause();
       document.documentElement.classList.add("wake-mode");
       document.body.classList.add("wake-mode");
       if (themeModeText) themeModeText.textContent = "WAKE [●] / DREAM [○] / BLOOM [○]";

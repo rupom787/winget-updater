@@ -6,7 +6,8 @@
 
 <p align="center">
   <a href="https://github.com/rupom787/winget-updater/releases/latest"><img src="https://img.shields.io/github/v/release/rupom787/winget-updater?style=for-the-badge&color=800020&logo=github&label=Release" alt="Latest Release" /></a>
-  <img src="https://img.shields.io/badge/Unit%20Tests-137%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="137 Tests Passing" />
+  <a href="https://winget-updater-rupom.vercel.app"><img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=LIVE%20VISITORS&labelColor=0f172a&countColor=025a5f&style=for-the-badge" alt="Live Verified Visitors" /></a>
+  <img src="https://img.shields.io/badge/Unit%20Tests-143%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="143 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Windows%2011-blue?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Architecture-x64%20%7C%2064--bit-success?style=for-the-badge" alt="64-bit Architecture" />
   <img src="https://img.shields.io/badge/Hardware-DirectX%2012%20%2F%20DWM%20Accelerated-orange?style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX 12 GPU" />

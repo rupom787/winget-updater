@@ -124,11 +124,16 @@
         <span class="brand-version">v2.1.0</span>
       </a>
 
-      <!-- Dual Precision World Clocks -->
-      <div class="header-clocks" aria-label="Global engineering clocks">
+      <!-- Dual Precision World Clocks & Real-time Live Visitor Metric -->
+      <div class="header-clocks" aria-label="Global engineering clocks and live verified public visitors">
         <span class="clock-item"><span class="clock-city">TYO</span> <span id="clock-tyo" class="clock-time">00:00:00</span></span>
         <span class="clock-divider">/</span>
         <span class="clock-item"><span class="clock-city">RED</span> <span id="clock-red" class="clock-time">00:00:00</span></span>
+        <span class="clock-divider">/</span>
+        <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="header-visitor-pill" title="Public Real-Time Verified Visitors (visitorbadge.io)">
+          <span class="visitor-pulse-dot"></span>
+          <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=VISITORS&labelColor=0f172a&countColor=025a5f&style=flat" alt="Live Verified Visitors" height="18" class="header-visitor-badge-img" loading="eager" />
+        </a>
       </div>
 
       <nav class="desktop-nav" aria-label="Site Navigation">
@@ -158,9 +163,19 @@
 
     <!-- HERO SECTION -->
     <section id="hero" class="hero-section">
-      <!-- Fullscreen 3D Interactive Quartz Crystal Rock & Amethyst Architecture Pavilion -->
+      <!-- Fullscreen 3D Interactive Quartz Crystal Rock & Amethyst Crystal Pedestal -->
       <div class="hero-canvas-fullscreen" id="canvas-frame">
-        <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Quartz & Amethyst Crystal Architecture"></canvas>
+        <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Quartz Crystal Rock"></canvas>
+        <div id="bloom-pedestal-container" class="bloom-pedestal-container" aria-label="3D Amethyst Crystal Pedestal Video">
+          <video id="bloom-pedestal-video" class="bloom-pedestal-video" autoplay loop muted playsinline poster="assets/bloom_pedestal_poster.jpg">
+            <source src="assets/bloom_pedestal.webm" type="video/webm">
+            <source src="assets/bloom_pedestal.mp4" type="video/mp4">
+          </video>
+          <div class="bloom-video-badge">
+            <span class="pulse-dot"></span>
+            <span>60 FPS // 3D AMETHYST PEDESTAL</span>
+          </div>
+        </div>
       </div>
 
       <div class="section-bounds hero-bounds">
@@ -170,6 +185,11 @@
           <span class="meta-item" id="hero-gpu-telemetry">0.0% IDLE CPU // 27.06 MB</span>
           <span class="meta-item live-pulse-pill" id="live-hardware-pill">GPU: DETECTING...</span>
           <span class="meta-item" id="live-hz-pill">REFRESH: --Hz</span>
+          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="meta-item meta-visitor-pill" title="Live Verified Public Visitors">
+            <span class="visitor-pulse-dot"></span>
+            <span>PUBLIC VISITORS:</span>
+            <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=&countColor=025a5f&style=flat" alt="Real Visitors" height="16" class="meta-visitor-badge-img" loading="eager" />
+          </a>
         </div>
 
         <div class="hero-headline-wrapper">
@@ -937,6 +957,15 @@
       </div>
       <div class="footer-col-center">
         <span class="coord-label">LAT 35.6762° N &bull; LON 139.6503° E // TOKYO &bull; REDMOND</span>
+        <div class="footer-live-metrics">
+          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="footer-metric-pill" title="Live Verified Public Visitors (visitorbadge.io)">
+            <span class="visitor-pulse-dot"></span>
+            <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=LIVE%20VISITORS&labelColor=0f172a&countColor=025a5f&style=flat" alt="Live Visitors" height="18" loading="lazy" />
+          </a>
+          <a href="https://github.com/rupom787/winget-updater/releases" target="_blank" rel="noopener noreferrer" class="footer-metric-pill" title="GitHub Verified Release Downloads">
+            <img src="https://img.shields.io/github/downloads/rupom787/winget-updater/total?label=DOWNLOADS&labelColor=0f172a&color=025a5f&style=flat" alt="GitHub Downloads" height="18" loading="lazy" />
+          </a>
+        </div>
       </div>
       <div class="footer-col-right">
         <a href="#hero" class="back-to-top" id="back-to-top" data-sound="click" data-magnetic>BACK TO TOP &uarr;</a>
