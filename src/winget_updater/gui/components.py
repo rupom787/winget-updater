@@ -431,10 +431,8 @@ class SidebarNavigation(tk.Frame):
         try:
             from winget_updater.engine.gpu import GpuAccelerationManager
             primary_gpu = GpuAccelerationManager.get_primary_gpu()
-            gpu_display = primary_gpu.name
-            if len(gpu_display) > 28:
-                gpu_display = gpu_display.replace("NVIDIA ", "").replace("Graphics", "").strip()
-            gpu_text = f"GPU: {gpu_display} (DirectX 12)"
+            gpu_display = primary_gpu.name.replace("NVIDIA ", "").replace("GeForce ", "").replace("Graphics", "").strip()
+            gpu_text = f"GPU: {gpu_display} • DX12"
         except Exception:
             gpu_text = "GPU: Hardware Accelerated"
 
@@ -782,6 +780,7 @@ class SidebarNavigation(tk.Frame):
                 border_color=theme.border,
                 parent_bg=theme.bg_sidebar,
             )
+        self._render_navigation_items()
         for d in self.filter_buttons.values():
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
@@ -831,6 +830,10 @@ class DetailsDrawer(tk.Frame):
         self.on_skip_version = on_skip_version
         self.current_item: Optional[ProgramItem] = None
         self.theme: ThemeColors = DREAM_THEME
+
+        # Right / Actions Container (packed first to guarantee right-side space)
+        self.actions_container = tk.Frame(self, bg="#161022")
+        self.actions_container.pack(side=tk.RIGHT, padx=(16, 12))
 
         # Left / Details Container
         self.details_container = tk.Frame(self, bg="#161022")
@@ -935,9 +938,7 @@ class DetailsDrawer(tk.Frame):
         )
         self.lbl_diag_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # Right / Actions Container
-        self.actions_container = tk.Frame(self, bg="#161022")
-        self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
+        # 3 Rows of Action Pills inside self.actions_container
 
         # 3 Rows of Action Pills matching crop_mockup_right.png exactly:
         # Row 1: [ Exclude ] [ Folder ]
@@ -955,6 +956,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=24,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_exclude.pack(side=tk.LEFT, padx=(0, 4))
@@ -970,6 +972,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=24,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_open_folder.pack(side=tk.LEFT)
@@ -989,6 +992,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=24,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_copy_id.pack(side=tk.LEFT, padx=(0, 4))
@@ -1004,6 +1008,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=24,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_pin.pack(side=tk.LEFT, padx=(0, 4))
@@ -1019,6 +1024,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=24,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_skip.pack(side=tk.LEFT)
@@ -1038,6 +1044,7 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8),
             height=26,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_uninstall.pack(side=tk.LEFT, padx=(0, 4))
@@ -1053,12 +1060,13 @@ class DetailsDrawer(tk.Frame):
             radius=8,
             font=("Segoe UI", 8, "bold"),
             height=26,
+            padding=(8, 2),
             parent_bg="#10182b",
         )
         self.btn_update.pack(side=tk.LEFT)
 
         # Row 3: Extended Package Resolution & Fallback Actions
-        self.resolution_actions = tk.Frame(self.actions_container, bg="#faf6f6")
+        self.resolution_actions = tk.Frame(self.actions_container, bg="#161022")
         self.resolution_actions.pack(fill=tk.X)
 
         self.btn_bind = RoundedButton(
@@ -1073,7 +1081,7 @@ class DetailsDrawer(tk.Frame):
             font=("Segoe UI", 8, "bold"),
             width=100,
             height=26,
-            parent_bg="#faf6f6",
+            parent_bg="#161022",
         )
         self.btn_bind.pack(side=tk.LEFT, padx=(0, 3))
 

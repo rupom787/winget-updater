@@ -12,17 +12,10 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
     """Applies native Windows 11 DWM window attributes:
     - DWMWCP_ROUND (rounded window corners)
     - DWMWA_USE_IMMERSIVE_DARK_MODE (native Windows dark/light frame)
-    - DWMWA_SYSTEMBACKDROP_TYPE (DWMSBT_TRANSIENTWINDOW = 3 for Acrylic frosted glass)
+    - DWMWA_SYSTEMBACKDROP_TYPE (DWMSBT_MAINWINDOW = 2 for Mica or DWMSBT_TRANSIENTWINDOW = 3 for Acrylic)
     - DWMWA_CAPTION_COLOR (clean titlebar matching app background)
     - DWMWA_TEXT_COLOR (dark/light readable titlebar text)
-    - Window level alpha transparency (-alpha 0.94 - 0.96)
     """
-    # Apply solid window-level opacity to guarantee crisp foreground readability
-    try:
-        window.wm_attributes("-alpha", 1.0)
-    except Exception:
-        pass
-
     if sys.platform != "win32":
         return
 
@@ -40,53 +33,23 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
         )
 
         # DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-        dark_mode_val = getattr(theme, "dwm_dark_mode", 0) if theme else 0
+        dark_mode_val = getattr(theme, "dwm_dark_mode", 1) if theme else 1
         DWMWA_USE_IMMERSIVE_DARK_MODE = 20
         dark_pref = ctypes.c_int(dark_mode_val)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(dark_pref), ctypes.sizeof(dark_pref)
         )
 
-        # DWMWA_SYSTEMBACKDROP_TYPE = 38 (3 = DWMSBT_TRANSIENTWINDOW: Acrylic frosted glass)
-        backdrop_val = getattr(theme, "dwm_backdrop_type", 3) if theme else 3
+        # DWMWA_SYSTEMBACKDROP_TYPE = 38 (2 = Mica, 3 = Acrylic)
+        backdrop_val = getattr(theme, "dwm_backdrop_type", 2) if theme else 2
         DWMWA_SYSTEMBACKDROP_TYPE = 38
         backdrop_pref = ctypes.c_int(backdrop_val)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ctypes.byref(backdrop_pref), ctypes.sizeof(backdrop_pref)
         )
 
-        # Windows 11 True Acrylic Blur Behind via SetWindowCompositionAttribute
-        try:
-            class ACCENT_POLICY(ctypes.Structure):
-                _fields_ = [
-                    ("AccentState", ctypes.c_int),
-                    ("AccentFlags", ctypes.c_int),
-                    ("GradientColor", ctypes.c_uint32),
-                    ("AnimationId", ctypes.c_int),
-                ]
-
-            class WINDOWCOMPOSITIONATTRIBDATA(ctypes.Structure):
-                _fields_ = [
-                    ("Attribute", ctypes.c_int),
-                    ("Data", ctypes.c_void_p),
-                    ("SizeOfData", ctypes.c_size_t),
-                ]
-
-            WCA_ACCENT_POLICY = 19
-            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
-            gradient_col = 0xCC241218 if dark_mode_val else 0xCCF2F7FA
-            accent = ACCENT_POLICY(ACCENT_ENABLE_ACRYLICBLURBEHIND, 0, gradient_col, 0)
-            data = WINDOWCOMPOSITIONATTRIBDATA(
-                WCA_ACCENT_POLICY,
-                ctypes.cast(ctypes.pointer(accent), ctypes.c_void_p),
-                ctypes.sizeof(accent),
-            )
-            ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
-        except Exception:
-            pass
-
         # DWMWA_CAPTION_COLOR = 35
-        caption_bgr = getattr(theme, "dwm_caption_bgr", 0x00F8F8FA) if theme else 0x00F8F8FA
+        caption_bgr = getattr(theme, "dwm_caption_bgr", 0x00160D09) if theme else 0x00160D09
         DWMWA_CAPTION_COLOR = 35
         color_bgr = ctypes.c_int(caption_bgr)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
@@ -215,7 +178,8 @@ class RoundedButton(tk.Canvas):
 
     def _redraw(self, offset_y: int = 0) -> None:
         self.delete("all")
-        w = self.winfo_width() or self.fixed_width or (len(self.text) * 8 + self.padding[0] * 2)
+        req_w = len(self.text) * 8 + self.padding[0] * 2
+        w = self.fixed_width if self.fixed_width else max(self.winfo_width(), req_w)
         h = self.winfo_height() or self.fixed_height
 
         # Draw rounded background
@@ -278,6 +242,9 @@ class RoundedButton(tk.Canvas):
 
         if "text" in kwargs:
             self.text = kwargs["text"]
+            if not self.fixed_width:
+                auto_w = len(self.text) * 8 + self.padding[0] * 2
+                canvas_kwargs["width"] = auto_w
 
         if "bg" in kwargs or "bg_color" in kwargs:
             new_bg = kwargs.get("bg", kwargs.get("bg_color"))

@@ -63,8 +63,8 @@ def build():
         print("  Embedded components: Uninstall.exe, exclusions.json, sources.json")
         print("=" * 60)
 
-        # Ensure default exclusions.json and sources.json exist in dist folder next to EXE
-        for cfg_file in ("exclusions.json", "sources.json"):
+        # Ensure default exclusions.json, sources.json, and config.json exist in dist folder next to EXE
+        for cfg_file in ("exclusions.json", "sources.json", "config.json"):
             src_cfg = root_dir / cfg_file
             dst_cfg = dist_dir / cfg_file
             if src_cfg.exists() and not dst_cfg.exists():

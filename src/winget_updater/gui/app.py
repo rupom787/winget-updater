@@ -826,6 +826,18 @@ class MainWindow(tk.Tk):
 
         self.main_body.config(bg=t.bg_root)
         self.right_container.config(bg=t.bg_root)
+        if hasattr(self, "right_action_sidebar"):
+            self.right_action_sidebar.config(bg=t.bg_sidebar if hasattr(t, "bg_sidebar") else t.bg_card, highlightbackground=t.border)
+        if hasattr(self, "switches_card"):
+            self.switches_card.config(bg=t.bg_card)
+        if hasattr(self, "actions_card"):
+            self.actions_card.config(bg=t.bg_card)
+        if hasattr(self, "lbl_action_deck"):
+            self.lbl_action_deck.config(bg=t.bg_card, fg=t.fg_muted)
+        if hasattr(self, "specs_card"):
+            self.specs_card.config(bg=t.bg_card, highlightbackground=t.border)
+        if hasattr(self, "lbl_specs_head"):
+            self.lbl_specs_head.config(bg=t.bg_card, fg="#a78bfa" if t.name == "dark" else t.fg_muted)
         if hasattr(self, "table_card"): self.table_card.config(bg=t.bg_card, highlightbackground=t.border)
         self.action_header.config(bg=t.bg_card, highlightthickness=0)
         self.header_title_box.config(bg=t.bg_card)

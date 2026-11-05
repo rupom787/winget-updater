@@ -195,12 +195,12 @@ class GpuAccelerationManager:
             pass
 
         try:
-            # Enable hardware window acceleration & Windows 11 Acrylic frosted glass backdrop
+            # Enable hardware window acceleration & Windows 11 Mica / Frosted glass backdrop
             window.update_idletasks()
             hwnd = window.winfo_id()
             if hwnd:
-                # Apply Windows 11 Acrylic / Frosted Glass Backdrop
-                cls.enable_windows11_glass_backdrop(window, backdrop_type=3)
+                # Apply Windows 11 Mica Glass Backdrop
+                cls.enable_windows11_glass_backdrop(window, backdrop_type=2)
                 return True
         except Exception as e:
             logger.debug(f"Hardware window acceleration note: {e}")
@@ -208,8 +208,8 @@ class GpuAccelerationManager:
         return False
 
     @classmethod
-    def enable_windows11_glass_backdrop(cls, window, backdrop_type: int = 3) -> bool:
-        """Applies Windows 11 system backdrop (Acrylic frosted glass / Mica).
+    def enable_windows11_glass_backdrop(cls, window, backdrop_type: int = 2) -> bool:
+        """Applies Windows 11 system backdrop (Mica / Acrylic frosted glass).
         backdrop_type: 2 = Mica, 3 = Acrylic (Frosted Glass), 4 = Mica Alt.
         """
         if sys.platform != "win32":
