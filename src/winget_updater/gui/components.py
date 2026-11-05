@@ -222,7 +222,7 @@ class SidebarNavigation(tk.Frame):
         # macOS Traffic Lights [● ● ●]
         self.traffic_lights_canvas = tk.Canvas(
             self.brand_frame,
-            width=64,
+            width=180,
             height=18,
             bg="#faf6f6",
             highlightthickness=0,
@@ -499,9 +499,9 @@ class SidebarNavigation(tk.Frame):
 
         # 01 // ACRYLIC UI Pill Badge
         is_dark = (getattr(self.theme, "name", "dark") == "dark")
-        badge_bg = "#141d30" if is_dark else "#f1f5f9"
-        badge_bd = "#1e2c45" if is_dark else "#e2e8f0"
-        badge_fg = "#94a3b8" if is_dark else "#64748b"
+        badge_bg = "#221a36" if is_dark else "#f1f5f9"
+        badge_bd = "#382a56" if is_dark else "#e2e8f0"
+        badge_fg = "#a78bfa" if is_dark else "#64748b"
         draw_rounded_rect(c, 58, 0, 168, 18, radius=8, fill=badge_bg, outline=badge_bd, width=1)
         c.create_text(113, 9, text="01 // ACRYLIC UI", fill=badge_fg, font=("Segoe UI", 7, "bold"))
 
@@ -553,7 +553,9 @@ class SidebarNavigation(tk.Frame):
                     badge_bg = "#e5dcce"
                     badge_fg = "#800020"
             else:
-                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill=t.bg_card, outline=t.border, width=1)
+                item_fill = "#1e1834" if mode == "dark" else t.bg_card
+                item_bd = "#2e254c" if mode == "dark" else t.border
+                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill=item_fill, outline=item_bd, width=1)
                 text_color = t.fg_primary
                 if internal_name == "Updates Available" and count not in ("0", ""):
                     badge_bg = t.tag_available_bg
@@ -1105,8 +1107,8 @@ class DetailsDrawer(tk.Frame):
             dis_fg = "#64748b" if is_dark else "#94a3b8"
             up_dis_bg = "#7c122e" if is_dark else dis_bg
             up_dis_fg = "#ffffff" if is_dark else dis_fg
-            pill_dis_bg = "#20142e" if is_dark else dis_bg
-            pill_dis_fg = "#cbd5e1" if is_dark else dis_fg
+            pill_dis_bg = "#2d1b46" if is_dark else dis_bg
+            pill_dis_fg = "#e2e8f0" if is_dark else dis_fg
             self.btn_update.config(state="disabled", text="Update application", bg=up_dis_bg, fg=up_dis_fg)
             self.btn_exclude.config(state="disabled", text="Exclude", bg=pill_dis_bg, fg=pill_dis_fg)
             self.btn_open_folder.config(state="disabled", text="Folder", bg=pill_dis_bg, fg=pill_dis_fg)
@@ -1326,11 +1328,11 @@ class DetailsDrawer(tk.Frame):
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
         is_dark = (theme.name == "dark")
-        bg_col = "#161022" if is_dark else theme.bg_sidebar
-        border_col = "#2d1b3b" if is_dark else theme.border
-        btn_bg = "#20142e" if is_dark else theme.bg_button
-        btn_border = "#361e4a" if is_dark else theme.border
-        btn_fg = "#cbd5e1" if is_dark else theme.fg_primary
+        bg_col = "#1e1330" if is_dark else theme.bg_sidebar
+        border_col = "#42265c" if is_dark else theme.border
+        btn_bg = "#2d1b46" if is_dark else theme.bg_button
+        btn_border = "#4f2e78" if is_dark else theme.border
+        btn_fg = "#e2e8f0" if is_dark else theme.fg_primary
 
         self.config(bg=bg_col, highlightbackground=border_col)
         self.details_container.config(bg=bg_col)
@@ -1714,11 +1716,11 @@ class ProgramTableView(tk.Frame):
                 "CleanWine.Vertical.TScrollbar",
                 width=6,
                 arrowsize=0,
-                background="#2a3b5a",
-                troughcolor="#0e1526",
-                bordercolor="#0e1526",
-                darkcolor="#2a3b5a",
-                lightcolor="#2a3b5a",
+                background="#4c3b6e",
+                troughcolor="#141126",
+                bordercolor="#141126",
+                darkcolor="#4c3b6e",
+                lightcolor="#4c3b6e",
                 relief="flat",
                 borderwidth=0,
             )
@@ -1750,11 +1752,11 @@ class ProgramTableView(tk.Frame):
         )
 
         # Subtle alternating dark glass rows so icons and text pop cleanly
-        bg_even = "#0b1220" if is_dark else "#ffffff"
-        bg_odd = "#0e1626" if is_dark else "#fdfcf9"
+        bg_even = "#141126" if is_dark else "#ffffff"
+        bg_odd = "#18142e" if is_dark else "#fdfcf9"
 
         self.tree.tag_configure("tag_catalog", background=bg_even, foreground="#34d399" if is_dark else "#065f46")
-        self.tree.tag_configure("tag_available", background="#180c16" if is_dark else "#fff1f2", foreground="#fda4af" if is_dark else "#991b1b")
+        self.tree.tag_configure("tag_available", background="#2a1224" if is_dark else "#fff1f2", foreground="#fda4af" if is_dark else "#991b1b")
         self.tree.tag_configure("tag_uptodate", background=bg_even, foreground="#34d399" if is_dark else "#166534")
         self.tree.tag_configure("tag_uptodate_alt", background=bg_odd, foreground="#34d399" if is_dark else "#166534")
         self.tree.tag_configure("tag_downgrade", background=bg_even, foreground="#fbbf24" if is_dark else "#92400e")
@@ -1764,7 +1766,7 @@ class ProgramTableView(tk.Frame):
         self.tree.tag_configure("tag_incompat", background="#180c16" if is_dark else "#fff1f2", foreground="#f87171" if is_dark else "#991b1b")
         self.tree.tag_configure("tag_nosource", background=bg_even, foreground="#94a3b8" if is_dark else "#475569")
         self.tree.tag_configure("tag_nosource_alt", background=bg_odd, foreground="#94a3b8" if is_dark else "#475569")
-        self.tree.tag_configure("tag_hover", background="#18243c" if is_dark else "#f1f5f9")
+        self.tree.tag_configure("tag_hover", background="#251c3d" if is_dark else "#f1f5f9")
 
         self.skeleton.apply_theme(theme)
         self.context_menu.config(bg=theme.bg_card, fg=theme.fg_primary, activebackground=theme.bg_card_hover, activeforeground=theme.accent_burgundy)

@@ -902,25 +902,25 @@ class GlassyTelemetryHUD(tk.Frame):
         self._is_active = True
 
         # Pill 1: CPU
-        self.pill_cpu = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_cpu = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
         self.pill_cpu.pack(side=tk.LEFT, padx=(0, 6))
-        self.lbl_cpu_icon = tk.Label(self.pill_cpu, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_cpu_icon = tk.Label(self.pill_cpu, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#00f0ff")
         self.lbl_cpu_icon.pack(side=tk.LEFT, padx=(0, 4))
         self.lbl_cpu = tk.Label(self.pill_cpu, text="CPU: 23%", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#34d399")
         self.lbl_cpu.pack(side=tk.LEFT)
 
         # Pill 2: RAM
-        self.pill_ram = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_ram = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
         self.pill_ram.pack(side=tk.LEFT, padx=(0, 6))
-        self.lbl_ram_icon = tk.Label(self.pill_ram, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_ram_icon = tk.Label(self.pill_ram, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#a855f7")
         self.lbl_ram_icon.pack(side=tk.LEFT, padx=(0, 4))
         self.lbl_ram = tk.Label(self.pill_ram, text="RAM: 9.2/15.8 GB (58%)", font=("Segoe UI", 8), bg="#10182b", fg="#f8fafc")
         self.lbl_ram.pack(side=tk.LEFT)
 
         # Pill 3: GPU & Status Beacon
-        self.pill_gpu = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_gpu = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
         self.pill_gpu.pack(side=tk.LEFT)
-        self.lbl_gpu_icon = tk.Label(self.pill_gpu, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_gpu_icon = tk.Label(self.pill_gpu, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#10b981")
         self.lbl_gpu_icon.pack(side=tk.LEFT, padx=(0, 4))
         gpu_short = gpu_name
         if len(gpu_short) > 22:

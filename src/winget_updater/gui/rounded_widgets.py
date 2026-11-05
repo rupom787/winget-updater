@@ -75,7 +75,7 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
 
             WCA_ACCENT_POLICY = 19
             ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
-            gradient_col = 0xCC160D09 if dark_mode_val else 0xCCF2F7FA
+            gradient_col = 0xCC241218 if dark_mode_val else 0xCCF2F7FA
             accent = ACCENT_POLICY(ACCENT_ENABLE_ACRYLICBLURBEHIND, 0, gradient_col, 0)
             data = WINDOWCOMPOSITIONATTRIBDATA(
                 WCA_ACCENT_POLICY,
