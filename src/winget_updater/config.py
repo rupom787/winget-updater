@@ -258,7 +258,7 @@ class ConfigManager:
             try:
                 with open(self.config_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.theme = data.get("theme", "light")
+                    self.theme = data.get("theme", "dream")
                     self.font_scale = data.get("font_scale", "normal")
                     self.auto_scan_on_startup = bool(data.get("auto_scan_on_startup", True))
                     self.create_restore_point = bool(data.get("create_restore_point", False))

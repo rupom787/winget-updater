@@ -88,9 +88,14 @@ class MainWindow(tk.Tk):
         self.geometry("1260x820")
         self.minsize(1040, 680)
 
-        # Apply native Windows 11 rounded window borders and titlebar styling
+        # Core services & theme
+        self.config = config_manager or ConfigManager()
+        self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "light"))
+        self.typography: Typography = get_typography(getattr(self.config, "font_scale", "normal"))
+
+        # Apply native Windows 11 rounded window borders and dark titlebar styling
         try:
-            apply_native_window_styling(self)
+            apply_native_window_styling(self, self.current_theme)
         except Exception:
             pass
 
@@ -108,10 +113,7 @@ class MainWindow(tk.Tk):
         except Exception:
             pass
 
-        # Core services
-        self.config = config_manager or ConfigManager()
-        self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "light"))
-        self.typography: Typography = get_typography(getattr(self.config, "font_scale", "normal"))
+        # Core services initialized above
         self.winget = WingetClient()
         self.sys_info = SystemInfoProvider()
         self.checker = CompatibilityChecker(system_info=self.sys_info)
@@ -463,30 +465,30 @@ class MainWindow(tk.Tk):
         self.btn_scan.pack(fill=tk.X)
 
         # 2c. Bottom Section: Selected App Action Pills
-        self.right_selected_card = tk.Frame(self.right_action_sidebar, bg="#ffffff")
-        self.right_selected_card.pack(side=tk.BOTTOM, fill=tk.X)
+        self.right_selected_card = tk.Frame(self.right_action_sidebar, bg=self.current_theme.bg_card)
+        self.right_selected_card.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
 
-        self.row_p1 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p1 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
         self.row_p1.pack(fill=tk.X, pady=2)
-        self.p_btn_exclude = RoundedButton(self.row_p1, text="Exclude", command=lambda: self._handle_context_exclude(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_exclude = RoundedButton(self.row_p1, text="Exclude", command=lambda: self._handle_context_exclude(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
         self.p_btn_exclude.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_folder = RoundedButton(self.row_p1, text="Folder", command=lambda: self._open_app_folder(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_folder = RoundedButton(self.row_p1, text="Folder", command=lambda: self._open_app_folder(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
         self.p_btn_folder.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
-        self.row_p2 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p2 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
         self.row_p2.pack(fill=tk.X, pady=2)
-        self.p_btn_copy = RoundedButton(self.row_p2, text="Copy ID", command=lambda: self._copy_package_id(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_copy = RoundedButton(self.row_p2, text="Copy ID", command=lambda: self._copy_package_id(self.selected_item), radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
         self.p_btn_copy.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_pin = RoundedButton(self.row_p2, text="Pin", command=lambda: self._handle_pin_item(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_pin = RoundedButton(self.row_p2, text="Pin", command=lambda: self._handle_pin_item(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
         self.p_btn_pin.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 2))
-        self.p_btn_skip = RoundedButton(self.row_p2, text="Skip", command=lambda: self._handle_skip_version(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color="#ffffff", fg_color="#334155", border_color="#e2e8f0")
+        self.p_btn_skip = RoundedButton(self.row_p2, text="Skip", command=lambda: self._handle_skip_version(self.selected_item) if self.selected_item else None, radius=6, height=24, font=("Segoe UI", 8), bg_color=self.current_theme.bg_button, fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, parent_bg=self.current_theme.bg_card)
         self.p_btn_skip.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
-        self.row_p3 = tk.Frame(self.right_selected_card, bg="#ffffff")
+        self.row_p3 = tk.Frame(self.right_selected_card, bg=self.current_theme.bg_card)
         self.row_p3.pack(fill=tk.X, pady=(3, 0))
-        self.p_btn_uninstall = RoundedButton(self.row_p3, text="Uninstall", command=lambda: self._handle_context_uninstall(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8), bg_color="#fef2f2", fg_color="#dc2626")
+        self.p_btn_uninstall = RoundedButton(self.row_p3, text="Uninstall", command=lambda: self._handle_context_uninstall(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8), bg_color="#2e0b17" if self.current_theme.name == "dark" else "#fef2f2", fg_color="#f87171" if self.current_theme.name == "dark" else "#dc2626", parent_bg=self.current_theme.bg_card)
         self.p_btn_uninstall.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        self.p_btn_update = RoundedButton(self.row_p3, text="Update App", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color="#881337", fg_color="#ffffff")
+        self.p_btn_update = RoundedButton(self.row_p3, text="Update App", command=lambda: self._handle_context_update(self.selected_item) if self.selected_item else None, radius=6, height=26, font=("Segoe UI", 8, "bold"), bg_color=self.current_theme.accent_burgundy, fg_color="#ffffff", parent_bg=self.current_theme.bg_card)
         self.p_btn_update.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
         # Center Column: Main Content Container (expands)
@@ -681,6 +683,10 @@ class MainWindow(tk.Tk):
         self.bind("<Control-Shift-u>", lambda e: self._open_complete_system_update())
 
         self.set_theme(self.current_theme.name)
+
+    def apply_theme(self, theme) -> None:
+        mode = getattr(theme, 'name', str(theme))
+        self.set_theme(mode)
 
     def set_theme(self, mode: str) -> None:
         """Sets the application theme (wake/light, dream/dark, bloom) and updates all UI modules."""

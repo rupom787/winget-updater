@@ -4,6 +4,7 @@ Features smooth rounded widgets, refined typography, two-column layout, and bott
 
 import os
 import tkinter as tk
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 from tkinter import messagebox, ttk
 from typing import Callable, Dict, List, Optional
 from winget_updater.gui.animations import (
@@ -19,18 +20,170 @@ from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
 from winget_updater.models import CompatibilityStatus, PackageType, ProgramItem, UpdateAction, UpdateOutcome
 
 
+
+class AppIconGenerator:
+    """Generates and caches vibrant, high-DPI 22x22 macOS/Windows-11 rounded squircle icons
+    for software packages in the table and details drawer.
+    Bound per-toplevel Tk instance to guarantee robust multi-window and test suite safety.
+    """
+    _pil_cache: Dict[Tuple[str, int], Image.Image] = {}
+    _photo_cache: Dict[Tuple[int, str, int], ImageTk.PhotoImage] = {}
+
+    @classmethod
+    def get_icon(cls, widget: tk.Widget, name: str, size: int = 22) -> Optional[ImageTk.PhotoImage]:
+        clean_name = (name or "").strip()
+        pil_key = (clean_name.lower(), size)
+
+        # 1. Retrieve or generate the supersampled PIL Image
+        if pil_key in cls._pil_cache:
+            img_resized = cls._pil_cache[pil_key]
+        else:
+            scale = 2
+            s = size * scale
+            img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            n = clean_name.lower()
+
+            if any(k in n for k in ["adguard", "adblock", "ublock", "blocker", "poper"]):
+                bg1 = (16, 185, 129)  # Emerald
+                icon_type = "shield"
+            elif any(k in n for k in ["download", "idm", "aria", "torrent", "manager"]):
+                bg1 = (6, 182, 212)   # Cyan / Teal
+                icon_type = "download"
+            elif any(k in n for k in ["git", "github", "gitlab", "version"]):
+                bg1 = (249, 115, 22)  # Coral Orange
+                icon_type = "diamond"
+            elif "edge" in n:
+                bg1 = (2, 132, 199)   # Ocean Blue
+                icon_type = "globe"
+            elif any(k in n for k in ["chrome", "google", "chromium"]):
+                bg1 = (37, 99, 235)   # Google Blue
+                icon_type = "globe"
+            elif any(k in n for k in ["code", "visual studio", "cursor", "sublime"]):
+                bg1 = (0, 122, 204)   # VS Blue
+                icon_type = "code"
+            elif "python" in n:
+                bg1 = (48, 105, 152)  # Python Blue
+                icon_type = "monogram"
+            elif any(k in n for k in ["node", "npm", "yarn", "bun"]):
+                bg1 = (22, 163, 74)   # Node Emerald
+                icon_type = "hex"
+            elif any(k in n for k in ["tampermonkey", "greasemonkey", "script"]):
+                bg1 = (15, 118, 110)  # Slate Teal
+                icon_type = "monogram"
+            elif any(k in n for k in ["discord", "steam", "game"]):
+                bg1 = (88, 101, 242)  # Blurple
+                icon_type = "gamepad"
+            elif any(k in n for k in ["spotify", "music", "audio", "vlc"]):
+                bg1 = (29, 185, 84)   # Spotify Green
+                icon_type = "play"
+            elif any(k in n for k in ["security", "antivirus", "defender", "malware"]):
+                bg1 = (225, 29, 72)   # Ruby Crimson
+                icon_type = "shield"
+            else:
+                palette = [
+                    (225, 29, 72),   # Crimson
+                    (139, 92, 246),  # Violet
+                    (99, 102, 241),  # Indigo
+                    (16, 185, 129),  # Emerald
+                    (245, 158, 11),  # Amber
+                    (6, 182, 212),   # Cyan
+                    (236, 72, 153),  # Pink
+                    (2, 132, 199),   # Sky
+                ]
+                bg1 = palette[abs(hash(clean_name)) % len(palette)]
+                icon_type = "monogram"
+
+            rad = int(s * 0.28)
+            draw.rounded_rectangle([0, 0, s - 1, s - 1], radius=rad, fill=bg1)
+            draw.rounded_rectangle([1, 1, s - 2, s - 2], radius=rad - 1, outline=(255, 255, 255, 65), width=1)
+
+            fg = (255, 255, 255, 245)
+            cx, cy = s // 2, s // 2
+            r = int(s * 0.26)
+
+            if icon_type == "shield":
+                pts = [(cx, cy - r), (cx + r, cy - r + 3), (cx + r - 2, cy + r - 2), (cx, cy + r + 2), (cx - r + 2, cy + r - 2), (cx - r, cy - r + 3)]
+                draw.polygon(pts, fill=fg)
+            elif icon_type == "download":
+                draw.polygon([(cx - r, cy), (cx + r, cy), (cx, cy + r)], fill=fg)
+                draw.rectangle([cx - 2, cy - r, cx + 2, cy], fill=fg)
+                draw.rectangle([cx - r, cy + r + 2, cx + r, cy + r + 4], fill=fg)
+            elif icon_type == "diamond":
+                draw.polygon([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)], fill=fg)
+            elif icon_type == "globe":
+                draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=fg, width=2)
+                draw.line([(cx - r, cy), (cx + r, cy)], fill=fg, width=1)
+                draw.ellipse([cx - r // 2, cy - r, cx + r // 2, cy + r], outline=fg, width=1)
+            elif icon_type == "code":
+                draw.line([(cx - 2, cy - r), (cx - r, cy), (cx - 2, cy + r)], fill=fg, width=2)
+                draw.line([(cx + 2, cy - r), (cx + r, cy), (cx + 2, cy + r)], fill=fg, width=2)
+            elif icon_type == "hex":
+                draw.polygon([
+                    (cx, cy - r),
+                    (cx + r, cy - r // 2),
+                    (cx + r, cy + r // 2),
+                    (cx, cy + r),
+                    (cx - r, cy + r // 2),
+                    (cx - r, cy - r // 2)
+                ], fill=fg)
+            elif icon_type == "play":
+                draw.polygon([(cx - r + 2, cy - r), (cx + r, cy), (cx - r + 2, cy + r)], fill=fg)
+            elif icon_type == "gamepad":
+                draw.rounded_rectangle([cx - r, cy - r // 2, cx + r, cy + r // 2], radius=3, fill=fg)
+            else:
+                ch = (clean_name[:1] or "A").upper()
+                try:
+                    font = ImageFont.truetype("segoeui.ttf", int(s * 0.52))
+                except Exception:
+                    font = ImageFont.load_default()
+                bbox = draw.textbbox((0, 0), ch, font=font)
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+                draw.text((cx - tw // 2, cy - th // 2 - 2), ch, font=font, fill=fg)
+
+            img_resized = img.resize((size, size), Image.Resampling.LANCZOS)
+            cls._pil_cache[pil_key] = img_resized
+
+        # 2. Bind PhotoImage to the current widget's root instance
+        try:
+            root_id = id(widget.winfo_toplevel()) if hasattr(widget, "winfo_toplevel") else id(widget)
+        except Exception:
+            root_id = 0
+
+        photo_key = (root_id, clean_name.lower(), size)
+        if photo_key in cls._photo_cache:
+            return cls._photo_cache[photo_key]
+
+        try:
+            photo = ImageTk.PhotoImage(img_resized, master=widget)
+            cls._photo_cache[photo_key] = photo
+            return photo
+        except Exception:
+            return None
+
+
 class SidebarNavigation(tk.Frame):
     """Clean left sidebar navigation with smooth rounded filter cards, search box, and live counts."""
 
     # Human-readable filter view definitions
     FILTERS = [
-        ("All Software", "⊞ All applications"),
-        ("Updates Available", "🔔 Updates available"),
-        ("Cannot Update", "📄 Review & issues"),
-        ("Up to Date", "🕒 Installed & current"),
-        ("Ignored Updates", "⊘ Excluded applications"),
-        ("Software Catalog", "⚙️ Discover & install"),
+        ("All Software", "All applications"),
+        ("Updates Available", "Updates available"),
+        ("Cannot Update", "Review & issues"),
+        ("Up to Date", "Installed & current"),
+        ("Ignored Updates", "Excluded applications"),
+        ("Software Catalog", "Discover & install"),
     ]
+
+    FILTER_ICONS = {
+        "All Software": ("#e11d48", "grid"),
+        "Updates Available": ("#06b6d4", "download"),
+        "Cannot Update": ("#f59e0b", "warning"),
+        "Up to Date": ("#10b981", "check"),
+        "Ignored Updates": ("#8b5cf6", "slash"),
+        "Software Catalog": ("#ec4899", "sparkle"),
+    }
 
     def __init__(
         self,
@@ -62,9 +215,20 @@ class SidebarNavigation(tk.Frame):
         self.hovered_filter: Optional[str] = None
         self._debounce_timer: Optional[str] = None
 
-        # 1. App Title / Brand
+        # 1. App Title / Brand with macOS Traffic Lights
         self.brand_frame = tk.Frame(self, bg="#faf6f6")
         self.brand_frame.pack(fill=tk.X, pady=(0, 16))
+
+        # macOS Traffic Lights [● ● ●]
+        self.traffic_lights_canvas = tk.Canvas(
+            self.brand_frame,
+            width=64,
+            height=18,
+            bg="#faf6f6",
+            highlightthickness=0,
+        )
+        self.traffic_lights_canvas.pack(anchor=tk.W, pady=(0, 8))
+        self._draw_traffic_lights()
 
         self.lbl_title = tk.Label(
             self.brand_frame,
@@ -314,6 +478,24 @@ class SidebarNavigation(tk.Frame):
         # Initial render
         self._render_navigation_items()
 
+
+    def _draw_traffic_lights(self) -> None:
+        """Draws classic macOS traffic light buttons: Close (red), Minimize (yellow), Maximize (green)."""
+        if not hasattr(self, "traffic_lights_canvas"):
+            return
+        c = self.traffic_lights_canvas
+        c.delete("all")
+        bg_col = getattr(self.theme, "bg_sidebar", "#faf6f6")
+        c.config(bg=bg_col)
+        # Red, Yellow, Green dots with subtle darker borders
+        dots = [
+            (9, 9, "#ff5f56", "#e0443e"),
+            (26, 9, "#ffbd2e", "#dea123"),
+            (43, 9, "#27c93f", "#1aab29"),
+        ]
+        for cx, cy, fill_col, border_col in dots:
+            c.create_oval(cx - 5, cy - 5, cx + 5, cy + 5, fill=fill_col, outline=border_col, width=1)
+
     def _render_navigation_items(self) -> None:
         """Draws rounded pill tabs for each sidebar navigation item with smooth hover & active styling."""
         for internal_name, data in self.filter_buttons.items():
@@ -374,9 +556,42 @@ class SidebarNavigation(tk.Frame):
                     badge_bg = t.bg_panel
                     badge_fg = t.fg_muted
 
-            # Label text
+            # 1. Squircle icon container on the left (22x22, radius=6)
+            sx, sy = 8, 7
+            sw = 22
+            sq_color, glyph = self.FILTER_ICONS.get(internal_name, ("#e11d48", "grid"))
+            draw_rounded_rect(canvas, sx, sy, sx + sw, sy + sw, radius=6, fill=sq_color)
+
+            # Specular top reflection
+            canvas.create_line(sx + 3, sy + 1, sx + sw - 3, sy + 1, fill="#ffffff", width=1)
+
+            # Vector icon glyph in bright white
+            scx, scy = sx + sw // 2, sy + sw // 2
+            if glyph == "grid":
+                for gx in (-3, 3):
+                    for gy in (-3, 3):
+                        canvas.create_rectangle(scx + gx - 2, scy + gy - 2, scx + gx + 1, scy + gy + 1, fill="#ffffff", outline="")
+            elif glyph == "download":
+                canvas.create_line(scx, scy - 5, scx, scy + 3, fill="#ffffff", width=2)
+                canvas.create_line(scx - 4, scy, scx, scy + 4, fill="#ffffff", width=2)
+                canvas.create_line(scx + 4, scy, scx, scy + 4, fill="#ffffff", width=2)
+                canvas.create_line(scx - 4, scy + 6, scx + 4, scy + 6, fill="#ffffff", width=2)
+            elif glyph == "warning":
+                canvas.create_polygon(scx, scy - 6, scx + 6, scy + 5, scx - 6, scy + 5, fill="#ffffff", outline="")
+                canvas.create_line(scx, scy - 2, scx, scy + 1, fill=sq_color, width=2)
+                canvas.create_oval(scx - 1, scy + 3, scx + 1, scy + 5, fill=sq_color, outline="")
+            elif glyph == "check":
+                canvas.create_line(scx - 5, scy, scx - 1, scy + 4, fill="#ffffff", width=2)
+                canvas.create_line(scx - 1, scy + 4, scx + 5, scy - 4, fill="#ffffff", width=2)
+            elif glyph == "slash":
+                canvas.create_oval(scx - 5, scy - 5, scx + 5, scy + 5, outline="#ffffff", width=2)
+                canvas.create_line(scx - 4, scy + 4, scx + 4, scy - 4, fill="#ffffff", width=2)
+            elif glyph == "sparkle":
+                canvas.create_polygon(scx, scy - 6, scx + 2, scy - 1, scx + 6, scy, scx + 2, scy + 1, scx, scy + 6, scx - 2, scy + 1, scx - 6, scy, scx - 2, scy - 1, fill="#ffffff", outline="")
+
+            # 2. Label text (spaced neatly past squircle)
             canvas.create_text(
-                14,
+                38,
                 h / 2,
                 text=display_label,
                 fill=text_color,
@@ -384,20 +599,18 @@ class SidebarNavigation(tk.Frame):
                 anchor="w",
             )
 
-            # Badge pill on right or active glowing dot
+            # 3. Badge pill on right or active glowing dot
             if is_active:
-                dot_cx = w - 18
+                dot_cx = w - 16
                 dot_cy = h / 2
                 halo_col = "#4c0519" if mode == "dark" else ("#fbcfe8" if mode == "bloom" else "#fee2e2")
                 core_col = "#e11d48" if mode == "dark" else ("#d946ef" if mode == "bloom" else "#ffffff")
                 canvas.create_oval(dot_cx - 6, dot_cy - 6, dot_cx + 6, dot_cy + 6, fill=halo_col, outline="")
                 canvas.create_oval(dot_cx - 3, dot_cy - 3, dot_cx + 3, dot_cy + 3, fill=core_col, outline="")
-            elif False:
-                pass
             elif count not in ("0", "", None):
                 badge_text = str(count)
                 badge_w = max(22, len(badge_text) * 7 + 10)
-                bx2 = w - 12
+                bx2 = w - 10
                 bx1 = bx2 - badge_w
                 by1 = (h - 20) / 2
                 by2 = by1 + 20
@@ -488,6 +701,7 @@ class SidebarNavigation(tk.Frame):
         self.theme = theme
         self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
         self.brand_frame.config(bg=theme.bg_sidebar)
+        self._draw_traffic_lights()
         self.lbl_title.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
         self.lbl_version_tag.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
         self.lbl_nav_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
@@ -1365,13 +1579,30 @@ class ProgramTableView(tk.Frame):
             foreground=[("selected", "#881337")],
         )
 
-        cols = [c[0] for c in self.COLUMNS]
-        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="extended", style="CleanWine.Treeview")
+        cols = ("installed", "latest", "status")
+        self.tree = ttk.Treeview(self, columns=cols, show="tree headings", selectmode="extended", style="CleanWine.Treeview")
+
+        _orig_col = self.tree.column
+        _orig_head = self.tree.heading
+
+        def _safe_column(col_id, *args, **kwargs):
+            actual = "#0" if col_id == "name" else col_id
+            return _orig_col(actual, *args, **kwargs)
+
+        def _safe_heading(col_id, *args, **kwargs):
+            actual = "#0" if col_id == "name" else col_id
+            return _orig_head(actual, *args, **kwargs)
+
+        self.tree.column = _safe_column
+        self.tree.heading = _safe_heading
+
+        self.tree.heading("#0", text="Application Name", command=lambda: self._sort_column("name", False))
+        self.tree.column("#0", width=340, minwidth=140, anchor=tk.W)
 
         self._last_configured_width: int = 0
-        for col_id, col_text, col_width in self.COLUMNS:
-            self.tree.heading(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
-            self.tree.column(col_id, width=col_width, minwidth=90, anchor=tk.W)
+        for col_id, col_text, col_width in self.COLUMNS[1:]:
+            _orig_head(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
+            _orig_col(col_id, width=col_width, minwidth=80, anchor=tk.W)
 
         # Clear Status Badge Tags
         self.tree.tag_configure("tag_catalog", background="#f0fdf4", foreground="#166534")
@@ -1582,12 +1813,18 @@ class ProgramTableView(tk.Frame):
                     tag = "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
 
                 values = (
-                    item.name,
                     item.installed_version or "Unknown",
                     item.latest_version or "—",
                     status_str,
                 )
-                self.tree.insert("", tk.END, iid=iid, values=values, tags=(tag,))
+                icon = AppIconGenerator.get_icon(self.tree, item.name)
+                try:
+                    if icon:
+                        self.tree.insert("", tk.END, iid=iid, text="  " + item.name, image=icon, values=values, tags=(tag,))
+                    else:
+                        self.tree.insert("", tk.END, iid=iid, text="  " + item.name, values=values, tags=(tag,))
+                except Exception:
+                    self.tree.insert("", tk.END, iid=iid, text="  " + item.name, values=values, tags=(tag,))
 
             if end_idx < total:
                 self.after(6, lambda: _insert_chunk(end_idx))
@@ -1638,14 +1875,14 @@ class ProgramTableView(tk.Frame):
                     status_str = item.action.value
                     tag = "tag_nosource"
 
+                icon = AppIconGenerator.get_icon(self.tree, item.name)
                 values = (
-                    item.name,
                     item.installed_version or "Unknown",
                     item.latest_version or "—",
                     status_str,
                 )
                 try:
-                    self.tree.item(iid, values=values, tags=(tag,))
+                    self.tree.item(iid, text="  " + item.name, image=icon, values=values, tags=(tag,))
                 except Exception:
                     pass
                 break
@@ -1902,7 +2139,10 @@ class ProgramTableView(tk.Frame):
             self.on_batch_exclude(items)
 
     def _sort_column(self, col: str, reverse: bool) -> None:
-        l = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
+        if col in ("name", "#0"):
+            l = [(self.tree.item(k, "text").strip().lower(), k) for k in self.tree.get_children("")]
+        else:
+            l = [(str(self.tree.set(k, col)).lower(), k) for k in self.tree.get_children("")]
         l.sort(reverse=reverse)
         for index, (_, k) in enumerate(l):
             self.tree.move(k, "", index)
