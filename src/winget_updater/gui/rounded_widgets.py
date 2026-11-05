@@ -29,9 +29,8 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
 
     try:
         window.update_idletasks()
-        hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
-        if not hwnd:
-            hwnd = window.winfo_id()
+        GA_ROOT = 2
+        hwnd = ctypes.windll.user32.GetAncestor(window.winfo_id(), GA_ROOT) or ctypes.windll.user32.GetParent(window.winfo_id()) or window.winfo_id()
 
         # DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWCP_ROUND = 2
         DWMWA_WINDOW_CORNER_PREFERENCE = 33
@@ -56,6 +55,36 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ctypes.byref(backdrop_pref), ctypes.sizeof(backdrop_pref)
         )
+
+        # Windows 11 True Acrylic Blur Behind via SetWindowCompositionAttribute
+        try:
+            class ACCENT_POLICY(ctypes.Structure):
+                _fields_ = [
+                    ("AccentState", ctypes.c_int),
+                    ("AccentFlags", ctypes.c_int),
+                    ("GradientColor", ctypes.c_uint32),
+                    ("AnimationId", ctypes.c_int),
+                ]
+
+            class WINDOWCOMPOSITIONATTRIBDATA(ctypes.Structure):
+                _fields_ = [
+                    ("Attribute", ctypes.c_int),
+                    ("Data", ctypes.c_void_p),
+                    ("SizeOfData", ctypes.c_size_t),
+                ]
+
+            WCA_ACCENT_POLICY = 19
+            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
+            gradient_col = 0xCC160D09 if dark_mode_val else 0xCCF2F7FA
+            accent = ACCENT_POLICY(ACCENT_ENABLE_ACRYLICBLURBEHIND, 0, gradient_col, 0)
+            data = WINDOWCOMPOSITIONATTRIBDATA(
+                WCA_ACCENT_POLICY,
+                ctypes.cast(ctypes.pointer(accent), ctypes.c_void_p),
+                ctypes.sizeof(accent),
+            )
+            ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
+        except Exception:
+            pass
 
         # DWMWA_CAPTION_COLOR = 35
         caption_bgr = getattr(theme, "dwm_caption_bgr", 0x00F8F8FA) if theme else 0x00F8F8FA

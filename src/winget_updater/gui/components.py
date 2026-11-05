@@ -480,12 +480,13 @@ class SidebarNavigation(tk.Frame):
 
 
     def _draw_traffic_lights(self) -> None:
-        """Draws classic macOS traffic light buttons: Close (red), Minimize (yellow), Maximize (green)."""
+        """Draws classic macOS traffic light buttons: Close (red), Minimize (yellow), Maximize (green),
+        along with the 01 // ACRYLIC UI badge matching the website mockup."""
         if not hasattr(self, "traffic_lights_canvas"):
             return
         c = self.traffic_lights_canvas
         c.delete("all")
-        bg_col = getattr(self.theme, "bg_sidebar", "#faf6f6")
+        bg_col = getattr(self.theme, "bg_sidebar", "#10182b")
         c.config(bg=bg_col)
         # Red, Yellow, Green dots with subtle darker borders
         dots = [
@@ -495,6 +496,14 @@ class SidebarNavigation(tk.Frame):
         ]
         for cx, cy, fill_col, border_col in dots:
             c.create_oval(cx - 5, cy - 5, cx + 5, cy + 5, fill=fill_col, outline=border_col, width=1)
+
+        # 01 // ACRYLIC UI Pill Badge
+        is_dark = (getattr(self.theme, "name", "dark") == "dark")
+        badge_bg = "#141d30" if is_dark else "#f1f5f9"
+        badge_bd = "#1e2c45" if is_dark else "#e2e8f0"
+        badge_fg = "#94a3b8" if is_dark else "#64748b"
+        draw_rounded_rect(c, 58, 0, 168, 18, radius=8, fill=badge_bg, outline=badge_bd, width=1)
+        c.create_text(113, 9, text="01 // ACRYLIC UI", fill=badge_fg, font=("Segoe UI", 7, "bold"))
 
     def _render_navigation_items(self) -> None:
         """Draws rounded pill tabs for each sidebar navigation item with smooth hover & active styling."""
@@ -513,7 +522,7 @@ class SidebarNavigation(tk.Frame):
             mode = getattr(t, "name", "light")
             if is_active:
                 if mode == "dark":
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=10, fill="#3b0d1e", outline="#e11d48", width=1.5)
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=10, fill="#7c122e", outline="#b91c47", width=1.5)
                     text_color = "#ffffff"
                     badge_bg = "#4c0519"
                     badge_fg = "#fda4af"
@@ -787,10 +796,10 @@ class DetailsDrawer(tk.Frame):
     ):
         super().__init__(
             parent,
-            bg="#faf6f6",
-            padx=18,
-            pady=12,
-            highlightbackground="#f3d5d9",
+            bg="#161022",
+            padx=16,
+            pady=10,
+            highlightbackground="#2d1b3b",
             highlightthickness=1,
         )
         self.on_single_update = on_single_update
@@ -806,43 +815,43 @@ class DetailsDrawer(tk.Frame):
         self.theme: ThemeColors = DREAM_THEME
 
         # Left / Details Container
-        self.details_container = tk.Frame(self, bg="#faf6f6")
+        self.details_container = tk.Frame(self, bg="#161022")
         self.details_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.details_container.bind("<Configure>", self._on_details_resize)
 
         # Header Row: Program Avatar, Title, and Rounded Status Pill
-        self.header_row = tk.Frame(self.details_container, bg="#faf6f6")
+        self.header_row = tk.Frame(self.details_container, bg="#161022")
         self.header_row.pack(fill=tk.X, anchor=tk.W)
 
         # Rounded Avatar Canvas
-        self.avatar_canvas = tk.Canvas(self.header_row, width=34, height=34, bg="#faf6f6", highlightthickness=0)
+        self.avatar_canvas = tk.Canvas(self.header_row, width=34, height=34, bg="#161022", highlightthickness=0)
         self.avatar_canvas.pack(side=tk.LEFT, padx=(0, 10))
-        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill="#fff1f2", outline="#f3d5d9", width=1)
-        self.avatar_canvas.create_text(17, 17, text="A", fill="#881337", font=("Segoe UI", 11, "bold"))
+        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill="#20142e", outline="#361e4a", width=1)
+        self.avatar_canvas.create_text(17, 17, text="A", fill="#e11d48", font=("Segoe UI", 11, "bold"))
 
         self.lbl_name = tk.Label(
             self.header_row,
             text="Select an application to view details",
-            bg="#faf6f6",
-            fg="#0f172a",
+            bg="#161022",
+            fg="#cbd5e1",
             font=("Segoe UI", 11, "bold"),
             anchor="w",
         )
         self.lbl_name.pack(side=tk.LEFT)
 
         # Rounded Status Pill Badge
-        self.status_pill = RoundedPillBadge(self.header_row, text="", bg_color="#f1f5f9", fg_color="#475569", parent_bg="#faf6f6")
+        self.status_pill = RoundedPillBadge(self.header_row, text="", bg_color="#20142e", fg_color="#cbd5e1", parent_bg="#161022")
         self.status_pill.pack(side=tk.LEFT, padx=(12, 0))
 
         # Metadata grid
-        self.meta_frame = tk.Frame(self.details_container, bg="#faf6f6")
+        self.meta_frame = tk.Frame(self.details_container, bg="#161022")
         self.meta_frame.pack(fill=tk.X, pady=(4, 0))
 
         self.lbl_pub = tk.Label(
             self.meta_frame,
             text="Publisher: —",
-            bg="#faf6f6",
-            fg="#475569",
+            bg="#161022",
+            fg="#94a3b8",
             font=("Segoe UI", 9),
             anchor="w",
         )
@@ -851,8 +860,8 @@ class DetailsDrawer(tk.Frame):
         self.lbl_versions = tk.Label(
             self.meta_frame,
             text="Installed: —  •  Latest: —  •  Source: —",
-            bg="#faf6f6",
-            fg="#1e293b",
+            bg="#161022",
+            fg="#f8fafc",
             font=("Segoe UI", 9),
             anchor="w",
         )
@@ -861,7 +870,7 @@ class DetailsDrawer(tk.Frame):
         self.lbl_id_path = tk.Label(
             self.meta_frame,
             text="Package ID: —  •  Location: —",
-            bg="#faf6f6",
+            bg="#161022",
             fg="#64748b",
             font=("Segoe UI", 8),
             anchor="w",
@@ -871,8 +880,8 @@ class DetailsDrawer(tk.Frame):
         self.lbl_notes = tk.Label(
             self.meta_frame,
             text="",
-            bg="#faf6f6",
-            fg="#881337",
+            bg="#161022",
+            fg="#e11d48",
             font=("Segoe UI", 8),
             anchor="w",
         )
@@ -908,12 +917,12 @@ class DetailsDrawer(tk.Frame):
         self.lbl_diag_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Right / Actions Container
-        self.actions_container = tk.Frame(self, bg="#faf6f6")
+        self.actions_container = tk.Frame(self, bg="#161022")
         self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
 
         # 3 Rows of Action Pills matching crop_mockup_right.png exactly:
         # Row 1: [ Exclude ] [ Folder ]
-        self.row_act1 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act1 = tk.Frame(self.actions_container, bg="#161022")
         self.row_act1.pack(fill=tk.X, anchor=tk.E, pady=(0, 3))
 
         self.btn_exclude = RoundedButton(
@@ -947,7 +956,7 @@ class DetailsDrawer(tk.Frame):
         self.btn_open_folder.pack(side=tk.LEFT)
 
         # Row 2: [ Copy ID ] [ Pin ] [ Skip ]
-        self.row_act2 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act2 = tk.Frame(self.actions_container, bg="#161022")
         self.row_act2.pack(fill=tk.X, anchor=tk.E, pady=(0, 3))
 
         self.btn_copy_id = RoundedButton(
@@ -996,7 +1005,7 @@ class DetailsDrawer(tk.Frame):
         self.btn_skip.pack(side=tk.LEFT)
 
         # Row 3: [ Uninstall ] [ Update application ]
-        self.row_act3 = tk.Frame(self.actions_container, bg="#10182b")
+        self.row_act3 = tk.Frame(self.actions_container, bg="#161022")
         self.row_act3.pack(fill=tk.X, anchor=tk.E, pady=(0, 1))
 
         self.btn_uninstall = RoundedButton(
@@ -1094,13 +1103,18 @@ class DetailsDrawer(tk.Frame):
             is_dark = (self.theme.name == "dark")
             dis_bg = "#141d30" if is_dark else "#f1f5f9"
             dis_fg = "#64748b" if is_dark else "#94a3b8"
-            self.btn_update.config(state="disabled", text="Update application", bg=dis_bg, fg=dis_fg)
-            self.btn_exclude.config(state="disabled", text="Exclude", bg=dis_bg, fg=dis_fg)
-            self.btn_open_folder.config(state="disabled", text="Folder", bg=dis_bg, fg=dis_fg)
-            self.btn_copy_id.config(state="disabled", text="Copy ID", bg=dis_bg, fg=dis_fg)
-            self.btn_pin.config(state="disabled", text="Pin", bg=dis_bg, fg=dis_fg)
-            self.btn_skip.config(state="disabled", text="Skip", bg=dis_bg, fg=dis_fg)
-            self.btn_uninstall.config(state="disabled", text="Uninstall", bg=dis_bg, fg=dis_fg)
+            up_dis_bg = "#7c122e" if is_dark else dis_bg
+            up_dis_fg = "#ffffff" if is_dark else dis_fg
+            pill_dis_bg = "#20142e" if is_dark else dis_bg
+            pill_dis_fg = "#cbd5e1" if is_dark else dis_fg
+            self.btn_update.config(state="disabled", text="Update application", bg=up_dis_bg, fg=up_dis_fg)
+            self.btn_exclude.config(state="disabled", text="Exclude", bg=pill_dis_bg, fg=pill_dis_fg)
+            self.btn_open_folder.config(state="disabled", text="Folder", bg=pill_dis_bg, fg=pill_dis_fg)
+            self.btn_copy_id.config(state="disabled", text="Copy ID", bg=pill_dis_bg, fg=pill_dis_fg)
+            self.btn_pin.config(state="disabled", text="Pin", bg=pill_dis_bg, fg=pill_dis_fg)
+            self.btn_skip.pack(side=tk.LEFT)
+            self.btn_skip.config(state="disabled", text="Skip", bg=pill_dis_bg, fg=pill_dis_fg)
+            self.btn_uninstall.config(state="disabled", text="Uninstall", bg=pill_dis_bg, fg=pill_dis_fg)
             self.btn_bind.config(state="disabled")
             self.diagnostic_box.pack_forget()
             self.btn_allow_unverified.pack_forget()
@@ -1311,35 +1325,41 @@ class DetailsDrawer(tk.Frame):
 
     def apply_theme(self, theme: ThemeColors) -> None:
         self.theme = theme
-        self.config(bg=theme.bg_sidebar, highlightbackground=theme.border)
-        self.details_container.config(bg=theme.bg_sidebar)
-        self.header_row.config(bg=theme.bg_sidebar)
-        self.avatar_canvas.config(bg=theme.bg_sidebar)
-        self.lbl_name.config(bg=theme.bg_sidebar, fg=theme.fg_primary if self.current_item else theme.fg_muted)
-        self.meta_frame.config(bg=theme.bg_sidebar)
-        self.lbl_pub.config(bg=theme.bg_sidebar, fg=theme.fg_secondary)
-        self.lbl_versions.config(bg=theme.bg_sidebar, fg=theme.fg_primary)
-        self.lbl_id_path.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
-        self.lbl_notes.config(bg=theme.bg_sidebar, fg=theme.accent_burgundy)
-        self.actions_container.config(bg=theme.bg_sidebar)
+        is_dark = (theme.name == "dark")
+        bg_col = "#161022" if is_dark else theme.bg_sidebar
+        border_col = "#2d1b3b" if is_dark else theme.border
+        btn_bg = "#20142e" if is_dark else theme.bg_button
+        btn_border = "#361e4a" if is_dark else theme.border
+        btn_fg = "#cbd5e1" if is_dark else theme.fg_primary
+
+        self.config(bg=bg_col, highlightbackground=border_col)
+        self.details_container.config(bg=bg_col)
+        self.header_row.config(bg=bg_col)
+        self.avatar_canvas.config(bg=bg_col)
+        self.lbl_name.config(bg=bg_col, fg=theme.fg_primary if self.current_item else theme.fg_muted)
+        self.meta_frame.config(bg=bg_col)
+        self.lbl_pub.config(bg=bg_col, fg=theme.fg_secondary)
+        self.lbl_versions.config(bg=bg_col, fg=theme.fg_primary)
+        self.lbl_id_path.config(bg=bg_col, fg=theme.fg_muted)
+        self.lbl_notes.config(bg=bg_col, fg=theme.accent_burgundy)
+        self.actions_container.config(bg=bg_col)
         for r_act in (getattr(self, "row_act1", None), getattr(self, "row_act2", None), getattr(self, "row_act3", None), getattr(self, "secondary_actions", None), getattr(self, "secondary_row_b", None)):
             if r_act:
-                r_act.config(bg=theme.bg_sidebar)
-        self.resolution_actions.config(bg=theme.bg_sidebar)
-        self.status_pill.config(bg=theme.bg_sidebar)
+                r_act.config(bg=bg_col)
+        self.resolution_actions.config(bg=bg_col)
+        self.status_pill.config(bg=bg_col)
         if hasattr(self, "diagnostic_box"):
-            box_bg = "#261908" if theme.name == "dark" else "#fffbeb"
-            box_border = "#78350f" if theme.name == "dark" else "#fef3c7"
-            box_fg = "#fef3c7" if theme.name == "dark" else "#92400e"
+            box_bg = "#261908" if is_dark else "#fffbeb"
+            box_border = "#78350f" if is_dark else "#fef3c7"
+            box_fg = "#fef3c7" if is_dark else "#92400e"
             self.diagnostic_box.config(bg=box_bg, highlightbackground=box_border)
             if hasattr(self, "lbl_diag_icon"):
                 self.lbl_diag_icon.config(bg=box_bg)
             if hasattr(self, "lbl_diag_text"):
                 self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
 
-        # Theme all drawer action buttons
+        # Theme drawer action buttons
         for btn in (
-            getattr(self, "btn_update", None),
             getattr(self, "btn_open_folder", None),
             getattr(self, "btn_copy_id", None),
             getattr(self, "btn_pin", None),
@@ -1351,19 +1371,29 @@ class DetailsDrawer(tk.Frame):
             getattr(self, "btn_website", None),
         ):
             if btn:
-                btn.disabled_bg = theme.bg_button
-                btn.disabled_fg = theme.fg_muted
+                btn.disabled_bg = "#20142e" if is_dark else theme.bg_button
+                btn.disabled_fg = "#64748b" if is_dark else theme.fg_muted
                 btn.config(
-                    bg=theme.bg_button,
-                    fg=theme.fg_primary,
-                    border_color=theme.border,
-                    parent_bg=theme.bg_sidebar,
-                    disabled_bg=theme.bg_button,
-                    disabled_fg=theme.fg_muted,
+                    bg=btn_bg,
+                    fg=btn_fg,
+                    border_color=btn_border,
+                    parent_bg=bg_col,
+                    disabled_bg=btn.disabled_bg,
+                    disabled_fg=btn.disabled_fg,
                 )
-            self.diagnostic_box.config(bg=box_bg, highlightbackground=box_border)
-            self.lbl_diag_icon.config(bg=box_bg)
-            self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
+        if hasattr(self, "btn_update"):
+            up_bg = "#7c122e" if is_dark else theme.accent_burgundy
+            self.btn_update.disabled_bg = up_bg
+            self.btn_update.disabled_fg = "#ffffff"
+            self.btn_update.config(
+                bg=up_bg,
+                fg="#ffffff",
+                border_color="#b91c47" if is_dark else theme.border,
+                parent_bg=bg_col,
+                hover_bg="#9f1239" if is_dark else theme.accent_burgundy_hover,
+                disabled_bg=up_bg,
+                disabled_fg="#ffffff",
+            )
 
 
 class DiagnosticsResolutionBanner(tk.Frame):
@@ -1641,6 +1671,8 @@ class ProgramTableView(tk.Frame):
         self.tree.bind("<Button-3>", self._show_context_menu)
         self.tree.bind("<<TreeviewSelect>>", self._handle_select)
         self.tree.bind("<MouseWheel>", self._on_mousewheel)
+        self.tree.bind("<Motion>", self._on_tree_motion)
+        self.tree.bind("<Leave>", self._on_tree_leave)
         self.bind("<Configure>", self._on_table_resize)
 
         # Context Menu
@@ -1680,13 +1712,24 @@ class ProgramTableView(tk.Frame):
         if is_dark:
             style.configure(
                 "CleanWine.Vertical.TScrollbar",
-                background="#1e2c45",
-                troughcolor="#0c1220",
-                bordercolor="#0c1220",
-                arrowcolor="#94a3b8",
+                width=6,
+                arrowsize=0,
+                background="#2a3b5a",
+                troughcolor="#0e1526",
+                bordercolor="#0e1526",
+                darkcolor="#2a3b5a",
+                lightcolor="#2a3b5a",
                 relief="flat",
                 borderwidth=0,
             )
+            try:
+                style.layout("CleanWine.Vertical.TScrollbar", [
+                    ("Vertical.Scrollbar.trough", {"sticky": "ns", "children": [
+                        ("Vertical.Scrollbar.thumb", {"expand": "1", "sticky": "nswe"})
+                    ]})
+                ])
+            except Exception:
+                pass
         else:
             style.configure(
                 "CleanWine.Vertical.TScrollbar",
@@ -1721,6 +1764,7 @@ class ProgramTableView(tk.Frame):
         self.tree.tag_configure("tag_incompat", background="#180c16" if is_dark else "#fff1f2", foreground="#f87171" if is_dark else "#991b1b")
         self.tree.tag_configure("tag_nosource", background=bg_even, foreground="#94a3b8" if is_dark else "#475569")
         self.tree.tag_configure("tag_nosource_alt", background=bg_odd, foreground="#94a3b8" if is_dark else "#475569")
+        self.tree.tag_configure("tag_hover", background="#18243c" if is_dark else "#f1f5f9")
 
         self.skeleton.apply_theme(theme)
         self.context_menu.config(bg=theme.bg_card, fg=theme.fg_primary, activebackground=theme.bg_card_hover, activeforeground=theme.accent_burgundy)
@@ -1779,9 +1823,81 @@ class ProgramTableView(tk.Frame):
             self.tree.column("status", width=w_stat, stretch=False)
 
     def _on_mousewheel(self, event):
-        lines = int(-3 * (event.delta / 120))
-        self.tree.yview_scroll(lines, "units")
+        delta = getattr(event, "delta", 0)
+        units = -(delta / 120.0) if delta != 0 else 0
+        if not hasattr(self, "_scroll_velocity"):
+            self._scroll_velocity = 0.0
+            self._is_smooth_scrolling = False
+        self._scroll_velocity += units * 0.035
+        if not self._is_smooth_scrolling:
+            self._is_smooth_scrolling = True
+            self._smooth_scroll_step()
         return "break"
+
+    def _smooth_scroll_step(self):
+        if not self.winfo_ismapped():
+            self._is_smooth_scrolling = False
+            return
+        current_y = self.tree.yview()[0]
+        target_y = max(0.0, min(1.0, current_y + self._scroll_velocity))
+        new_y = current_y + (target_y - current_y) * 0.45
+        self.tree.yview_moveto(new_y)
+        self._scroll_velocity *= 0.72
+        if abs(self._scroll_velocity) > 0.001:
+            self.after(8, self._smooth_scroll_step)
+        else:
+            self._scroll_velocity = 0.0
+            self._is_smooth_scrolling = False
+
+    def _on_tree_motion(self, event):
+        iid = self.tree.identify_row(event.y)
+        old_iid = getattr(self, "_hovered_iid", None)
+        if iid == old_iid:
+            return
+        self._hovered_iid = iid
+        if old_iid and old_iid in self.items_by_iid and old_iid not in self.tree.selection():
+            self._restore_row_tags(old_iid)
+        if iid and iid in self.items_by_iid and iid not in self.tree.selection():
+            tags = list(self.tree.item(iid, "tags"))
+            if "tag_hover" not in tags:
+                tags.append("tag_hover")
+                self.tree.item(iid, tags=tags)
+
+    def _on_tree_leave(self, event=None):
+        old_iid = getattr(self, "_hovered_iid", None)
+        self._hovered_iid = None
+        if old_iid and old_iid in self.items_by_iid and old_iid not in self.tree.selection():
+            self._restore_row_tags(old_iid)
+
+    def _restore_row_tags(self, iid: str):
+        item = self.items_by_iid.get(iid)
+        if not item:
+            return
+        tag = self._get_item_tag(item)
+        self.tree.item(iid, tags=(tag,))
+
+    def _get_item_tag(self, item: ProgramItem, idx: int = 0) -> str:
+        if item.installed_version in ("Not Installed", "None", None, ""):
+            return "tag_catalog"
+        if item.outcome in (UpdateOutcome.UPDATED, UpdateOutcome.SIMULATED):
+            return "tag_uptodate" if (idx % 2 == 0) else "tag_uptodate_alt"
+        if item.outcome == UpdateOutcome.FAILED:
+            return "tag_incompat"
+        if item.action == UpdateAction.AVAILABLE:
+            return "tag_available"
+        if item.action == UpdateAction.UP_TO_DATE:
+            return "tag_uptodate" if (idx % 2 == 0) else "tag_uptodate_alt"
+        if item.action == UpdateAction.UNVERIFIED:
+            return "tag_unverified"
+        if item.action == UpdateAction.SCAN_FAILED:
+            return "tag_incompat"
+        if item.action == UpdateAction.EXCLUDED:
+            return "tag_ignored"
+        if item.action == UpdateAction.NEWER_THAN_SOURCE:
+            return "tag_downgrade"
+        if item.action == UpdateAction.VENDOR_FALLBACK:
+            return "tag_fallback"
+        return "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
 
     def populate(self, items: List[ProgramItem], chunk_size: int = 50) -> None:
         """Progressive chunked population preventing UI hitches on 300+ item inventories."""

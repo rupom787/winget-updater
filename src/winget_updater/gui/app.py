@@ -10,6 +10,7 @@ import queue
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from PIL import Image, ImageDraw, ImageFilter, ImageTk
 from typing import List, Optional, Set
 from winget_updater.adapters import SourceManager
 from winget_updater.compatibility.checker import CompatibilityChecker
@@ -90,7 +91,7 @@ class MainWindow(tk.Tk):
 
         # Core services & theme
         self.config = config_manager or ConfigManager()
-        self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "light"))
+        self.current_theme: ThemeColors = get_theme(getattr(self.config, "theme", "dark"))
         self.typography: Typography = get_typography(getattr(self.config, "font_scale", "normal"))
 
         # Apply native Windows 11 rounded window borders and dark titlebar styling
@@ -245,7 +246,7 @@ class MainWindow(tk.Tk):
             font=("Segoe UI", 8, "bold"),
             padding=(4, 2),
         )
-        self.btn_theme_cycle.pack(side=tk.LEFT, padx=(8, 0))
+        # self.btn_theme_cycle.pack(side=tk.LEFT, padx=(8, 0))
 
         # 2. Top Left Brand & Status
         self.brand_title_box = tk.Frame(self.top_bar, bg=self.current_theme.bg_header)
@@ -307,9 +308,15 @@ class MainWindow(tk.Tk):
             height=28,
         )
 
-        # 2. Main 3-Column Container
-        self.main_body = tk.Frame(self, bg=self.current_theme.bg_root)
+        # Cyber laser pulse divider beneath header
+        self.laser_header = CyberLaserHeaderCanvas(self, height=2, bg=self.current_theme.bg_root)
+        self.laser_header.pack(fill=tk.X)
+        self.laser_header.start()
+
+        # 2. Main 3-Column Container with Translucent Ambient Aurora Glass Backdrop
+        self.main_body = tk.Canvas(self, bg=self.current_theme.bg_root, highlightthickness=0, bd=0)
         self.main_body.pack(fill=tk.BOTH, expand=True)
+        self.main_body.bind("<Configure>", self._update_aurora_bg)
 
         # Left Column: Sidebar Navigation (width 250)
         self.sidebar = SidebarNavigation(
@@ -320,54 +327,54 @@ class MainWindow(tk.Tk):
             on_open_tracker=self._open_update_tracker,
             sys_info=self.sys_info,
         )
-        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=(12, 6), pady=12)
 
         # Right Column: Action & Controls Sidebar (width 245)
         self.right_action_sidebar = tk.Frame(
             self.main_body,
             width=245,
-            bg="#ffffff",
+            bg=self.current_theme.bg_card,
             padx=12,
             pady=12,
-            highlightbackground="#f3d5d9",
+            highlightbackground=self.current_theme.border,
             highlightthickness=1,
         )
-        self.right_action_sidebar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.right_action_sidebar.pack(side=tk.RIGHT, fill=tk.Y, padx=(6, 12), pady=12)
         self.right_action_sidebar.pack_propagate(False)
 
         # 2a. Top Section: iOS Switches Box
         self.switches_card = tk.Frame(
             self.right_action_sidebar,
-            bg="#ffffff",
-            padx=6,
-            pady=6,
-            highlightbackground="#f3d5d9",
+            bg=self.current_theme.bg_card,
+            padx=8,
+            pady=8,
+            highlightbackground=self.current_theme.border,
             highlightthickness=1,
         )
         self.switches_card.pack(fill=tk.X, pady=(0, 10))
 
         # Row 1: Auto-close running
-        self.row_sw1 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw1 = tk.Frame(self.switches_card, bg=self.current_theme.bg_card)
         self.row_sw1.pack(fill=tk.X, pady=3)
-        self.lbl_sw_auto = tk.Label(self.row_sw1, text="Auto-close running", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_auto = tk.Label(self.row_sw1, text="Auto-close running", bg=self.current_theme.bg_card, fg=self.current_theme.fg_primary, font=("Segoe UI", 8), anchor="w")
         self.lbl_sw_auto.pack(side=tk.LEFT)
-        self.sw_auto_close = IOSStyleToggleSwitch(self.row_sw1, variable=self.auto_close_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_auto_close = IOSStyleToggleSwitch(self.row_sw1, variable=self.auto_close_var, width=36, height=18, parent_bg=self.current_theme.bg_card, on_color=self.current_theme.accent_crimson, off_color="#334155" if self.current_theme.name == "dark" else "#cbd5e1")
         self.sw_auto_close.pack(side=tk.RIGHT)
 
         # Row 2: Create restore point
-        self.row_sw2 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw2 = tk.Frame(self.switches_card, bg=self.current_theme.bg_card)
         self.row_sw2.pack(fill=tk.X, pady=3)
-        self.lbl_sw_restore = tk.Label(self.row_sw2, text="Create restore point", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_restore = tk.Label(self.row_sw2, text="Create restore point", bg=self.current_theme.bg_card, fg=self.current_theme.fg_primary, font=("Segoe UI", 8), anchor="w")
         self.lbl_sw_restore.pack(side=tk.LEFT)
-        self.sw_restore_point = IOSStyleToggleSwitch(self.row_sw2, variable=self.restore_point_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_restore_point = IOSStyleToggleSwitch(self.row_sw2, variable=self.restore_point_var, width=36, height=18, parent_bg=self.current_theme.bg_card, on_color=self.current_theme.accent_crimson, off_color="#334155" if self.current_theme.name == "dark" else "#cbd5e1")
         self.sw_restore_point.pack(side=tk.RIGHT)
 
         # Row 3: Dry run (simulate only)
-        self.row_sw3 = tk.Frame(self.switches_card, bg="#ffffff")
+        self.row_sw3 = tk.Frame(self.switches_card, bg=self.current_theme.bg_card)
         self.row_sw3.pack(fill=tk.X, pady=3)
-        self.lbl_sw_dry = tk.Label(self.row_sw3, text="Dry run (simulate only)", bg="#ffffff", fg="#334155", font=("Segoe UI", 8), anchor="w")
+        self.lbl_sw_dry = tk.Label(self.row_sw3, text="Dry run (simulate only)", bg=self.current_theme.bg_card, fg=self.current_theme.fg_primary, font=("Segoe UI", 8), anchor="w")
         self.lbl_sw_dry.pack(side=tk.LEFT)
-        self.sw_dry_run = IOSStyleToggleSwitch(self.row_sw3, variable=self.dry_run_var, width=36, height=18, parent_bg="#ffffff")
+        self.sw_dry_run = IOSStyleToggleSwitch(self.row_sw3, variable=self.dry_run_var, width=36, height=18, parent_bg=self.current_theme.bg_card, on_color=self.current_theme.accent_crimson, off_color="#334155" if self.current_theme.name == "dark" else "#cbd5e1")
         self.sw_dry_run.pack(side=tk.RIGHT)
 
         # Hidden Checkbuttons for backwards compatibility with tests
@@ -376,91 +383,97 @@ class MainWindow(tk.Tk):
         self.chk_auto_close = tk.Checkbutton(self.right_action_sidebar, variable=self.auto_close_var)
 
         # 2b. Middle Section: Action Deck
-        self.actions_card = tk.Frame(self.right_action_sidebar, bg="#ffffff")
+        self.actions_card = tk.Frame(self.right_action_sidebar, bg=self.current_theme.bg_card)
         self.actions_card.pack(fill=tk.X, pady=(0, 10))
 
         self.lbl_action_deck = tk.Label(
             self.actions_card,
             text="ACTIONS",
-            bg="#ffffff",
-            fg="#64748b",
+            bg=self.current_theme.bg_card,
+            fg=self.current_theme.fg_muted,
             font=("Segoe UI", 8, "bold"),
             anchor="w",
         )
-        self.lbl_action_deck.pack(fill=tk.X, pady=(0, 4))
+        self.lbl_action_deck.pack(fill=tk.X, pady=(0, 6))
 
         self.btn_select_updates = RoundedButton(
             self.actions_card,
             text="Select updates",
             command=self._select_all_updates_clicked,
-            bg_color="#ffffff",
-            fg_color="#334155",
-            hover_bg="#f1f5f9",
-            border_color="#cbd5e1",
-            radius=8,
+            bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff",
+            fg_color=self.current_theme.fg_primary,
+            hover_bg="#1e2c45" if self.current_theme.name == "dark" else "#f1f5f9",
+            border_color=self.current_theme.border,
+            radius=10,
             height=32,
             font=("Segoe UI", 9),
             padding=(8, 4),
+            parent_bg=self.current_theme.bg_card,
         )
 
         self.btn_update_selected = RoundedButton(
             self.actions_card,
             text="Update selected",
             command=self._on_update_selected_clicked,
-            bg_color="#ffffff",
-            fg_color="#64748b",
-            hover_bg="#f1f5f9",
-            border_color="#e2e8f0",
-            radius=8,
+            bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff",
+            fg_color="#64748b" if self.current_theme.name == "dark" else "#64748b",
+            hover_bg="#1e2c45" if self.current_theme.name == "dark" else "#f1f5f9",
+            border_color=self.current_theme.border,
+            radius=10,
             height=32,
             font=("Segoe UI", 9),
             padding=(8, 4),
+            parent_bg=self.current_theme.bg_card,
         )
         self.btn_update_selected.config(state="disabled")
-        self.btn_update_selected.pack(fill=tk.X, pady=(0, 5))
+        self.btn_update_selected.pack(fill=tk.X, pady=(0, 6))
 
         self.btn_update = RoundedButton(
             self.actions_card,
             text="Update all eligible",
             command=self.start_update_approved,
-            bg_color="#3b0d1e",
+            bg_color="#541528" if self.current_theme.name == "dark" else "#3b0d1e",
             fg_color="#ffffff",
-            hover_bg="#4c0519",
-            border_color="#e11d48",
+            hover_bg="#6b1a33",
+            border_color="#7c1e38" if self.current_theme.name == "dark" else "#e11d48",
             radius=10,
             height=32,
             font=("Segoe UI", 9, "bold"),
             padding=(8, 4),
+            parent_bg=self.current_theme.bg_card,
         )
         self.btn_update.config(state="disabled")
-        self.btn_update.pack(fill=tk.X, pady=(0, 5))
+        self.btn_update.pack(fill=tk.X, pady=(0, 6))
 
         self.btn_complete_system = RoundedButton(
             self.actions_card,
             text="⚡ Complete system update",
             command=self._open_complete_system_update,
-            bg_color="#680b26",
+            bg_color="#7c122e" if self.current_theme.name == "dark" else "#680b26",
             fg_color="#ffffff",
-            hover_bg="#881337",
-            border_color="#9f1239",
+            hover_bg="#941838",
+            border_color="#a81b40" if self.current_theme.name == "dark" else "#9f1239",
             radius=10,
             height=32,
             font=("Segoe UI", 9, "bold"),
             padding=(8, 4),
+            parent_bg=self.current_theme.bg_card,
         )
-        self.btn_complete_system.pack(fill=tk.X, pady=(0, 5))
+        self.btn_complete_system.pack(fill=tk.X, pady=(0, 6))
 
         self.btn_scan = RoundedButton(
             self.actions_card,
             text="Check for updates",
             command=self.start_scan,
-            bg_color="#e11d48",
+            bg_color="#b91c47" if self.current_theme.name == "dark" else "#e11d48",
             fg_color="#ffffff",
-            hover_bg="#f43f5e",
+            hover_bg="#d92455",
+            border_color="#e11d48",
             radius=10,
             height=32,
             font=("Segoe UI", 9, "bold"),
             padding=(8, 4),
+            parent_bg=self.current_theme.bg_card,
         )
         self.btn_scan.pack(fill=tk.X)
 
@@ -468,11 +481,11 @@ class MainWindow(tk.Tk):
 
         # Center Column: Main Content Container (expands)
         self.right_container = tk.Frame(self.main_body, bg=self.current_theme.bg_root)
-        self.right_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.right_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=12)
 
         # Floating Pill Dock Bar right above table (matches 1:1 with mockup dock)
         self.top_dock_bar = tk.Frame(self.right_container, bg=self.current_theme.bg_root, pady=4)
-        self.top_dock_bar.pack(fill=tk.X, padx=16, pady=(6, 2))
+        self.top_dock_bar.pack(fill=tk.X, padx=0, pady=(0, 6))
 
         self.btn_restore = RoundedButton(self.top_dock_bar, text="Restore Backup", command=self._import_software_backup, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_restore.pack(side=tk.LEFT, padx=(0, 6))
@@ -486,7 +499,7 @@ class MainWindow(tk.Tk):
         self.btn_exclusions = RoundedButton(self.top_dock_bar, text="Exclusions", command=self._open_exclusions, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_exclusions.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.btn_schedule = RoundedButton(self.top_dock_bar, text="🕒 Schedule", command=self._open_schedule, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_schedule = RoundedButton(self.top_dock_bar, text="⏰ Schedule", command=self._open_schedule, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
         self.btn_schedule.pack(side=tk.LEFT, padx=(0, 6))
 
         self.btn_export = RoundedButton(self.top_dock_bar, text="Export Inventory", command=self._export_report_dialog, bg_color="#141d30" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color=self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
@@ -501,7 +514,7 @@ class MainWindow(tk.Tk):
             padx=2,
             pady=2,
         )
-        self.table_card.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 8))
+        self.table_card.pack(fill=tk.BOTH, expand=True, padx=0, pady=(0, 8))
 
         # Title Header directly inside the frosted card
         self.action_header = tk.Frame(
@@ -654,8 +667,7 @@ class MainWindow(tk.Tk):
         self.hero_scene.pack_forget()
         self.timeline = TimelinePipelineHUD(self.main_body, height=1)
         self.timeline.pack_forget()
-        self.laser_header = CyberLaserHeaderCanvas(self.main_body, height=1)
-        self.laser_header.pack_forget()
+# CyberLaserHeaderCanvas active between top_bar and main_body
         self.stat_cards = StatCardDeck(self.main_body, on_select_filter=lambda f: None)
         self.stat_cards.pack_forget()
         self.warning_bar = LiveWarningBar(self.main_body)
@@ -682,6 +694,50 @@ class MainWindow(tk.Tk):
         mode = getattr(theme, 'name', str(theme))
         self.set_theme(mode)
 
+    def _update_aurora_bg(self, event=None):
+        if not hasattr(self, "main_body") or not isinstance(self.main_body, tk.Canvas):
+            return
+        t = getattr(self, "current_theme", None)
+        if not t or t.name != "dark":
+            self.main_body.delete("aurora_bg")
+            self.main_body.config(bg=t.bg_root if t else "#090d16")
+            return
+
+        w = self.main_body.winfo_width()
+        h = self.main_body.winfo_height()
+        if w < 100 or h < 100:
+            w, h = 1260, 740
+
+        cache_key = (w, h)
+        if getattr(self, "_last_aurora_size", None) == cache_key and hasattr(self, "_aurora_photo"):
+            photo = self._aurora_photo
+        else:
+            base = Image.new("RGB", (w, h), (9, 13, 22))
+            draw = ImageDraw.Draw(base)
+            # Radiant magenta/plum in center-bottom
+            draw.ellipse([w // 4, int(h * 0.45), int(w * 0.85), int(h * 1.05)], fill=(124, 18, 46))
+            draw.ellipse([int(w * 0.35), int(h * 0.55), int(w * 0.75), int(h * 0.95)], fill=(185, 28, 71))
+            # Radiant sapphire/cyan in top-right
+            draw.ellipse([int(w * 0.60), -50, int(w * 1.1), int(h * 0.55)], fill=(2, 132, 199))
+            draw.ellipse([int(w * 0.72), -20, int(w * 0.98), int(h * 0.35)], fill=(6, 182, 212))
+            # Radiant purple on left
+            draw.ellipse([-80, int(h * 0.2), int(w * 0.35), int(h * 0.8)], fill=(67, 24, 98))
+
+            blurred = base.filter(ImageFilter.GaussianBlur(radius=80))
+            try:
+                photo = ImageTk.PhotoImage(blurred, master=self.main_body)
+                self._aurora_photo = photo
+                self._last_aurora_size = cache_key
+            except Exception:
+                return
+
+        try:
+            self.main_body.delete("aurora_bg")
+            self.main_body.create_image(0, 0, image=photo, anchor="nw", tags="aurora_bg")
+            self.main_body.tag_lower("aurora_bg")
+        except Exception:
+            pass
+
     def set_theme(self, mode: str) -> None:
         """Sets the application theme (wake/light, dream/dark, bloom) and updates all UI modules."""
         self.current_theme = get_theme(mode)
@@ -698,6 +754,9 @@ class MainWindow(tk.Tk):
         self.lbl_app_title.config(bg=t.bg_header, fg=t.accent_burgundy)
         self.lbl_app_sub.config(bg=t.bg_header, fg=t.fg_muted)
         self.top_controls.config(bg=t.bg_header)
+        if hasattr(self, "laser_header"):
+            self.laser_header.apply_theme(t)
+        self._update_aurora_bg()
 
         # Update 3-Way Mode Switcher button
         if hasattr(self, "btn_theme_cycle"):
@@ -771,13 +830,19 @@ class MainWindow(tk.Tk):
 
         if hasattr(self, "btn_complete_system"):
             cs_bg = "#7c122e" if t.name == "dark" else t.accent_burgundy
-            self.btn_complete_system.config(bg=cs_bg, fg="#ffffff", hover_bg="#941838", border_color="#a81b40" if t.name == "dark" else "#9f1239")
+            self.btn_complete_system.disabled_bg = cs_bg
+            self.btn_complete_system.disabled_fg = "#ffffff"
+            self.btn_complete_system.config(bg=cs_bg, fg="#ffffff", hover_bg="#941838", border_color="#a81b40" if t.name == "dark" else "#9f1239", disabled_bg=cs_bg, disabled_fg="#ffffff")
         if hasattr(self, "btn_update"):
             up_bg = "#541528" if t.name == "dark" else t.accent_burgundy
-            self.btn_update.config(bg=up_bg, fg="#ffffff", hover_bg="#6b1a33", border_color="#7c1e38" if t.name == "dark" else "#e11d48")
+            self.btn_update.disabled_bg = up_bg
+            self.btn_update.disabled_fg = "#ffffff"
+            self.btn_update.config(bg=up_bg, fg="#ffffff", hover_bg="#6b1a33", border_color="#7c1e38" if t.name == "dark" else "#e11d48", disabled_bg=up_bg, disabled_fg="#ffffff")
         if hasattr(self, "btn_scan"):
             sc_bg = "#b91c47" if t.name == "dark" else t.accent_burgundy
-            self.btn_scan.config(bg=sc_bg, fg="#ffffff", hover_bg="#d92455", border_color="#e11d48")
+            self.btn_scan.disabled_bg = sc_bg
+            self.btn_scan.disabled_fg = "#ffffff"
+            self.btn_scan.config(bg=sc_bg, fg="#ffffff", hover_bg="#d92455", border_color="#e11d48", disabled_bg=sc_bg, disabled_fg="#ffffff")
         if hasattr(self, "reboot_badge"):
             is_reb, _ = WindowsUpdateManager.is_reboot_pending()
             if is_reb:
@@ -1112,7 +1177,7 @@ class MainWindow(tk.Tk):
         if hasattr(self, "p_btn_uninstall") and self.p_btn_uninstall:
             self.p_btn_uninstall.config(state="normal" if has_sel else "disabled")
         if hasattr(self, "p_btn_update") and self.p_btn_update:
-            up_text = "Update App" if can_up else ("Up to Date" if item and item.action == UpdateAction.UP_TO_DATE else "Update App")
+            up_text = "Update application" if can_up else ("Up to Date" if item and item.action == UpdateAction.UP_TO_DATE else "Update application")
             self.p_btn_update.config(state="normal" if can_up else "disabled", text=up_text)
 
     def _on_update_selected_clicked(self) -> None:
