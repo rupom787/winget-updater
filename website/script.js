@@ -8,6 +8,20 @@
 (function () {
   "use strict";
 
+  // Pre-initialize top-level Three.js references to prevent TDZ ReferenceErrors during initial scroll
+  let rockGroup = null;
+  let shardMeshes = [];
+  let shardData = [];
+  let portalGroup = null;
+  let portalLight = null;
+  let causticMesh = null;
+  let dirLight1 = null;
+  let dirLight2 = null;
+  let dirLight3 = null;
+  let crystalMat = null;
+  let portalMat = null;
+  let particleSystem = null;
+
   // ==========================================
   // 1. PROCEDURAL WEB AUDIO API SYNTHESIZER
   // ==========================================
@@ -799,8 +813,8 @@
   const gemStatusEl = document.getElementById("telemetry-gem-status");
   const gemHintEl = document.getElementById("telemetry-gem-hint");
 
-  let rockGroup, shardMeshes = [], shardData = [], portalGroup, portalLight, causticMesh;
-  let dirLight1, dirLight2, dirLight3, crystalMat, portalMat, particleSystem;
+  shardMeshes = [];
+  shardData = [];
 
   if (typeof THREE !== "undefined" && canvas && canvasFrame) {
     try {
