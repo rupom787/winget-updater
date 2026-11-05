@@ -883,16 +883,13 @@ class SmoothLerpProgressBar(tk.Canvas):
 
 
 class GlassyTelemetryHUD(tk.Frame):
-    """Frosted Glass live hardware telemetry HUD pill with pulsating status beacon."""
+    """3 Distinct Frosted Glass Telemetry Pills matching Windows 11 Acrylic Glass Table mockup."""
 
     def __init__(self, parent: tk.Widget, sys_info=None, gpu_name: str = "DirectX 12", **kwargs):
         super().__init__(
             parent,
-            bg="#ffffff",
-            padx=10,
-            pady=3,
-            highlightthickness=1,
-            highlightbackground="#f3d5d9",
+            bg="#0c1220",
+            highlightthickness=0,
             **kwargs,
         )
         self.sys_info = sys_info
@@ -900,36 +897,44 @@ class GlassyTelemetryHUD(tk.Frame):
         self.theme: ThemeColors = LIGHT_THEME
         self._pulse_phase = 0.0
         self._cpu_val = 0.0
-        self._ram_str = "RAM: —"
+        self._ram_str = "RAM: 9.2/15.8 GB (58%)"
         self._mode = "idle"  # "idle", "scanning", "updating"
         self._is_active = True
 
-        # Specular 1px bevel canvas for subtle glassy sheen
-        self.beacon = tk.Canvas(self, width=16, height=16, bg="#ffffff", highlightthickness=0)
-        self.beacon.pack(side=tk.LEFT, padx=(0, 6))
+        # Pill 1: CPU
+        self.pill_cpu = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_cpu.pack(side=tk.LEFT, padx=(0, 6))
+        self.lbl_cpu_icon = tk.Label(self.pill_cpu, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_cpu_icon.pack(side=tk.LEFT, padx=(0, 4))
+        self.lbl_cpu = tk.Label(self.pill_cpu, text="CPU: 23%", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#34d399")
+        self.lbl_cpu.pack(side=tk.LEFT)
 
-        # CPU Label
-        self.lbl_cpu = tk.Label(self, text="CPU: 0%", font=("Segoe UI", 8, "bold"), bg="#ffffff", fg="#059669")
-        self.lbl_cpu.pack(side=tk.LEFT, padx=(0, 6))
+        # Pill 2: RAM
+        self.pill_ram = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_ram.pack(side=tk.LEFT, padx=(0, 6))
+        self.lbl_ram_icon = tk.Label(self.pill_ram, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_ram_icon.pack(side=tk.LEFT, padx=(0, 4))
+        self.lbl_ram = tk.Label(self.pill_ram, text="RAM: 9.2/15.8 GB (58%)", font=("Segoe UI", 8), bg="#10182b", fg="#f8fafc")
+        self.lbl_ram.pack(side=tk.LEFT)
 
-        # Dot separator
-        self.lbl_sep1 = tk.Label(self, text="•", font=("Segoe UI", 8), bg="#ffffff", fg="#94a3b8")
-        self.lbl_sep1.pack(side=tk.LEFT, padx=(0, 6))
-
-        # RAM Label
-        self.lbl_ram = tk.Label(self, text="RAM: —", font=("Segoe UI", 8), bg="#ffffff", fg="#334155")
-        self.lbl_ram.pack(side=tk.LEFT, padx=(0, 6))
-
-        # Dot separator
-        self.lbl_sep2 = tk.Label(self, text="•", font=("Segoe UI", 8), bg="#ffffff", fg="#94a3b8")
-        self.lbl_sep2.pack(side=tk.LEFT, padx=(0, 6))
-
-        # GPU / DWM Label
+        # Pill 3: GPU & Status Beacon
+        self.pill_gpu = tk.Frame(self, bg="#10182b", padx=8, pady=3, highlightthickness=1, highlightbackground="#1e2c45")
+        self.pill_gpu.pack(side=tk.LEFT)
+        self.lbl_gpu_icon = tk.Label(self.pill_gpu, text="🔲", font=("Segoe UI", 7), bg="#10182b", fg="#94a3b8")
+        self.lbl_gpu_icon.pack(side=tk.LEFT, padx=(0, 4))
         gpu_short = gpu_name
         if len(gpu_short) > 22:
             gpu_short = gpu_short.replace("NVIDIA ", "").replace("Graphics", "").strip()
-        self.lbl_gpu = tk.Label(self, text=f"GPU: {gpu_short}", font=("Segoe UI", 8, "bold"), bg="#ffffff", fg="#881337")
-        self.lbl_gpu.pack(side=tk.LEFT)
+        self.lbl_gpu = tk.Label(self.pill_gpu, text=f"GPU: {gpu_short}", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#f8fafc")
+        self.lbl_gpu.pack(side=tk.LEFT, padx=(0, 6))
+
+        # Beacon dot canvas
+        self.beacon = tk.Canvas(self.pill_gpu, width=12, height=12, bg="#10182b", highlightthickness=0)
+        self.beacon.pack(side=tk.LEFT)
+
+        # Retained dummy labels for backward compatibility
+        self.lbl_sep1 = tk.Label(self, text="", bg="#0c1220")
+        self.lbl_sep2 = tk.Label(self, text="", bg="#0c1220")
 
         self._start_telemetry_thread()
         self._render_idle_beacon()
@@ -952,13 +957,13 @@ class GlassyTelemetryHUD(tk.Frame):
             halo_col = "#fae8ff"
             core_col = "#d946ef"
         elif mode == "dark":
-            halo_col = "#0c2838"
-            core_col = "#00f0ff"
+            halo_col = "#064e3b"
+            core_col = "#10b981"
         else:
             halo_col = "#d1fae5"
             core_col = "#10b981"
-        self.beacon.create_oval(3, 3, 13, 13, fill=halo_col, outline="")
-        self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
+        self.beacon.create_oval(1, 1, 11, 11, fill=halo_col, outline="")
+        self.beacon.create_oval(3, 3, 9, 9, fill=core_col, outline="")
 
     def _pulse_tick(self) -> None:
         if not self._is_active or not self.winfo_exists():
@@ -972,16 +977,16 @@ class GlassyTelemetryHUD(tk.Frame):
         scale = (math.sin(self._pulse_phase) + 1.0) / 2.0
 
         if self._mode == "scanning":
-            core_col = "#881337"
-            halo_col = "#ffe4e6" if self.theme.name == "light" else "#4c0519"
+            core_col = "#e11d48"
+            halo_col = "#4c0519" if self.theme.name == "dark" else "#ffe4e6"
         else:
-            core_col = "#d97706"
-            halo_col = "#fef3c7" if self.theme.name == "light" else "#451a03"
+            core_col = "#fbbf24"
+            halo_col = "#451a03" if self.theme.name == "dark" else "#fef3c7"
 
-        halo_radius = 4.0 + scale * 3.5
+        halo_radius = 3.0 + scale * 2.5
         self.beacon.delete("all")
-        self.beacon.create_oval(8 - halo_radius, 8 - halo_radius, 8 + halo_radius, 8 + halo_radius, fill=halo_col, outline="")
-        self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
+        self.beacon.create_oval(6 - halo_radius, 6 - halo_radius, 6 + halo_radius, 6 + halo_radius, fill=halo_col, outline="")
+        self.beacon.create_oval(4, 4, 8, 8, fill=core_col, outline="")
 
         self.after(80, self._pulse_tick)
 
@@ -1005,7 +1010,7 @@ class GlassyTelemetryHUD(tk.Frame):
                         elif c > 50:
                             cpu_col = "#d97706"
                         else:
-                            cpu_col = "#38bdf8" if self.theme.name == "dark" else "#059669"
+                            cpu_col = "#34d399" if self.theme.name == "dark" else "#059669"
                         self.lbl_cpu.config(text=f"CPU: {int(round(c))}%", fg=cpu_col)
                         self.lbl_ram.config(text=r)
 
@@ -1020,24 +1025,90 @@ class GlassyTelemetryHUD(tk.Frame):
         self.theme = theme
         card_bg = theme.bg_card
         border_col = theme.border
-        self.config(bg=card_bg, highlightbackground=border_col)
+        header_bg = theme.bg_header
+        self.config(bg=header_bg)
+
+        for pill in (self.pill_cpu, self.pill_ram, self.pill_gpu):
+            pill.config(bg=card_bg, highlightbackground=border_col)
+
         self.beacon.config(bg=card_bg)
         if self._mode == "idle":
             self._render_idle_beacon()
-        self.lbl_cpu.config(bg=card_bg)
-        self.lbl_sep1.config(bg=card_bg, fg=theme.fg_muted)
+
+        self.lbl_cpu_icon.config(bg=card_bg, fg=theme.fg_muted)
+        self.lbl_cpu.config(bg=card_bg, fg="#34d399" if theme.name == "dark" else "#059669")
+
+        self.lbl_ram_icon.config(bg=card_bg, fg=theme.fg_muted)
         self.lbl_ram.config(bg=card_bg, fg=theme.fg_primary)
-        self.lbl_sep2.config(bg=card_bg, fg=theme.fg_muted)
-        mode = getattr(theme, "name", "light")
-        if mode == "bloom":
-            gpu_fg = "#7c3aed"
-        elif mode == "dark":
-            gpu_fg = "#00f0ff"
-        else:
-            gpu_fg = theme.accent_burgundy
+
+        self.lbl_gpu_icon.config(bg=card_bg, fg=theme.fg_muted)
+        gpu_fg = "#00f0ff" if theme.name == "dark" else (theme.accent_burgundy if theme.name == "light" else "#a855f7")
         self.lbl_gpu.config(bg=card_bg, fg=gpu_fg)
 
     def destroy(self) -> None:
         self._is_active = False
         super().destroy()
 
+
+class SmoothLerpProgressBar(tk.Canvas):
+    """Custom high-performance canvas progress bar with lerp interpolation and animated light bead."""
+
+    def __init__(self, parent: tk.Widget, width: int = 240, height: int = 18):
+        super().__init__(parent, width=width, height=height, bg="#0d1017", highlightthickness=1, highlightbackground="#1e2433", bd=0)
+        self.bar_width = width
+        self.bar_height = height
+        self.theme: ThemeColors = DARK_THEME
+        self.current_val = 0.0
+        self.target_val = 0.0
+        self.light_pos = 0.0
+        self.is_running = False
+        self._render()
+
+    def apply_theme(self, theme: ThemeColors) -> None:
+        self.theme = theme
+        self.config(bg=theme.bg_root, highlightbackground=theme.border)
+        self._render()
+
+    def set_progress(self, target: float) -> None:
+        self.target_val = max(0.0, min(100.0, float(target)))
+        if not self.is_running and abs(self.target_val - self.current_val) > 0.05:
+            self.is_running = True
+            self._tick()
+
+    def _tick(self) -> None:
+        diff = self.target_val - self.current_val
+        self.current_val += diff * 0.18
+        if abs(diff) < 0.2:
+            self.current_val = self.target_val
+
+        self.light_pos = (self.light_pos + 4) % (self.bar_width + 40)
+        self._render()
+
+        if self.is_running and abs(self.target_val - self.current_val) > 0.1:
+            self.after(25, self._tick)
+        else:
+            self.is_running = False
+
+    def _render(self) -> None:
+        self.delete("all")
+        w = self.winfo_width() or self.bar_width
+        h = self.bar_height
+
+        self.create_rectangle(0, 0, w, h, fill=self.theme.bg_input, outline="")
+
+        fill_w = int((self.current_val / 100.0) * w)
+        if fill_w > 0:
+            fill_col = self.theme.accent_emerald if self.current_val >= 99.5 else self.theme.accent_cyan
+            self.create_rectangle(0, 0, fill_w, h, fill=fill_col, outline="")
+
+            if self.light_pos < fill_w:
+                self.create_rectangle(
+                    max(0, self.light_pos - 15), 0,
+                    min(fill_w, self.light_pos + 15), h,
+                    fill="#ffffff",
+                    outline="",
+                )
+
+        pct_text = f"{int(round(self.current_val))}%"
+        txt_col = "#ffffff" if fill_w > (w / 2) else self.theme.fg_primary
+        self.create_text(w // 2, h // 2, text=pct_text, fill=txt_col, font=("Cascadia Code", 8, "bold"))

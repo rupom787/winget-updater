@@ -140,6 +140,10 @@ class RoundedButton(tk.Canvas):
         self.normal_fg = fg_color
         self.hover_bg = hover_bg or self._tint_color(bg_color, 1.15)
         self.hover_fg = hover_fg or fg_color
+        is_dark_parent = str(parent_bg).lower().startswith(("#0", "#1", "#2"))
+        if disabled_bg == "#f1f1f4" and is_dark_parent:
+            disabled_bg = "#141d30"
+            disabled_fg = "#475569"
         self.disabled_bg = disabled_bg
         self.disabled_fg = disabled_fg
         self.border_color = border_color
@@ -229,7 +233,7 @@ class RoundedButton(tk.Canvas):
                 self.command()
 
     def config(self, **kwargs) -> None:
-        """Emulates standard widget config method."""
+        """Emulates standard widget config method with full theme-awareness."""
         canvas_kwargs = {}
         if "state" in kwargs:
             self._state = kwargs["state"]
@@ -247,15 +251,43 @@ class RoundedButton(tk.Canvas):
         if "text" in kwargs:
             self.text = kwargs["text"]
 
-        if "bg" in kwargs:
-            self.normal_bg = kwargs["bg"]
+        if "bg" in kwargs or "bg_color" in kwargs:
+            new_bg = kwargs.get("bg", kwargs.get("bg_color"))
+            self.normal_bg = new_bg
             if self._state == "normal" and not self._is_hovered:
-                self.current_bg = kwargs["bg"]
+                self.current_bg = new_bg
 
-        if "fg" in kwargs:
-            self.normal_fg = kwargs["fg"]
+        if "fg" in kwargs or "fg_color" in kwargs:
+            new_fg = kwargs.get("fg", kwargs.get("fg_color"))
+            self.normal_fg = new_fg
             if self._state == "normal" and not self._is_hovered:
-                self.current_fg = kwargs["fg"]
+                self.current_fg = new_fg
+
+        if "border_color" in kwargs:
+            self.border_color = kwargs["border_color"]
+
+        if "disabled_bg" in kwargs:
+            self.disabled_bg = kwargs["disabled_bg"]
+            if self._state == "disabled":
+                self.current_bg = self.disabled_bg
+
+        if "disabled_fg" in kwargs:
+            self.disabled_fg = kwargs["disabled_fg"]
+            if self._state == "disabled":
+                self.current_fg = self.disabled_fg
+
+        if "hover_bg" in kwargs:
+            self.hover_bg = kwargs["hover_bg"]
+
+        if "hover_fg" in kwargs:
+            self.hover_fg = kwargs["hover_fg"]
+
+        if "parent_bg" in kwargs:
+            self.parent_bg = kwargs["parent_bg"]
+            canvas_kwargs["bg"] = kwargs["parent_bg"]
+
+        if "radius" in kwargs:
+            self.radius = kwargs["radius"]
 
         if "command" in kwargs:
             self.command = kwargs["command"]

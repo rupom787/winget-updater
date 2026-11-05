@@ -331,17 +331,17 @@ class SidebarNavigation(tk.Frame):
             mode = getattr(t, "name", "light")
             if is_active:
                 if mode == "dark":
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#13163a", outline="#00f0ff", width=1.5)
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=10, fill="#3b0d1e", outline="#e11d48", width=1.5)
                     text_color = "#ffffff"
-                    badge_bg = "#08091a"
-                    badge_fg = "#00f0ff"
+                    badge_bg = "#4c0519"
+                    badge_fg = "#fda4af"
                 elif mode == "bloom":
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#7c3aed", outline="#d946ef", width=1.5)
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=10, fill="#7c3aed", outline="#d946ef", width=1.5)
                     text_color = "#ffffff"
                     badge_bg = "#ede9fe"
                     badge_fg = "#7c3aed"
                 else:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#800020", outline="#b45309", width=1.5)
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=10, fill="#800020", outline="#b45309", width=1.5)
                     text_color = "#ffffff"
                     badge_bg = "#991b1b"
                     badge_fg = "#ffffff"
@@ -385,12 +385,15 @@ class SidebarNavigation(tk.Frame):
             )
 
             # Badge pill on right or active glowing dot
-            if is_active and count in ("0", "", None):
+            if is_active:
                 dot_cx = w - 18
                 dot_cy = h / 2
-                glow_col = getattr(t, "glass_glow", "#800020")
-                canvas.create_oval(dot_cx - 5, dot_cy - 5, dot_cx + 5, dot_cy + 5, fill=glow_col, outline="")
-                canvas.create_oval(dot_cx - 2, dot_cy - 2, dot_cx + 2, dot_cy + 2, fill="#ffffff", outline="")
+                halo_col = "#4c0519" if mode == "dark" else ("#fbcfe8" if mode == "bloom" else "#fee2e2")
+                core_col = "#e11d48" if mode == "dark" else ("#d946ef" if mode == "bloom" else "#ffffff")
+                canvas.create_oval(dot_cx - 6, dot_cy - 6, dot_cx + 6, dot_cy + 6, fill=halo_col, outline="")
+                canvas.create_oval(dot_cx - 3, dot_cy - 3, dot_cx + 3, dot_cy + 3, fill=core_col, outline="")
+            elif False:
+                pass
             elif count not in ("0", "", None):
                 badge_text = str(count)
                 badge_w = max(22, len(badge_text) * 7 + 10)
@@ -495,15 +498,28 @@ class SidebarNavigation(tk.Frame):
         self.search_entry.config(bg=theme.bg_input, fg=theme.fg_primary, insertbackground=theme.accent_burgundy)
         self.btn_clear_search.config(bg=theme.bg_input, fg=theme.fg_muted)
         self.lbl_cat_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
+        try:
+            combo_style = ttk.Style()
+            if theme.name == "dark":
+                combo_style.theme_use("clam")
+                combo_style.configure("TCombobox", fieldbackground="#141d30", background="#141d30", foreground="#f8fafc", bordercolor="#1e2c45", darkcolor="#141d30", lightcolor="#141d30")
+                combo_style.map("TCombobox", fieldbackground=[("readonly", "#141d30")], foreground=[("readonly", "#f8fafc")])
+            else:
+                combo_style.theme_use("clam")
+                combo_style.configure("TCombobox", fieldbackground="#ffffff", background="#f8fafc", foreground="#1e293b", bordercolor="#cbd5e1")
+                combo_style.map("TCombobox", fieldbackground=[("readonly", "#ffffff")], foreground=[("readonly", "#1e293b")])
+        except Exception:
+            pass
         self.telemetry_box.config(bg=theme.bg_card, highlightbackground=theme.border)
         mode = getattr(theme, "name", "light")
         if mode == "dark":
-            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#00f0ff")
+            self.lbl_title.config(bg=theme.bg_sidebar, fg="#ffffff")
+            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#cbd5e1")
             if hasattr(self, "lbl_tele_gpu"):
                 self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#10b981")
             self.lbl_tele_mode.config(bg=theme.bg_card, fg="#64748b")
             if hasattr(self, "lbl_tele_managers"):
-                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#38bdf8")
+                self.lbl_tele_managers.config(text="Managers: WINGET • MSSTORE", bg=theme.bg_card, fg="#00f0ff")
         elif mode == "bloom":
             self.lbl_tele_sys.config(bg=theme.bg_card, fg="#7c3aed")
             if hasattr(self, "lbl_tele_gpu"):
@@ -518,6 +534,13 @@ class SidebarNavigation(tk.Frame):
             self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
             if hasattr(self, "lbl_tele_managers"):
                 self.lbl_tele_managers.config(bg=theme.bg_card, fg="#b45309")
+        if hasattr(self, "btn_open_tracker"):
+            self.btn_open_tracker.config(
+                bg=theme.bg_button,
+                fg=theme.fg_primary,
+                border_color=theme.border,
+                parent_bg=theme.bg_sidebar,
+            )
         for d in self.filter_buttons.values():
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
@@ -855,6 +878,7 @@ class DetailsDrawer(tk.Frame):
             self.lbl_notes.config(text="")
             self.avatar_canvas.pack_forget()
             self.status_pill.pack_forget()
+            self.actions_container.pack_forget()
             self.btn_update.config(state="disabled", text="Update application")
             self.btn_exclude.config(state="disabled")
             self.btn_open_folder.config(state="disabled")
@@ -867,6 +891,7 @@ class DetailsDrawer(tk.Frame):
             return
 
         # Restore widgets for selected item
+        self.actions_container.pack(side=tk.RIGHT, padx=(16, 0))
         self.avatar_canvas.pack(side=tk.LEFT, padx=(0, 10), before=self.lbl_name)
         self.status_pill.pack(side=tk.LEFT, padx=(12, 0))
 
@@ -1088,6 +1113,36 @@ class DetailsDrawer(tk.Frame):
             box_bg = "#261908" if theme.name == "dark" else "#fffbeb"
             box_border = "#78350f" if theme.name == "dark" else "#fef3c7"
             box_fg = "#fef3c7" if theme.name == "dark" else "#92400e"
+            self.diagnostic_box.config(bg=box_bg, highlightbackground=box_border)
+            if hasattr(self, "lbl_diag_icon"):
+                self.lbl_diag_icon.config(bg=box_bg)
+            if hasattr(self, "lbl_diag_text"):
+                self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
+
+        # Theme all drawer action buttons
+        for btn in (
+            getattr(self, "btn_update", None),
+            getattr(self, "btn_open_folder", None),
+            getattr(self, "btn_copy_id", None),
+            getattr(self, "btn_pin", None),
+            getattr(self, "btn_exclude", None),
+            getattr(self, "btn_skip", None),
+            getattr(self, "btn_uninstall", None),
+            getattr(self, "btn_bind", None),
+            getattr(self, "btn_allow", None),
+            getattr(self, "btn_website", None),
+        ):
+            if btn:
+                btn.disabled_bg = theme.bg_button
+                btn.disabled_fg = theme.fg_muted
+                btn.config(
+                    bg=theme.bg_button,
+                    fg=theme.fg_primary,
+                    border_color=theme.border,
+                    parent_bg=theme.bg_sidebar,
+                    disabled_bg=theme.bg_button,
+                    disabled_fg=theme.fg_muted,
+                )
             self.diagnostic_box.config(bg=box_bg, highlightbackground=box_border)
             self.lbl_diag_icon.config(bg=box_bg)
             self.lbl_diag_text.config(bg=box_bg, fg=box_fg)
@@ -1338,7 +1393,6 @@ class ProgramTableView(tk.Frame):
 
         self.tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
 
         # Shimmering Skeleton Loader Screen
         self.skeleton = AnimatedSkeletonOverlay(self)
@@ -1373,15 +1427,19 @@ class ProgramTableView(tk.Frame):
             foreground=theme.fg_primary,
             fieldbackground=theme.bg_table,
         )
+        is_dark = (theme.name == "dark")
         style.configure(
             "CleanWine.Treeview.Heading",
-            background=theme.bg_sidebar,
-            foreground=theme.accent_burgundy,
+            background=theme.bg_header,
+            foreground="#f8fafc" if is_dark else theme.accent_burgundy,
         )
+        is_dark = (theme.name == "dark")
+        sel_bg = "#064e3b" if is_dark else theme.bg_card_selected
+        sel_fg = "#ffffff" if is_dark else theme.accent_burgundy
         style.map(
             "CleanWine.Treeview",
-            background=[("selected", theme.bg_card_selected)],
-            foreground=[("selected", theme.accent_burgundy)],
+            background=[("selected", sel_bg)],
+            foreground=[("selected", sel_fg)],
         )
 
         self.tree.tag_configure("tag_catalog", background="#ecfdf5", foreground="#065f46")
@@ -1517,10 +1575,10 @@ class ProgramTableView(tk.Frame):
                     status_str = "Vendor fallback"
                     tag = "tag_fallback"
                 elif item.action == UpdateAction.NO_SOURCE:
-                    status_str = "No update source"
+                    status_str = "Listed Only"
                     tag = "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
                 else:
-                    status_str = item.action.value
+                    status_str = "Listed Only" if item.action.value == "No update source" else item.action.value
                     tag = "tag_nosource" if (idx % 2 == 0) else "tag_nosource_alt"
 
                 values = (
