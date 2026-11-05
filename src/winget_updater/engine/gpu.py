@@ -195,12 +195,12 @@ class GpuAccelerationManager:
             pass
 
         try:
-            # Enable hardware window acceleration & Windows 11 Mica / Frosted glass backdrop
+            # Enable hardware window acceleration (DWMSBT_NONE to prevent GDI whitewash)
             window.update_idletasks()
             hwnd = window.winfo_id()
             if hwnd:
-                # Apply Windows 11 Mica Glass Backdrop
-                cls.enable_windows11_glass_backdrop(window, backdrop_type=2)
+                # Disable DWM system backdrop on Tkinter GDI to prevent transparency bleaching
+                cls.enable_windows11_glass_backdrop(window, backdrop_type=1)
                 return True
         except Exception as e:
             logger.debug(f"Hardware window acceleration note: {e}")
@@ -208,9 +208,10 @@ class GpuAccelerationManager:
         return False
 
     @classmethod
-    def enable_windows11_glass_backdrop(cls, window, backdrop_type: int = 2) -> bool:
-        """Applies Windows 11 system backdrop (Mica / Acrylic frosted glass).
-        backdrop_type: 2 = Mica, 3 = Acrylic (Frosted Glass), 4 = Mica Alt.
+    def enable_windows11_glass_backdrop(cls, window, backdrop_type: int = 1) -> bool:
+        """Configures Windows 11 system backdrop.
+        backdrop_type: 1 = DWMSBT_NONE (opaque solid GDI, zero whitewash), 2 = Mica, 3 = Acrylic.
+        Default is DWMSBT_NONE to avoid bleaching Tkinter client area.
         """
         if sys.platform != "win32":
             return False
@@ -223,7 +224,7 @@ class GpuAccelerationManager:
             parent_hwnd = ctypes.windll.user32.GetParent(hwnd)
             target_hwnd = parent_hwnd if parent_hwnd else hwnd
 
-            # DWMWA_SYSTEMBACKDROP_TYPE = 38
+            # DWMWA_SYSTEMBACKDROP_TYPE = 38 (DWMSBT_NONE = 1)
             DWMWA_SYSTEMBACKDROP_TYPE = 38
             val = ctypes.c_int(backdrop_type)
             hr = ctypes.windll.dwmapi.DwmSetWindowAttribute(

@@ -475,8 +475,9 @@ class SidebarNavigation(tk.Frame):
         )
         self.lbl_tele_managers.pack(anchor=tk.W, pady=(2, 0))
 
-        # Initial render
+        # Initial render & theme
         self._render_navigation_items()
+        self.apply_theme(self.theme)
 
 
     def _on_traffic_lights_click(self, event) -> None:
@@ -1704,6 +1705,7 @@ class ProgramTableView(tk.Frame):
 
         # Context Menu
         self.context_menu = tk.Menu(self, tearoff=0, bg="#ffffff", fg="#0f172a", activebackground="#fff1f2", activeforeground="#881337")
+        self.apply_theme(self.theme)
 
     def _on_details_resize(self, event: tk.Event) -> None:
         """Dynamically adjust diagnostic wraplength so text never clips or overflows."""

@@ -77,7 +77,7 @@ class ThemeColors:
     glass_border: str = "#1e2c45"
     glass_highlight: str = "#2a3b5a"
     glass_glow: str = "#e11d48"
-    dwm_backdrop_type: int = 3  # 3 = DWMSBT_TRANSIENTWINDOW (Acrylic frosted blur)
+    dwm_backdrop_type: int = 1  # 1 = DWMSBT_NONE (opaque solid GDI, zero whitewash)
     dwm_caption_bgr: int = 0x00160D09  # BGR for Windows native titlebar
     dwm_dark_mode: int = 1  # 1 = Dark, 0 = Light
 
@@ -137,7 +137,7 @@ DREAM_THEME = ThemeColors(
     glass_border="#3e3262",
     glass_highlight="#544485",
     glass_glow="#e11d48",
-    dwm_backdrop_type=3,
+    dwm_backdrop_type=1,
     dwm_caption_bgr=0x00181224,
     dwm_dark_mode=1,
 )
@@ -197,7 +197,7 @@ WAKE_THEME = ThemeColors(
     glass_border="#e2d9cc",
     glass_highlight="#ffffff",
     glass_glow="#800020",
-    dwm_backdrop_type=3,
+    dwm_backdrop_type=1,
     dwm_caption_bgr=0x00F2F7FA,
     dwm_dark_mode=0,
 )
@@ -257,7 +257,7 @@ BLOOM_THEME = ThemeColors(
     glass_border="#c7d2fe",
     glass_highlight="#e0e7ff",
     glass_glow="#d946ef",
-    dwm_backdrop_type=3,
+    dwm_backdrop_type=1,
     dwm_caption_bgr=0x00FCF3F0,
     dwm_dark_mode=0,
 )

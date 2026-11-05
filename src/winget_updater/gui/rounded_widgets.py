@@ -40,10 +40,12 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
             hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(dark_pref), ctypes.sizeof(dark_pref)
         )
 
-        # DWMWA_SYSTEMBACKDROP_TYPE = 38 (2 = Mica, 3 = Acrylic)
-        backdrop_val = getattr(theme, "dwm_backdrop_type", 2) if theme else 2
+        # DWMWA_SYSTEMBACKDROP_TYPE = 38
+        # DWMSBT_NONE = 1 explicitly turns off DWM Acrylic/Mica wash on the GDI client area,
+        # guaranteeing 100% deep, rich, solid dark obsidian rendering with zero whitewash
+        DWMSBT_NONE = 1
         DWMWA_SYSTEMBACKDROP_TYPE = 38
-        backdrop_pref = ctypes.c_int(backdrop_val)
+        backdrop_pref = ctypes.c_int(DWMSBT_NONE)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ctypes.byref(backdrop_pref), ctypes.sizeof(backdrop_pref)
         )
