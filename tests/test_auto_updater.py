@@ -57,14 +57,14 @@ def test_update_checker_detects_newer_version(mock_urlopen, tmp_path):
     mock_resp = MagicMock()
     mock_resp.status = 200
     mock_resp.read.return_value = json.dumps({
-        "tag_name": "v2.2.0",
-        "name": "Release v2.2.0",
+        "tag_name": "v2.3.0",
+        "name": "Release v2.3.0",
         "body": "Test release notes",
-        "html_url": "https://github.com/rupom787/winget-updater/releases/tag/v2.2.0",
+        "html_url": "https://github.com/rupom787/winget-updater/releases/tag/v2.3.0",
         "assets": [
             {
                 "name": "WingetUpdater.exe",
-                "browser_download_url": "https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe"
+                "browser_download_url": "https://github.com/rupom787/winget-updater/releases/download/v2.3.0/WingetUpdater.exe"
             }
         ],
     }).encode("utf-8")
@@ -72,7 +72,7 @@ def test_update_checker_detects_newer_version(mock_urlopen, tmp_path):
 
     res = checker.check_for_updates(force=True)
     assert res["update_available"] is True
-    assert res["latest_version"] == "2.2.0"
+    assert res["latest_version"] == "2.3.0"
     assert "WingetUpdater.exe" in res["download_url"]
 
 

@@ -30,11 +30,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.1.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.2.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe">
-    <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.48_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.2.0/Uninstall.exe">
+    <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.49_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
   </a>
 </p>
 
@@ -54,11 +54,11 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `7EA273E8E2B2006A058E65693A2370354F4A364F42DF130FC2E28209496320CA` |
-| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `046CDA3CEEF0F4EDF9941E9C6EC163B1AE82ABF7AAB51C15A91564FF0C2AE86B` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `1B92F355F3428472EF4CB3F7ED139426FDAABBC0AB8E61C6DC6BE32419463FE8` |
+| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `1211D561B402EE726E72B2BA1DAD03651BFA46FFE922CC85FE443717FA88F33A` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.

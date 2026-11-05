@@ -1,6 +1,6 @@
 {
   "name": "winget-updater-website",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Ultra-premium Windows 11 Software & Package Updater Showcase Website",
   "private": true,
   "type": "module",
