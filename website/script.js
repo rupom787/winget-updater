@@ -749,28 +749,28 @@
 
     const isInitialDream = document.documentElement.classList.contains("dream-mode");
     const fluidColor = isInitialDream
-      ? { r: 0.20, g: 0.75, b: 1.40 }
-      : { r: 0.14, g: 0.42, b: 0.90 };
+      ? { r: 0.10, g: 0.38, b: 0.70 }
+      : { r: 0.07, g: 0.21, b: 0.45 };
 
     WebGLFluid(canvas, {
       IMMEDIATE: false,
       TRIGGER: "hover",
       SIM_RESOLUTION: 128,
       DYE_RESOLUTION: 1024,
-      DENSITY_DISSIPATION: 2.8,   // Slightly faster dissipation for lighter, softer feel
-      VELOCITY_DISSIPATION: 1.1,  // Natural aerodynamic breeze decay
+      DENSITY_DISSIPATION: 3.4,   // Delicate, fast-dissipating aerodynamic ink trail
+      VELOCITY_DISSIPATION: 1.2,  // Natural aerodynamic breeze decay
       PRESSURE: 0.8,
       PRESSURE_ITERATIONS: 20,
-      CURL: 32,                   // Gentle wind vortices
-      SPLAT_RADIUS: 0.085,        // Sleek, refined, non-overpowering stream
-      SPLAT_FORCE: 4800,
+      CURL: 30,                   // Gentle wind vortices
+      SPLAT_RADIUS: 0.070,        // Sleek, refined, non-overpowering stream
+      SPLAT_FORCE: 4200,
       SHADING: true,              // Atmospheric fluid depth
       COLORFUL: false,            // Pure atmospheric wind tone
       SPLAT_COLOR: fluidColor,
       TRANSPARENT: true,
       BLOOM: true,
-      BLOOM_INTENSITY: 0.05,      // Ultra-subtle airy halo (zero glare or white washout)
-      BLOOM_THRESHOLD: 0.82,      // High threshold preserves delicate, soft transparency
+      BLOOM_INTENSITY: 0.02,      // 50% reduced bloom: ultra-delicate airy halo
+      BLOOM_THRESHOLD: 0.92,      // High threshold prevents light accumulation or glare
       SUNRAYS: false
     });
 
@@ -790,16 +790,16 @@
       }));
     });
 
-    // Support theme switching for Wake / Dream mode
+    // Support theme switching for Wake / Dream mode (50% reduced luminescence)
     window.syncFluidPalette = function (isDream) {
       if (isDream) {
-        fluidColor.r = 0.20;
-        fluidColor.g = 0.75;
-        fluidColor.b = 1.40;
+        fluidColor.r = 0.10;
+        fluidColor.g = 0.38;
+        fluidColor.b = 0.70;
       } else {
-        fluidColor.r = 0.14;
-        fluidColor.g = 0.42;
-        fluidColor.b = 0.90;
+        fluidColor.r = 0.07;
+        fluidColor.g = 0.21;
+        fluidColor.b = 0.45;
       }
     };
   }
