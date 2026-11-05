@@ -749,28 +749,28 @@
 
     const isInitialDream = document.documentElement.classList.contains("dream-mode");
     const fluidColor = isInitialDream
-      ? { r: 0.10, g: 0.38, b: 0.70 }
-      : { r: 0.07, g: 0.21, b: 0.45 };
+      ? { r: 0.20, g: 0.75, b: 1.40 }
+      : { r: 0.14, g: 0.42, b: 0.90 };
 
     WebGLFluid(canvas, {
       IMMEDIATE: false,
       TRIGGER: "hover",
       SIM_RESOLUTION: 128,
       DYE_RESOLUTION: 1024,
-      DENSITY_DISSIPATION: 3.4,   // Delicate, fast-dissipating aerodynamic ink trail
-      VELOCITY_DISSIPATION: 1.2,  // Natural aerodynamic breeze decay
+      DENSITY_DISSIPATION: 2.8,   // Slightly faster dissipation for lighter, softer feel
+      VELOCITY_DISSIPATION: 1.1,  // Natural aerodynamic breeze decay
       PRESSURE: 0.8,
       PRESSURE_ITERATIONS: 20,
-      CURL: 30,                   // Gentle wind vortices
-      SPLAT_RADIUS: 0.070,        // Sleek, refined, non-overpowering stream
-      SPLAT_FORCE: 4200,
+      CURL: 32,                   // Gentle wind vortices
+      SPLAT_RADIUS: 0.085,        // Sleek, refined, non-overpowering stream
+      SPLAT_FORCE: 4800,
       SHADING: true,              // Atmospheric fluid depth
       COLORFUL: false,            // Pure atmospheric wind tone
       SPLAT_COLOR: fluidColor,
       TRANSPARENT: true,
       BLOOM: true,
-      BLOOM_INTENSITY: 0.02,      // 50% reduced bloom: ultra-delicate airy halo
-      BLOOM_THRESHOLD: 0.92,      // High threshold prevents light accumulation or glare
+      BLOOM_INTENSITY: 0.05,      // Ultra-subtle airy halo (zero glare or white washout)
+      BLOOM_THRESHOLD: 0.82,      // High threshold preserves delicate, soft transparency
       SUNRAYS: false
     });
 
@@ -790,9 +790,15 @@
       }));
     });
 
-    // Support theme switching for Wake / Dream mode (50% reduced luminescence)
-    window.syncFluidPalette = function (isDream) {
-      if (isDream) {
+    // Support theme switching for Wake / Dream / Bloom mode
+    window.syncFluidPalette = function (mode) {
+      const isBloom = mode === "bloom" || document.documentElement.classList.contains("bloom-mode");
+      const isDream = mode === "dream" || mode === true || document.documentElement.classList.contains("dream-mode");
+      if (isBloom) {
+        fluidColor.r = 0.22;
+        fluidColor.g = 0.10;
+        fluidColor.b = 0.45;
+      } else if (isDream) {
         fluidColor.r = 0.10;
         fluidColor.g = 0.38;
         fluidColor.b = 0.70;
@@ -1658,20 +1664,21 @@
   }
 
   // ==========================================
-  // 15. WAKE / DREAM MODE TOGGLE WITH RADIAL IRIS WIPE
+  // 15. WAKE / DREAM / BLOOM MODE TOGGLE WITH RADIAL IRIS WIPE
   // ==========================================
   const fixedThemeBtn = document.getElementById("fixed-theme-btn");
   const dreamTriggerBtn = document.getElementById("dream-trigger-btn");
+  const activateBloomBtn = document.getElementById("activate-bloom-btn");
   const themeModeText = document.getElementById("theme-mode-text");
   const irisWipe = document.getElementById("iris-wipe");
 
-  function isDreamActive() {
-    return document.documentElement.classList.contains("dream-mode");
+  function getCurrentMode() {
+    if (document.documentElement.classList.contains("bloom-mode")) return "bloom";
+    if (document.documentElement.classList.contains("dream-mode")) return "dream";
+    return "wake";
   }
 
   function setMode(mode, clickOrigin = null) {
-    const isDream = mode === "dream";
-
     if (irisWipe && clickOrigin) {
       irisWipe.style.clipPath = `circle(0% at ${clickOrigin.x}px ${clickOrigin.y}px)`;
       irisWipe.classList.add("active");
@@ -1680,39 +1687,69 @@
       }, 550);
     }
 
-    if (isDream) {
+    document.documentElement.classList.remove("wake-mode", "dream-mode", "bloom-mode");
+    document.body.classList.remove("wake-mode", "dream-mode", "bloom-mode");
+
+    const bloomVid = document.getElementById("bloom-pedestal-video");
+
+    if (mode === "bloom") {
+      document.documentElement.classList.add("bloom-mode");
+      document.body.classList.add("bloom-mode");
+      if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [○] / BLOOM [●]";
+      try { localStorage.setItem("color-scheme", "bloom"); } catch (e) {}
+      if (bloomVid) bloomVid.play().catch(() => {});
+      if (window.syncFluidPalette) window.syncFluidPalette("bloom");
+      if (audio) audio.playChime(true);
+    } else if (mode === "dream") {
       document.documentElement.classList.add("dream-mode");
-      document.body.classList.remove("wake-mode");
       document.body.classList.add("dream-mode");
-      if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [●]";
+      if (themeModeText) themeModeText.textContent = "WAKE [○] / DREAM [●] / BLOOM [○]";
       try { localStorage.setItem("color-scheme", "dark"); } catch (e) {}
+      if (window.syncThreePalette) window.syncThreePalette(true);
+      if (window.syncFluidPalette) window.syncFluidPalette("dream");
+      if (audio) audio.playChime(true);
     } else {
-      document.documentElement.classList.remove("dream-mode");
-      document.body.classList.remove("dream-mode");
+      document.documentElement.classList.add("wake-mode");
       document.body.classList.add("wake-mode");
-      if (themeModeText) themeModeText.textContent = "WAKE [●] / DREAM [○]";
+      if (themeModeText) themeModeText.textContent = "WAKE [●] / DREAM [○] / BLOOM [○]";
       try { localStorage.setItem("color-scheme", "light"); } catch (e) {}
-    }
-
-    if (window.syncThreePalette) {
-      window.syncThreePalette(isDream);
+      if (window.syncThreePalette) window.syncThreePalette(false);
+      if (window.syncFluidPalette) window.syncFluidPalette("wake");
+      if (audio) audio.playChime(false);
     }
   }
 
-  function toggleTheme(e) {
+  function cycleTheme(e) {
     const origin = e ? { x: e.clientX, y: e.clientY } : null;
-    const nextMode = isDreamActive() ? "wake" : "dream";
+    const current = getCurrentMode();
+    const nextMode = current === "wake" ? "dream" : current === "dream" ? "bloom" : "wake";
     setMode(nextMode, origin);
-    showToast(nextMode === "dream" ? "DREAM MODE // OBSIDIAN BLUEPRINT" : "WAKE MODE // EDITORIAL PAPER");
+    const modeLabels = {
+      wake: "WAKE MODE // EDITORIAL PAPER",
+      dream: "DREAM MODE // OBSIDIAN BLUEPRINT",
+      bloom: "BLOOM MODE // 3D AMETHYST ARCHITECTURE"
+    };
+    showToast(modeLabels[nextMode]);
   }
 
-  if (fixedThemeBtn) fixedThemeBtn.addEventListener("click", toggleTheme);
-  if (dreamTriggerBtn) dreamTriggerBtn.addEventListener("click", toggleTheme);
+  if (fixedThemeBtn) fixedThemeBtn.addEventListener("click", cycleTheme);
+  if (dreamTriggerBtn) dreamTriggerBtn.addEventListener("click", (e) => {
+    setMode("dream", e ? { x: e.clientX, y: e.clientY } : null);
+    showToast("DREAM MODE // OBSIDIAN BLUEPRINT");
+  });
+  if (activateBloomBtn) activateBloomBtn.addEventListener("click", (e) => {
+    setMode("bloom", e ? { x: e.clientX, y: e.clientY } : null);
+    showToast("BLOOM MODE // 3D AMETHYST ARCHITECTURE");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 
   // Sync initial state
-  if (window.location.search.includes("dream")) {
-    setMode("dream");
-  } else if (isDreamActive()) {
+  const savedScheme = (function() {
+    try { return localStorage.getItem("color-scheme"); } catch (e) { return null; }
+  })();
+  if (window.location.search.includes("bloom") || savedScheme === "bloom") {
+    setMode("bloom");
+  } else if (window.location.search.includes("dream") || savedScheme === "dark") {
     setMode("dream");
   } else {
     setMode("wake");
@@ -2306,9 +2343,13 @@
     function renderWave() {
       if (audio.enabled) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = document.documentElement.classList.contains("dream-mode")
-          ? "rgba(0, 240, 255, 0.75)"
-          : "rgba(2, 132, 199, 0.75)";
+        const isBloom = document.documentElement.classList.contains("bloom-mode");
+        const isDream = document.documentElement.classList.contains("dream-mode");
+        ctx.fillStyle = isBloom
+          ? "rgba(124, 58, 237, 0.75)"
+          : isDream
+            ? "rgba(0, 240, 255, 0.75)"
+            : "rgba(2, 132, 199, 0.75)";
         step += 0.04;
         const w = canvas.width;
         for (let x = 0; x < w; x += 4) {
