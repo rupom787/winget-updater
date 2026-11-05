@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.0.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(13.74_MB)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.1.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.0.0/Uninstall.exe">
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe">
     <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.48_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
   </a>
 </p>
