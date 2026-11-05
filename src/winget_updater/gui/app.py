@@ -160,7 +160,12 @@ class MainWindow(tk.Tk):
 
     def _show_floating_toast(self, text: str, icon: str = "✓") -> None:
         """Presents a clean floating notification dropping from top."""
-        FluentFloatingToast.show(self, text=text, icon=icon, duration_ms=2800)
+        t = getattr(self, "current_theme", None)
+        bg = t.bg_card if t else "#0b0f17"
+        fg = t.fg_primary if t else "#f8fafc"
+        border_col = t.border_accent if t else "#00f0ff"
+        icon_fg = t.fg_laser if t else "#00f0ff"
+        FluentFloatingToast.show(self, text=text, icon=icon, bg=bg, fg=fg, border_col=border_col, icon_fg=icon_fg, duration_ms=2800)
         if hasattr(self, "status_lbl"):
             self.status_lbl.config(text=text)
 
@@ -204,30 +209,37 @@ class MainWindow(tk.Tk):
         self.btn_schedule = RoundedButton(self.top_controls, text="🕒 Schedule", command=self._open_schedule)
         self.btn_export = RoundedButton(self.top_controls, text="Export Inventory", command=self._export_report_dialog)
 
-        # iOS-style Light / Dark Mode Switch
-        self.theme_box = tk.Frame(self.top_controls, bg="#ffffff")
+        # 3-Way Luxury Glass Mode Switcher: WAKE [●] / DREAM [○] / BLOOM [○]
+        self.theme_box = tk.Frame(self.top_controls, bg=self.current_theme.bg_header)
         self.theme_box.pack(side=tk.LEFT, padx=(6, 0))
 
-        self.lbl_theme_mode = tk.Label(
+        self.btn_theme_cycle = RoundedButton(
             self.theme_box,
-            text="Theme",
-            bg="#ffffff",
-            fg="#64748b",
-            font=("Segoe UI", 8),
+            text="WAKE [●] / DREAM [○] / BLOOM [○]",
+            command=self.cycle_theme,
+            bg_color=self.current_theme.bg_card,
+            fg_color=self.current_theme.fg_primary,
+            hover_bg=self.current_theme.bg_card_hover,
+            border_color=self.current_theme.border,
+            radius=6,
+            height=28,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 4),
         )
-        self.lbl_theme_mode.pack(side=tk.LEFT, padx=(0, 4))
+        self.btn_theme_cycle.pack(side=tk.LEFT)
 
+        # Retained for programmatic backwards compatibility with tests
+        self.lbl_theme_mode = tk.Label(self.theme_box, text="Theme", font=("Segoe UI", 8))
         self.sw_theme = IOSStyleToggleSwitch(
             self.theme_box,
             variable=self.theme_var,
             command=self._on_theme_switch_toggled,
             width=38,
             height=20,
-            on_color="#881337",
+            on_color=self.current_theme.accent_burgundy,
             off_color="#334155",
-            parent_bg="#ffffff",
+            parent_bg=self.current_theme.bg_header,
         )
-        self.sw_theme.pack(side=tk.RIGHT)
 
         # 2. Top Left Brand & Status
         self.lbl_app_title = tk.Label(
@@ -632,9 +644,15 @@ class MainWindow(tk.Tk):
         self.set_theme(self.current_theme.name)
 
     def set_theme(self, mode: str) -> None:
-        """Sets the application theme to either 'light' or 'dark' and updates all UI modules."""
+        """Sets the application theme (wake/light, dream/dark, bloom) and updates all UI modules."""
         self.current_theme = get_theme(mode)
         t = self.current_theme
+
+        # Re-apply native Windows 11 DWM backdrop and titlebar styling
+        try:
+            apply_native_window_styling(self, t)
+        except Exception:
+            pass
 
         self.configure(bg=t.bg_root)
         self.top_bar.config(bg=t.bg_header, highlightbackground=t.border)
@@ -642,8 +660,25 @@ class MainWindow(tk.Tk):
         self.lbl_app_sub.config(bg=t.bg_header, fg=t.fg_muted)
         self.top_controls.config(bg=t.bg_header)
 
+        # Update 3-Way Mode Switcher button
+        if hasattr(self, "btn_theme_cycle"):
+            if t.name == "dark":
+                txt = "WAKE [○] / DREAM [●] / BLOOM [○]"
+            elif t.name == "bloom":
+                txt = "WAKE [○] / DREAM [○] / BLOOM [●]"
+            else:
+                txt = "WAKE [●] / DREAM [○] / BLOOM [○]"
+            self.btn_theme_cycle.config(
+                text=txt,
+                bg=t.bg_card,
+                fg=t.fg_primary,
+                hover_bg=t.bg_card_hover,
+            )
+            self.btn_theme_cycle.border_color = t.border
+
         btn_txt = "Light mode" if t.name == "dark" else "Dark mode"
         self.btn_theme.config(text=btn_txt, bg=t.bg_button, fg=t.fg_primary)
+        self.btn_settings.config(bg=t.accent_burgundy, fg="#ffffff", hover_bg=t.accent_burgundy_hover)
         self.btn_schedule.config(bg=t.bg_button, fg=t.fg_primary)
         self.btn_exclusions.config(bg=t.bg_button, fg=t.fg_primary)
         if hasattr(self, "btn_sources"):
@@ -688,7 +723,11 @@ class MainWindow(tk.Tk):
         if hasattr(self, "btn_select_updates"):
             self.btn_select_updates.config(bg=t.bg_button, fg=t.fg_primary)
         if hasattr(self, "btn_complete_system"):
-            self.btn_complete_system.config(bg=t.accent_burgundy, fg="#ffffff")
+            self.btn_complete_system.config(bg=t.accent_burgundy, fg="#ffffff", hover_bg=t.accent_burgundy_hover)
+        if hasattr(self, "btn_update"):
+            self.btn_update.config(bg=t.accent_burgundy, fg="#ffffff", hover_bg=t.accent_burgundy_hover)
+        if hasattr(self, "btn_scan"):
+            self.btn_scan.config(bg=t.accent_burgundy, fg="#ffffff", hover_bg=t.accent_burgundy_hover)
         if hasattr(self, "reboot_badge"):
             is_reb, _ = WindowsUpdateManager.is_reboot_pending()
             if is_reb:
@@ -801,6 +840,18 @@ class MainWindow(tk.Tk):
     def _open_complete_system_update(self) -> None:
         """Launches the 4-stage Complete System Update workflow dialog."""
         CompleteSystemUpdateDialog(self, theme=self.current_theme, on_finished=self.start_scan)
+
+    def cycle_theme(self) -> None:
+        """Cycles across all 3 luxury modes: WAKE -> DREAM -> BLOOM -> WAKE."""
+        curr = getattr(self.current_theme, "name", "light")
+        if curr in ("light", "wake"):
+            nxt = "dream"
+        elif curr in ("dark", "dream"):
+            nxt = "bloom"
+        else:
+            nxt = "wake"
+        self.set_theme(nxt)
+        self._show_floating_toast(f"Switched to {nxt.upper()} Mode", "✨")
 
     def toggle_theme(self) -> None:
         """Toggles between Dark Mode and Light Mode."""

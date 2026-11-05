@@ -8,12 +8,22 @@ import tkinter as tk
 from typing import Callable, Optional, Tuple
 
 
-def apply_native_window_styling(window: tk.Tk) -> None:
+def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -> None:
     """Applies native Windows 11 DWM window attributes:
     - DWMWCP_ROUND (rounded window corners)
+    - DWMWA_USE_IMMERSIVE_DARK_MODE (native Windows dark/light frame)
+    - DWMWA_SYSTEMBACKDROP_TYPE (DWMSBT_TRANSIENTWINDOW = 3 for Acrylic frosted glass)
     - DWMWA_CAPTION_COLOR (clean titlebar matching app background)
-    - DWMWA_TEXT_COLOR (dark readable titlebar text)
+    - DWMWA_TEXT_COLOR (dark/light readable titlebar text)
+    - Window level alpha transparency (-alpha 0.94 - 0.96)
     """
+    # Apply Tkinter window-level alpha transparency for frosted translucent glass
+    try:
+        alpha = getattr(theme, "glass_backdrop_alpha", 0.95) if theme else 0.95
+        window.wm_attributes("-alpha", alpha)
+    except Exception:
+        pass
+
     if sys.platform != "win32":
         return
 
@@ -31,16 +41,34 @@ def apply_native_window_styling(window: tk.Tk) -> None:
             hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ctypes.byref(pref), ctypes.sizeof(pref)
         )
 
-        # DWMWA_CAPTION_COLOR = 35 (BGR 0x00FAF8F8)
+        # DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        dark_mode_val = getattr(theme, "dwm_dark_mode", 0) if theme else 0
+        DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        dark_pref = ctypes.c_int(dark_mode_val)
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(dark_pref), ctypes.sizeof(dark_pref)
+        )
+
+        # DWMWA_SYSTEMBACKDROP_TYPE = 38 (3 = DWMSBT_TRANSIENTWINDOW: Acrylic frosted glass)
+        backdrop_val = getattr(theme, "dwm_backdrop_type", 3) if theme else 3
+        DWMWA_SYSTEMBACKDROP_TYPE = 38
+        backdrop_pref = ctypes.c_int(backdrop_val)
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ctypes.byref(backdrop_pref), ctypes.sizeof(backdrop_pref)
+        )
+
+        # DWMWA_CAPTION_COLOR = 35
+        caption_bgr = getattr(theme, "dwm_caption_bgr", 0x00F8F8FA) if theme else 0x00F8F8FA
         DWMWA_CAPTION_COLOR = 35
-        color_bgr = ctypes.c_int(0x00F8F8FA)
+        color_bgr = ctypes.c_int(caption_bgr)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_CAPTION_COLOR, ctypes.byref(color_bgr), ctypes.sizeof(color_bgr)
         )
 
-        # DWMWA_TEXT_COLOR = 36 (Dark charcoal 0x00271811)
+        # DWMWA_TEXT_COLOR = 36
+        is_dark = bool(dark_mode_val)
+        text_bgr = ctypes.c_int(0x00F0F4FC if is_dark else 0x00271811)
         DWMWA_TEXT_COLOR = 36
-        text_bgr = ctypes.c_int(0x00271811)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, DWMWA_TEXT_COLOR, ctypes.byref(text_bgr), ctypes.sizeof(text_bgr)
         )

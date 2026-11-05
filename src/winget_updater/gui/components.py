@@ -327,47 +327,52 @@ class SidebarNavigation(tk.Frame):
             w = canvas.winfo_width() or 230
             h = 36
 
-            is_dark = getattr(self.theme, "name", "light") == "dark"
+            t = self.theme
+            mode = getattr(t, "name", "light")
             if is_active:
-                if is_dark:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#2a0814", outline="#be123c", width=1.5)
+                if mode == "dark":
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#13163a", outline="#00f0ff", width=1.5)
                     text_color = "#ffffff"
-                    badge_bg = "#1e293b"
-                    badge_fg = "#f8fafc"
+                    badge_bg = "#08091a"
+                    badge_fg = "#00f0ff"
+                elif mode == "bloom":
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#7c3aed", outline="#d946ef", width=1.5)
+                    text_color = "#ffffff"
+                    badge_bg = "#ede9fe"
+                    badge_fg = "#7c3aed"
                 else:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#881337")
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#800020", outline="#b45309", width=1.5)
                     text_color = "#ffffff"
-                    badge_bg = "#9f1239"
+                    badge_bg = "#991b1b"
                     badge_fg = "#ffffff"
             elif is_hovered:
-                if is_dark:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#1e293b", outline="#334155", width=1)
-                    text_color = "#f8fafc"
-                    badge_bg = "#334155"
-                    badge_fg = "#f8fafc"
+                if mode == "dark":
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#181c4e", outline="#2e3875", width=1)
+                    text_color = "#f0f4fc"
+                    badge_bg = "#252e75"
+                    badge_fg = "#00f0ff"
+                elif mode == "bloom":
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#e0e7f8", outline="#c7d2fe", width=1)
+                    text_color = "#1e1b4b"
+                    badge_bg = "#ede9fe"
+                    badge_fg = "#7c3aed"
                 else:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#fff1f2", outline="#f43f5e", width=1)
-                    text_color = "#881337"
-                    badge_bg = "#ffe4e6"
-                    badge_fg = "#881337"
+                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#eee7da", outline="#d5c7b3", width=1)
+                    text_color = "#1c1917"
+                    badge_bg = "#e5dcce"
+                    badge_fg = "#800020"
             else:
-                if is_dark:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#111827", outline="#1e293b", width=1)
-                    text_color = "#94a3b8"
-                    badge_bg = "#1e293b"
-                    badge_fg = "#64748b"
+                draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill=t.bg_card, outline=t.border, width=1)
+                text_color = t.fg_primary
+                if internal_name == "Updates Available" and count not in ("0", ""):
+                    badge_bg = t.tag_available_bg
+                    badge_fg = t.tag_available_fg
+                elif internal_name == "Cannot Update" and count not in ("0", ""):
+                    badge_bg = t.tag_unverified_bg
+                    badge_fg = t.tag_unverified_fg
                 else:
-                    draw_rounded_rect(canvas, 1, 1, w - 2, h - 2, radius=8, fill="#ffffff", outline="#f3d5d9", width=1)
-                    text_color = "#1e293b"
-                    if internal_name == "Updates Available" and count not in ("0", ""):
-                        badge_bg = "#fef2f2"
-                        badge_fg = "#991b1b"
-                    elif internal_name == "Cannot Update" and count not in ("0", ""):
-                        badge_bg = "#fef3c7"
-                        badge_fg = "#92400e"
-                    else:
-                        badge_bg = "#faf6f6"
-                        badge_fg = "#64748b"
+                    badge_bg = t.bg_panel
+                    badge_fg = t.fg_muted
 
             # Label text
             canvas.create_text(
@@ -381,11 +386,11 @@ class SidebarNavigation(tk.Frame):
 
             # Badge pill on right or active glowing dot
             if is_active and count in ("0", "", None):
-                # Active glowing red indicator dot
                 dot_cx = w - 18
                 dot_cy = h / 2
-                canvas.create_oval(dot_cx - 5, dot_cy - 5, dot_cx + 5, dot_cy + 5, fill="#be123c", outline="")
-                canvas.create_oval(dot_cx - 3, dot_cy - 3, dot_cx + 3, dot_cy + 3, fill="#f43f5e", outline="")
+                glow_col = getattr(t, "glass_glow", "#800020")
+                canvas.create_oval(dot_cx - 5, dot_cy - 5, dot_cx + 5, dot_cy + 5, fill=glow_col, outline="")
+                canvas.create_oval(dot_cx - 2, dot_cy - 2, dot_cx + 2, dot_cy + 2, fill="#ffffff", outline="")
             elif count not in ("0", "", None):
                 badge_text = str(count)
                 badge_w = max(22, len(badge_text) * 7 + 10)
@@ -491,20 +496,28 @@ class SidebarNavigation(tk.Frame):
         self.btn_clear_search.config(bg=theme.bg_input, fg=theme.fg_muted)
         self.lbl_cat_header.config(bg=theme.bg_sidebar, fg=theme.fg_muted)
         self.telemetry_box.config(bg=theme.bg_card, highlightbackground=theme.border)
-        if getattr(theme, "name", "light") == "dark":
-            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#38bdf8")
+        mode = getattr(theme, "name", "light")
+        if mode == "dark":
+            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#00f0ff")
             if hasattr(self, "lbl_tele_gpu"):
                 self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#10b981")
             self.lbl_tele_mode.config(bg=theme.bg_card, fg="#64748b")
             if hasattr(self, "lbl_tele_managers"):
                 self.lbl_tele_managers.config(bg=theme.bg_card, fg="#38bdf8")
+        elif mode == "bloom":
+            self.lbl_tele_sys.config(bg=theme.bg_card, fg="#7c3aed")
+            if hasattr(self, "lbl_tele_gpu"):
+                self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#d946ef")
+            self.lbl_tele_mode.config(bg=theme.bg_card, fg="#6366f1")
+            if hasattr(self, "lbl_tele_managers"):
+                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#7c3aed")
         else:
             self.lbl_tele_sys.config(bg=theme.bg_card, fg=theme.accent_emerald)
             if hasattr(self, "lbl_tele_gpu"):
-                self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#0369a1")
+                self.lbl_tele_gpu.config(bg=theme.bg_card, fg="#800020")
             self.lbl_tele_mode.config(bg=theme.bg_card, fg=theme.fg_muted)
             if hasattr(self, "lbl_tele_managers"):
-                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#7c3aed")
+                self.lbl_tele_managers.config(bg=theme.bg_card, fg="#b45309")
         for d in self.filter_buttons.values():
             d["canvas"].config(bg=theme.bg_sidebar)
         self._render_navigation_items()
@@ -862,11 +875,12 @@ class DetailsDrawer(tk.Frame):
         pub_text = item.publisher or "Standard Publisher"
         self.lbl_pub.config(text=f"Publisher: {pub_text}")
 
-        # Update initial avatar
+        # Update initial avatar with theme-matched glass pill
         initial = (item.name.strip()[0] if item.name else "A").upper()
         self.avatar_canvas.delete("all")
-        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill="#fff1f2", outline="#f3d5d9", width=1)
-        self.avatar_canvas.create_text(17, 17, text=initial, fill="#881337", font=("Segoe UI", 11, "bold"))
+        t = self.theme
+        draw_rounded_rect(self.avatar_canvas, 1, 1, 33, 33, radius=10, fill=t.bg_card, outline=t.border, width=1)
+        self.avatar_canvas.create_text(17, 17, text=initial, fill=t.accent_burgundy, font=("Segoe UI", 11, "bold"))
 
         # Versions & Source
         cur_v = item.installed_version or "Unknown"

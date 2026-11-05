@@ -1,5 +1,9 @@
 """Theme definitions and color palettes for Software & Package Updater.
-Provides Burgundy Light (Clean White & Wine Red) and High-Contrast Dark.
+Provides 3 matched luxury glassmorphism themes inspired by the Daiki Fujita Awwwards showcase:
+- WAKE (Warm Editorial Linen Ivory Glass & Burgundy)
+- DREAM (Obsidian Deep Cyber Glass & Neon Cyan Laser)
+- BLOOM (Amethyst Surreal Architecture Glass & Violet / Magenta)
+Supports Windows 11 DWM Acrylic / Mica translucency and high-contrast accessibility.
 """
 
 from dataclasses import dataclass
@@ -8,7 +12,7 @@ from typing import Dict
 
 @dataclass
 class ThemeColors:
-    name: str  # "light" or "dark"
+    name: str  # "light", "dark", "bloom", "wake", "dream"
 
     # Surfaces & Backgrounds
     bg_root: str
@@ -68,31 +72,40 @@ class ThemeColors:
     tag_ignored_bg: str
     tag_ignored_fg: str
 
+    # Windows 11 DWM & Frosted Glass Attributes
+    glass_backdrop_alpha: float = 0.95
+    glass_border: str = "#e2d9cc"
+    glass_highlight: str = "#ffffff"
+    glass_glow: str = "#800020"
+    dwm_backdrop_type: int = 3  # 3 = DWMSBT_TRANSIENTWINDOW (Acrylic frosted blur), 4 = Mica Alt
+    dwm_caption_bgr: int = 0x00F2F7FA  # BGR for Windows native titlebar
+    dwm_dark_mode: int = 0  # 1 = Dark, 0 = Light
 
-# Clean White background with Deep Red-Wine / Burgundy accents
-LIGHT_THEME = ThemeColors(
-    name="light",
-    bg_root="#faf8f8",
-    bg_canvas="#ffffff",
-    bg_panel="#ffffff",
-    bg_card="#ffffff",
-    bg_card_hover="#fff1f2",
-    bg_card_selected="#ffe4e6",
+
+# 1. WAKE THEME (Warm Editorial Linen Ivory Glass with Burgundy & Warm Amber Accents)
+WAKE_THEME = ThemeColors(
+    name="light",  # Retains 'light' for seamless backwards compatibility with test assertions
+    bg_root="#faf7f2",
+    bg_canvas="#fdfcf9",
+    bg_panel="#f3eee5",
+    bg_card="#f7f3eb",
+    bg_card_hover="#eee7da",
+    bg_card_selected="#e5dcce",
     bg_input="#ffffff",
-    bg_table="#ffffff",
-    bg_table_alt="#fdfafa",
-    bg_header="#ffffff",
+    bg_table="#f7f3eb",
+    bg_table_alt="#fbf9f4",
+    bg_header="#fdfcf9",
     bg_button="#ffffff",
     bg_button_hover="#fff1f2",
     bg_button_active="#fecdd3",
-    bg_sidebar="#faf5f5",
-    border="#f3d5d9",
-    border_subtle="#fce7e9",
+    bg_sidebar="#f3eee5",
+    border="#e5dcce",
+    border_subtle="#eee8dd",
     border_accent="#800020",
-    grid_line="#fceef0",
-    fg_primary="#111827",
-    fg_secondary="#374151",
-    fg_muted="#6b7280",
+    grid_line="#f3ede2",
+    fg_primary="#1c1917",
+    fg_secondary="#44403c",
+    fg_muted="#78716c",
     fg_accent="#800020",
     fg_laser="#800020",
     accent_burgundy="#800020",
@@ -120,45 +133,53 @@ LIGHT_THEME = ThemeColors(
     tag_unverified_fg="#92400e",
     tag_ignored_bg="#f5f3ff",
     tag_ignored_fg="#5b21b6",
+    glass_backdrop_alpha=0.96,
+    glass_border="#e2d9cc",
+    glass_highlight="#ffffff",
+    glass_glow="#800020",
+    dwm_backdrop_type=3,
+    dwm_caption_bgr=0x00F2F7FA,
+    dwm_dark_mode=0,
 )
 
-DARK_THEME = ThemeColors(
-    name="dark",
-    bg_root="#0c1222",
-    bg_canvas="#0f172a",
-    bg_panel="#111827",
-    bg_card="#162036",
-    bg_card_hover="#1e293b",
-    bg_card_selected="#241424",
-    bg_input="#1e293b",
-    bg_table="#111827",
-    bg_table_alt="#141d2e",
-    bg_header="#0f172a",
-    bg_button="#1e293b",
-    bg_button_hover="#334155",
-    bg_button_active="#475569",
-    bg_sidebar="#111827",
-    border="#1e293b",
-    border_subtle="#1a2336",
-    border_accent="#be123c",
-    grid_line="#172033",
-    fg_primary="#f8fafc",
+# 2. DREAM THEME (Obsidian Cyber Glass with Electric Neon Cyan Laser & Deep Blue)
+DREAM_THEME = ThemeColors(
+    name="dark",  # Retains 'dark' for seamless backwards compatibility with test assertions
+    bg_root="#08091a",
+    bg_canvas="#0b0d24",
+    bg_panel="#0e1130",
+    bg_card="#111438",
+    bg_card_hover="#181c4e",
+    bg_card_selected="#1f2462",
+    bg_input="#13173d",
+    bg_table="#0e1130",
+    bg_table_alt="#111438",
+    bg_header="#0b0d24",
+    bg_button="#161b45",
+    bg_button_hover="#1e2560",
+    bg_button_active="#252e75",
+    bg_sidebar="#0b0d24",
+    border="#1e254d",
+    border_subtle="#151b3d",
+    border_accent="#00f0ff",
+    grid_line="#151a3a",
+    fg_primary="#f0f4fc",
     fg_secondary="#94a3b8",
     fg_muted="#64748b",
-    fg_accent="#f43f5e",
-    fg_laser="#f43f5e",
-    accent_burgundy="#881337",
-    accent_burgundy_hover="#9f1239",
-    accent_cyan="#38bdf8",
+    fg_accent="#00f0ff",
+    fg_laser="#00f0ff",
+    accent_burgundy="#00f0ff",
+    accent_burgundy_hover="#38bdf8",
+    accent_cyan="#00f0ff",
     accent_emerald="#10b981",
     accent_amber="#fbbf24",
-    accent_crimson="#be123c",
-    accent_purple="#a855f7",
-    tag_available_bg="#4c0519",
-    tag_available_fg="#fda4af",
-    tag_uptodate_bg="#065f46",
+    accent_crimson="#f43f5e",
+    accent_purple="#818cf8",
+    tag_available_bg="#2a1228",
+    tag_available_fg="#f43f5e",
+    tag_uptodate_bg="#064e3b",
     tag_uptodate_fg="#34d399",
-    tag_uptodate_alt_bg="#065f46",
+    tag_uptodate_alt_bg="#064e3b",
     tag_uptodate_alt_fg="#34d399",
     tag_downgrade_bg="#451a03",
     tag_downgrade_fg="#fbbf24",
@@ -172,19 +193,93 @@ DARK_THEME = ThemeColors(
     tag_unverified_fg="#fbbf24",
     tag_ignored_bg="#2e1065",
     tag_ignored_fg="#c084fc",
+    glass_backdrop_alpha=0.94,
+    glass_border="#2a3366",
+    glass_highlight="#3b478c",
+    glass_glow="#00f0ff",
+    dwm_backdrop_type=3,
+    dwm_caption_bgr=0x001A0908,
+    dwm_dark_mode=1,
 )
 
+# 3. BLOOM THEME (Amethyst Surreal Architecture Glass with Vivid Violet & Magenta Accents)
+BLOOM_THEME = ThemeColors(
+    name="bloom",
+    bg_root="#f0f3fc",
+    bg_canvas="#f6f8fe",
+    bg_panel="#e7ecf9",
+    bg_card="#edf1fb",
+    bg_card_hover="#e0e7f8",
+    bg_card_selected="#d4def5",
+    bg_input="#ffffff",
+    bg_table="#edf1fb",
+    bg_table_alt="#f4f7fd",
+    bg_header="#f6f8fe",
+    bg_button="#ffffff",
+    bg_button_hover="#ede9fe",
+    bg_button_active="#ddd6fe",
+    bg_sidebar="#e7ecf9",
+    border="#c7d2fe",
+    border_subtle="#e0e7ff",
+    border_accent="#7c3aed",
+    grid_line="#eef2ff",
+    fg_primary="#1e1b4b",
+    fg_secondary="#4338ca",
+    fg_muted="#6366f1",
+    fg_accent="#7c3aed",
+    fg_laser="#d946ef",
+    accent_burgundy="#7c3aed",
+    accent_burgundy_hover="#6d28d9",
+    accent_cyan="#7c3aed",
+    accent_emerald="#059669",
+    accent_amber="#d97706",
+    accent_crimson="#e11d48",
+    accent_purple="#7c3aed",
+    tag_available_bg="#fae8ff",
+    tag_available_fg="#a21caf",
+    tag_uptodate_bg="#ecfdf5",
+    tag_uptodate_fg="#047857",
+    tag_uptodate_alt_bg="#ecfdf5",
+    tag_uptodate_alt_fg="#047857",
+    tag_downgrade_bg="#fef3c7",
+    tag_downgrade_fg="#b45309",
+    tag_fallback_bg="#e0e7ff",
+    tag_fallback_fg="#4338ca",
+    tag_incompat_bg="#ffe4e6",
+    tag_incompat_fg="#be123c",
+    tag_listed_bg="#f1f5f9",
+    tag_listed_fg="#475569",
+    tag_unverified_bg="#fef3c7",
+    tag_unverified_fg="#b45309",
+    tag_ignored_bg="#f3e8ff",
+    tag_ignored_fg="#7e22ce",
+    glass_backdrop_alpha=0.96,
+    glass_border="#c7d2fe",
+    glass_highlight="#e0e7ff",
+    glass_glow="#d946ef",
+    dwm_backdrop_type=3,
+    dwm_caption_bgr=0x00FCF3F0,
+    dwm_dark_mode=0,
+)
+
+# Aliases for backwards compatibility with existing codebase and tests
+LIGHT_THEME = WAKE_THEME
+DARK_THEME = DREAM_THEME
+
 THEMES: Dict[str, ThemeColors] = {
-    "light": LIGHT_THEME,
-    "dark": DARK_THEME,
+    "light": WAKE_THEME,
+    "dark": DREAM_THEME,
+    "wake": WAKE_THEME,
+    "dream": DREAM_THEME,
+    "bloom": BLOOM_THEME,
 }
 
 
 def get_theme(name: str) -> ThemeColors:
     """Returns the ThemeColors corresponding to the given theme name (defaults to light)."""
     if not name:
-        return LIGHT_THEME
-    return THEMES.get(name.lower(), LIGHT_THEME)
+        return WAKE_THEME
+    return THEMES.get(name.lower(), WAKE_THEME)
 
 
 @dataclass

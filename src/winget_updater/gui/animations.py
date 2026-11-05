@@ -667,7 +667,7 @@ class ToastNotificationHelper:
 
 
 class FluentFloatingToast(tk.Frame):
-    """Floating spring-animated modern dark industrial pill notification that drops from top and auto-dismisses."""
+    """Floating spring-animated modern glass pill notification that drops from top and auto-dismisses."""
 
     @classmethod
     def show(
@@ -677,18 +677,20 @@ class FluentFloatingToast(tk.Frame):
         icon: str = "✓",
         bg: str = "#0b0f17",
         fg: str = "#f8fafc",
+        border_col: str = "#00f0ff",
+        icon_fg: str = "#00f0ff",
         duration_ms: int = 2800,
     ) -> None:
-        toast = cls(root, text=text, icon=icon, bg=bg, fg=fg)
+        toast = cls(root, text=text, icon=icon, bg=bg, fg=fg, border_col=border_col, icon_fg=icon_fg)
         toast.animate_in_and_out(duration_ms=duration_ms)
 
-    def __init__(self, root: tk.Tk, text: str, icon: str, bg: str, fg: str):
-        super().__init__(root, bg=bg, padx=18, pady=9, relief=tk.SOLID, borderwidth=1, highlightbackground="#00f0ff", highlightthickness=1)
+    def __init__(self, root: tk.Tk, text: str, icon: str, bg: str, fg: str, border_col: str = "#00f0ff", icon_fg: str = "#00f0ff"):
+        super().__init__(root, bg=bg, padx=18, pady=9, relief=tk.SOLID, borderwidth=1, highlightbackground=border_col, highlightthickness=1)
         self.root = root
         self.y_pos = -60
         self.target_y = 16
 
-        lbl_icon = tk.Label(self, text=icon, bg=bg, fg="#00f0ff", font=("Segoe UI Emoji", 11, "bold"))
+        lbl_icon = tk.Label(self, text=icon, bg=bg, fg=icon_fg, font=("Segoe UI Emoji", 11, "bold"))
         lbl_icon.pack(side=tk.LEFT, padx=(0, 10))
 
         lbl_text = tk.Label(self, text=text, bg=bg, fg=fg, font=("Cascadia Code", 8, "bold"))
@@ -945,8 +947,16 @@ class GlassyTelemetryHUD(tk.Frame):
         if not self.winfo_exists():
             return
         self.beacon.delete("all")
-        halo_col = "#d1fae5" if self.theme.name == "light" else "#064e3b"
-        core_col = "#10b981"
+        mode = getattr(self.theme, "name", "light")
+        if mode == "bloom":
+            halo_col = "#fae8ff"
+            core_col = "#d946ef"
+        elif mode == "dark":
+            halo_col = "#0c2838"
+            core_col = "#00f0ff"
+        else:
+            halo_col = "#d1fae5"
+            core_col = "#10b981"
         self.beacon.create_oval(3, 3, 13, 13, fill=halo_col, outline="")
         self.beacon.create_oval(5, 5, 11, 11, fill=core_col, outline="")
 
@@ -1018,7 +1028,14 @@ class GlassyTelemetryHUD(tk.Frame):
         self.lbl_sep1.config(bg=card_bg, fg=theme.fg_muted)
         self.lbl_ram.config(bg=card_bg, fg=theme.fg_primary)
         self.lbl_sep2.config(bg=card_bg, fg=theme.fg_muted)
-        self.lbl_gpu.config(bg=card_bg, fg=theme.accent_burgundy if theme.name == "light" else "#f43f5e")
+        mode = getattr(theme, "name", "light")
+        if mode == "bloom":
+            gpu_fg = "#7c3aed"
+        elif mode == "dark":
+            gpu_fg = "#00f0ff"
+        else:
+            gpu_fg = theme.accent_burgundy
+        self.lbl_gpu.config(bg=card_bg, fg=gpu_fg)
 
     def destroy(self) -> None:
         self._is_active = False
