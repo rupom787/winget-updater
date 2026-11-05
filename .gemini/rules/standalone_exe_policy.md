@@ -13,3 +13,4 @@ The user starts and tests the application **only via `dist/WingetUpdater.exe`** 
    - Compute SHA-256 for `dist/WingetUpdater.exe`.
    - Update GitHub Release assets (`gh release upload v... dist/WingetUpdater.exe --clobber`) and release notes.
    - Rebuild website if any assets or version info changed.
+

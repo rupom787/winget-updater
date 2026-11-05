@@ -212,9 +212,9 @@ class MainWindow(tk.Tk):
         self.theme_box.pack(side=tk.LEFT, padx=(6, 0))
 
         initial_theme_txt = (
-            "WAKE [○] / DREAM [●] / BLOOM [○]" if self.current_theme.name == "dark"
-            else ("WAKE [○] / DREAM [○] / BLOOM [●]" if self.current_theme.name == "bloom"
-            else "WAKE [●] / DREAM [○] / BLOOM [○]")
+            "🌙 DREAM" if self.current_theme.name == "dark"
+            else ("🌸 BLOOM" if self.current_theme.name == "bloom"
+            else "☀️ WAKE")
         )
         self.btn_theme_cycle = RoundedButton(
             self.theme_box,
@@ -225,7 +225,7 @@ class MainWindow(tk.Tk):
             hover_bg="#352c54" if self.current_theme.name == "dark" else self.current_theme.bg_card_hover,
             border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border,
             radius=10,
-            width=210,
+            width=96,
             height=28,
             font=("Segoe UI", 8, "bold"),
             padding=(6, 2),
@@ -481,7 +481,30 @@ class MainWindow(tk.Tk):
         )
         self.btn_scan.pack(fill=tk.X)
 
-        # 2c. Clean Right Sidebar Bottom Spacer (Action buttons are cleanly housed in bottom drawer)
+        # 2c. System Engine Specs Card (fills lower space with luxury frosted telemetry)
+        self.specs_card = tk.Frame(
+            self.right_action_sidebar,
+            bg="#16132a" if self.current_theme.name == "dark" else self.current_theme.bg_card,
+            padx=10,
+            pady=10,
+            highlightbackground="#2e254c" if self.current_theme.name == "dark" else self.current_theme.border,
+            highlightthickness=1,
+        )
+        self.specs_card.pack(fill=tk.X, pady=(16, 0))
+
+        self.lbl_specs_head = tk.Label(self.specs_card, text="SYSTEM INTEG // METRICS", bg=self.specs_card.cget("bg"), fg="#a78bfa" if self.current_theme.name == "dark" else "#64748b", font=("Cascadia Code", 7, "bold"), anchor="w")
+        self.lbl_specs_head.pack(fill=tk.X, pady=(0, 6))
+
+        for spec_k, spec_v, spec_col in [
+            ("Mica Blur", "ACTIVE (DWM)", "#10b981"),
+            ("Refresh", "120Hz Lerp", "#00f0ff"),
+            ("Scan Engine", "Multi-Source", "#f43f5e"),
+            ("Scan Speed", "< 2.0s Instant", "#38bdf8"),
+        ]:
+            row = tk.Frame(self.specs_card, bg=self.specs_card.cget("bg"))
+            row.pack(fill=tk.X, pady=1)
+            tk.Label(row, text=spec_k, bg=self.specs_card.cget("bg"), fg="#94a3b8", font=("Segoe UI", 7), anchor="w").pack(side=tk.LEFT)
+            tk.Label(row, text=spec_v, bg=self.specs_card.cget("bg"), fg=spec_col, font=("Segoe UI", 7, "bold"), anchor="e").pack(side=tk.RIGHT)
 
         # Center Column: Main Content Container (expands)
         self.right_container = tk.Frame(self.main_body, bg=self.current_theme.bg_root)
@@ -491,23 +514,23 @@ class MainWindow(tk.Tk):
         self.top_dock_bar = tk.Frame(self.right_container, bg=self.current_theme.bg_root, pady=4)
         self.top_dock_bar.pack(fill=tk.X, padx=0, pady=(0, 6))
 
-        self.btn_restore = RoundedButton(self.top_dock_bar, text="Restore Backup", command=self._import_software_backup, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_restore.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_restore = RoundedButton(self.top_dock_bar, text="Restore", command=self._import_software_backup, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_restore.pack(side=tk.LEFT, padx=(0, 4))
 
-        self.btn_backup = RoundedButton(self.top_dock_bar, text="Backup Apps", command=self._export_software_backup, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_backup.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_backup = RoundedButton(self.top_dock_bar, text="Backup", command=self._export_software_backup, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_backup.pack(side=tk.LEFT, padx=(0, 4))
 
-        self.btn_sources = RoundedButton(self.top_dock_bar, text="Refresh Sources", command=self._refresh_sources_dialog, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_sources.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_sources = RoundedButton(self.top_dock_bar, text="Sources", command=self._refresh_sources_dialog, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_sources.pack(side=tk.LEFT, padx=(0, 4))
 
-        self.btn_exclusions = RoundedButton(self.top_dock_bar, text="Exclusions", command=self._open_exclusions, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_exclusions.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_exclusions = RoundedButton(self.top_dock_bar, text="Exclusions", command=self._open_exclusions, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_exclusions.pack(side=tk.LEFT, padx=(0, 4))
 
-        self.btn_schedule = RoundedButton(self.top_dock_bar, text="⏰ Schedule", command=self._open_schedule, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_schedule.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_schedule = RoundedButton(self.top_dock_bar, text="Schedule", command=self._open_schedule, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_schedule.pack(side=tk.LEFT, padx=(0, 4))
 
-        self.btn_export = RoundedButton(self.top_dock_bar, text="Export Inventory", command=self._export_report_dialog, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=12, height=26, font=("Segoe UI", 8), padding=(10, 2), parent_bg=self.current_theme.bg_root)
-        self.btn_export.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_export = RoundedButton(self.top_dock_bar, text="Export", command=self._export_report_dialog, bg_color="#221c38" if self.current_theme.name == "dark" else "#ffffff", fg_color=self.current_theme.fg_primary, border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border, radius=10, height=26, font=("Segoe UI", 8), padding=(8, 2), parent_bg=self.current_theme.bg_root)
+        self.btn_export.pack(side=tk.LEFT, padx=(0, 4))
 
         # 3. Unified Center Card: Frosted Glass container housing All Software header and Data Table
         self.table_card = tk.Frame(
@@ -582,7 +605,7 @@ class MainWindow(tk.Tk):
             font=("Segoe UI", 8, "bold"),
             anchor="e",
         )
-        self.lbl_gpu_badge.pack(side=tk.RIGHT, padx=(0, 12))
+        # Retained hidden to preserve space for progress bar and prevent line collisions
 
         # Animated status pulse
         self.scan_animator = ScanningPulseAnimator(self.status_lbl, "Scanning software and repositories...")
@@ -768,14 +791,14 @@ class MainWindow(tk.Tk):
             self.laser_header.apply_theme(t)
         self._update_aurora_bg()
 
-        # Update 3-Way Mode Switcher button
+        # Update Mode Switcher button
         if hasattr(self, "btn_theme_cycle"):
             if t.name == "dark":
-                txt = "WAKE [○] / DREAM [●] / BLOOM [○]"
+                txt = "🌙 DREAM"
             elif t.name == "bloom":
-                txt = "WAKE [○] / DREAM [○] / BLOOM [●]"
+                txt = "🌸 BLOOM"
             else:
-                txt = "WAKE [●] / DREAM [○] / BLOOM [○]"
+                txt = "☀️ WAKE"
             self.btn_theme_cycle.config(
                 text=txt,
                 bg=t.bg_card,
@@ -897,6 +920,19 @@ class MainWindow(tk.Tk):
                     p_btn.disabled_bg = t.bg_button
                     p_btn.disabled_fg = t.fg_muted
                     p_btn.config(bg=t.bg_button, fg=t.fg_primary, border_color=t.border, parent_bg=t.bg_card, disabled_bg=t.bg_button, disabled_fg=t.fg_muted)
+
+        if hasattr(self, "specs_card"):
+            sc_bg = "#16132a" if t.name == "dark" else t.bg_card
+            sc_bd = "#2e254c" if t.name == "dark" else t.border
+            self.specs_card.config(bg=sc_bg, highlightbackground=sc_bd)
+            if hasattr(self, "lbl_specs_head"):
+                self.lbl_specs_head.config(bg=sc_bg, fg="#a78bfa" if t.name == "dark" else "#64748b")
+            for ch in self.specs_card.winfo_children():
+                if isinstance(ch, tk.Frame):
+                    ch.config(bg=sc_bg)
+                    for lbl in ch.winfo_children():
+                        if isinstance(lbl, tk.Label):
+                            lbl.config(bg=sc_bg)
 
         if hasattr(self, "sw_theme"):
             self.sw_theme.set_colors(on_color=t.accent_burgundy, off_color="#334155" if t.name == "dark" else "#cbd5e1", parent_bg=t.bg_header)

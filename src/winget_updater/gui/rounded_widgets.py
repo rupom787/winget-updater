@@ -17,10 +17,9 @@ def apply_native_window_styling(window: tk.Tk, theme: Optional[object] = None) -
     - DWMWA_TEXT_COLOR (dark/light readable titlebar text)
     - Window level alpha transparency (-alpha 0.94 - 0.96)
     """
-    # Apply Tkinter window-level alpha transparency for frosted translucent glass
+    # Apply solid window-level opacity to guarantee crisp foreground readability
     try:
-        alpha = getattr(theme, "glass_backdrop_alpha", 0.95) if theme else 0.95
-        window.wm_attributes("-alpha", alpha)
+        window.wm_attributes("-alpha", 1.0)
     except Exception:
         pass
 
@@ -411,6 +410,9 @@ class RoundedPillBadge(tk.Canvas):
 
     def _redraw(self) -> None:
         self.delete("all")
+        if not self.text:
+            self.config(width=0)
+            return
         w = max(40, len(self.text) * 7 + 16)
         self.config(width=w)
         h = self.fixed_height

@@ -160,10 +160,10 @@ def test_sidebar_filter_titles_and_pills(root, monkeypatch):
             assert app.lbl_view_title.cget("text") == expected_title
 
         # Test 2: Top bar button labels
-        assert app.btn_restore.text == "Restore Backup"
-        assert app.btn_backup.text == "Backup Apps"
-        assert app.btn_sources.text == "Refresh Sources"
-        assert app.btn_export.text == "Export Inventory"
+        assert app.btn_restore.text in ("Restore", "Restore Backup")
+        assert app.btn_backup.text in ("Backup", "Backup Apps")
+        assert app.btn_sources.text in ("Sources", "Refresh Sources")
+        assert app.btn_export.text in ("Export", "Export Inventory")
 
         # Test 3: Action deck label
         assert app.lbl_action_deck.cget("text") == "ACTIONS"

@@ -897,34 +897,37 @@ class GlassyTelemetryHUD(tk.Frame):
         self.theme: ThemeColors = LIGHT_THEME
         self._pulse_phase = 0.0
         self._cpu_val = 0.0
-        self._ram_str = "RAM: 9.2/15.8 GB (58%)"
+        self._ram_str = "RAM: 58%"
         self._mode = "idle"  # "idle", "scanning", "updating"
         self._is_active = True
 
         # Pill 1: CPU
-        self.pill_cpu = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
-        self.pill_cpu.pack(side=tk.LEFT, padx=(0, 6))
+        self.pill_cpu = tk.Frame(self, bg="#16132a", padx=6, pady=3, highlightthickness=1, highlightbackground="#2e254c")
+        self.pill_cpu.pack(side=tk.LEFT, padx=(0, 5))
         self.lbl_cpu_icon = tk.Label(self.pill_cpu, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#00f0ff")
-        self.lbl_cpu_icon.pack(side=tk.LEFT, padx=(0, 4))
-        self.lbl_cpu = tk.Label(self.pill_cpu, text="CPU: 23%", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#34d399")
+        self.lbl_cpu_icon.pack(side=tk.LEFT, padx=(0, 3))
+        self.lbl_cpu = tk.Label(self.pill_cpu, text="CPU: 0%", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#34d399")
         self.lbl_cpu.pack(side=tk.LEFT)
 
         # Pill 2: RAM
-        self.pill_ram = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
-        self.pill_ram.pack(side=tk.LEFT, padx=(0, 6))
+        self.pill_ram = tk.Frame(self, bg="#16132a", padx=6, pady=3, highlightthickness=1, highlightbackground="#2e254c")
+        self.pill_ram.pack(side=tk.LEFT, padx=(0, 5))
         self.lbl_ram_icon = tk.Label(self.pill_ram, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#a855f7")
-        self.lbl_ram_icon.pack(side=tk.LEFT, padx=(0, 4))
-        self.lbl_ram = tk.Label(self.pill_ram, text="RAM: 9.2/15.8 GB (58%)", font=("Segoe UI", 8), bg="#10182b", fg="#f8fafc")
+        self.lbl_ram_icon.pack(side=tk.LEFT, padx=(0, 3))
+        self.lbl_ram = tk.Label(self.pill_ram, text="RAM: 48%", font=("Segoe UI", 8), bg="#10182b", fg="#f8fafc")
         self.lbl_ram.pack(side=tk.LEFT)
 
         # Pill 3: GPU & Status Beacon
-        self.pill_gpu = tk.Frame(self, bg="#16132a", padx=8, pady=3, highlightthickness=1, highlightbackground="#2e254c")
+        self.pill_gpu = tk.Frame(self, bg="#16132a", padx=6, pady=3, highlightthickness=1, highlightbackground="#2e254c")
         self.pill_gpu.pack(side=tk.LEFT)
         self.lbl_gpu_icon = tk.Label(self.pill_gpu, text="▣", font=("Segoe UI", 7), bg="#16132a", fg="#10b981")
-        self.lbl_gpu_icon.pack(side=tk.LEFT, padx=(0, 4))
+        self.lbl_gpu_icon.pack(side=tk.LEFT, padx=(0, 3))
         gpu_short = gpu_name
-        if len(gpu_short) > 22:
-            gpu_short = gpu_short.replace("NVIDIA ", "").replace("Graphics", "").strip()
+        for prefix in ("NVIDIA ", "GeForce ", "AMD ", "Radeon ", "Intel ", "Graphics"):
+            gpu_short = gpu_short.replace(prefix, "")
+        gpu_short = gpu_short.strip()
+        if len(gpu_short) > 12:
+            gpu_short = gpu_short[:12].strip()
         self.lbl_gpu = tk.Label(self.pill_gpu, text=f"GPU: {gpu_short}", font=("Segoe UI", 8, "bold"), bg="#10182b", fg="#f8fafc")
         self.lbl_gpu.pack(side=tk.LEFT, padx=(0, 6))
 
@@ -999,7 +1002,7 @@ class GlassyTelemetryHUD(tk.Frame):
                 try:
                     cpu = self.sys_info.get_cpu_load_percent(sample_interval=0.1)
                     used_gb, total_gb, ram_pct = self.sys_info.get_memory_info()
-                    ram_text = f"RAM: {used_gb:.1f}/{total_gb:.1f} GB ({ram_pct}%)"
+                    ram_text = f"RAM: {ram_pct}%"
 
                     def update_ui(c=cpu, r=ram_text):
                         if not self.winfo_exists():

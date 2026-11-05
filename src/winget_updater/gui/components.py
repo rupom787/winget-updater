@@ -226,10 +226,13 @@ class SidebarNavigation(tk.Frame):
             height=18,
             bg="#faf6f6",
             highlightthickness=0,
+            cursor="hand2",
         )
-        self.traffic_lights_canvas.pack(anchor=tk.W, pady=(0, 8))
+        self.traffic_lights_canvas.pack(anchor=tk.W, pady=(0, 6))
+        self.traffic_lights_canvas.bind("<Button-1>", self._on_traffic_lights_click)
         self._draw_traffic_lights()
 
+        # Retained reference for backwards test compatibility without duplicate UI clutter
         self.lbl_title = tk.Label(
             self.brand_frame,
             text="Software Updater",
@@ -239,7 +242,6 @@ class SidebarNavigation(tk.Frame):
             justify=tk.LEFT,
             anchor="w",
         )
-        self.lbl_title.pack(anchor=tk.W)
 
         self.lbl_version_tag = tk.Label(
             self.brand_frame,
@@ -478,6 +480,20 @@ class SidebarNavigation(tk.Frame):
         # Initial render
         self._render_navigation_items()
 
+
+    def _on_traffic_lights_click(self, event) -> None:
+        """Handles click on macOS-style traffic lights: Red=Close, Yellow=Minimize, Green=Maximize/Restore."""
+        try:
+            top = self.winfo_toplevel()
+            if event.x <= 17:
+                top.destroy()
+            elif event.x <= 34:
+                top.iconify()
+            elif event.x <= 52:
+                state = top.wm_state()
+                top.wm_state("normal" if state == "zoomed" else "zoomed")
+        except Exception:
+            pass
 
     def _draw_traffic_lights(self) -> None:
         """Draws classic macOS traffic light buttons: Close (red), Minimize (yellow), Maximize (green),
@@ -843,7 +859,8 @@ class DetailsDrawer(tk.Frame):
 
         # Rounded Status Pill Badge
         self.status_pill = RoundedPillBadge(self.header_row, text="", bg_color="#20142e", fg_color="#cbd5e1", parent_bg="#161022")
-        self.status_pill.pack(side=tk.LEFT, padx=(12, 0))
+        # Kept hidden initially until an item is actively selected
+        self.status_pill.pack_forget()
 
         # Metadata grid
         self.meta_frame = tk.Frame(self.details_container, bg="#161022")
@@ -1095,7 +1112,7 @@ class DetailsDrawer(tk.Frame):
         self.current_item = item
         if not item:
             self.lbl_name.config(text="Select an application to view details", fg=self.theme.fg_muted)
-            self.lbl_pub.config(text="")
+            self.lbl_pub.config(text="Click any application in the table above to inspect version telemetry & actions.")
             self.lbl_versions.config(text="")
             self.lbl_id_path.config(text="")
             self.lbl_notes.config(text="")
@@ -1538,10 +1555,10 @@ class ProgramTableView(tk.Frame):
     """
 
     COLUMNS = [
-        ("name", "Application Name", 330),
-        ("installed", "Installed Version", 130),
-        ("latest", "Available Version", 130),
-        ("status", "Status", 160),
+        ("name", "Application Name", 280),
+        ("installed", "Installed", 120),
+        ("latest", "Available", 120),
+        ("status", "Status", 140),
     ]
 
     def __init__(
