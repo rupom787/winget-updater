@@ -54,7 +54,7 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `DE43F08F9E01EE21AE6174E30FCC94365B7D65BF2C8A69C47BF644104AC62DDA` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `7EA273E8E2B2006A058E65693A2370354F4A364F42DF130FC2E28209496320CA` |
 | [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.1.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `046CDA3CEEF0F4EDF9941E9C6EC163B1AE82ABF7AAB51C15A91564FF0C2AE86B` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)

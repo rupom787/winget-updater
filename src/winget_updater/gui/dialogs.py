@@ -2,9 +2,11 @@
 Designed with Clean White and Velvet Burgundy typography and rounded controls.
 """
 
+import queue
+import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from winget_updater.config import ConfigManager, ExclusionRule, VendorSourceEntry
 from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge, apply_native_window_styling
@@ -2232,6 +2234,7 @@ class GameRuntimesDialog(tk.Toplevel):
         self.current_filter = "all"
         self.scan_results: List[Any] = []
         self._is_busy = False
+        self.msg_queue: queue.Queue = queue.Queue()
 
         from winget_updater.engine.runtimes import RuntimesManager
         self.runtimes_mgr = RuntimesManager()
@@ -2241,7 +2244,32 @@ class GameRuntimesDialog(tk.Toplevel):
         self.grab_set()
 
         self._build_ui()
+        self._process_queue()
         self._start_async_scan()
+
+    def _process_queue(self) -> None:
+        """Processes cross-thread asynchronous UI messages."""
+        try:
+            while True:
+                msg_type, payload = self.msg_queue.get_nowait()
+                if msg_type == "SCAN_COMPLETE":
+                    self._on_scan_completed(payload)
+                elif msg_type == "SCAN_FAILED":
+                    self._on_scan_failed(payload)
+                elif msg_type == "STATUS":
+                    self.lbl_status.config(text=payload)
+                elif msg_type == "PROGRESS":
+                    self.progress_bar.config(value=payload)
+                elif msg_type == "JOB_DONE":
+                    successes, failures, total = payload
+                    self._on_install_job_done(successes, failures, total)
+        except queue.Empty:
+            pass
+        except Exception:
+            pass
+        finally:
+            if self.winfo_exists():
+                self.after(50, self._process_queue)
 
     def _build_ui(self) -> None:
         t = self.theme
@@ -2499,9 +2527,9 @@ class GameRuntimesDialog(tk.Toplevel):
         def worker():
             try:
                 results = self.runtimes_mgr.scan_all_runtimes()
-                self.after(0, lambda: self._on_scan_completed(results))
+                self.msg_queue.put(("SCAN_COMPLETE", results))
             except Exception as e:
-                self.after(0, lambda: self._on_scan_failed(str(e)))
+                self.msg_queue.put(("SCAN_FAILED", str(e)))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -2672,8 +2700,8 @@ class GameRuntimesDialog(tk.Toplevel):
             for idx, it in enumerate(items, 1):
                 name = it.definition.name
                 pkg_id = it.definition.winget_id
-                self.after(0, lambda n=name, i=idx: self.lbl_status.config(text=f"Installing {n} ({i}/{total})..."))
-                self.after(0, lambda v=idx - 1: self.progress_bar.config(value=v))
+                self.msg_queue.put(("STATUS", f"Installing {name} ({idx}/{total})..."))
+                self.msg_queue.put(("PROGRESS", idx - 1))
 
                 success, msg = self.runtimes_mgr.install_runtime(pkg_id)
                 if success:
@@ -2681,7 +2709,7 @@ class GameRuntimesDialog(tk.Toplevel):
                 else:
                     failures += 1
 
-            self.after(0, lambda: self._on_install_job_done(successes, failures, total))
+            self.msg_queue.put(("JOB_DONE", (successes, failures, total)))
 
         threading.Thread(target=worker, daemon=True).start()
 

@@ -990,17 +990,26 @@ class MainWindow(tk.Tk):
         if self.drawer:
             self.drawer._on_copy_id_click()
 
+    @property
+    def theme(self) -> ThemeColors:
+        return self.current_theme
+
     def _open_update_tracker(self) -> None:
         """Opens the App Update Tracker dialog."""
-        AppUpdateTrackerDialog(self, tracker=self.update_tracker, theme=self.theme)
+        AppUpdateTrackerDialog(self, tracker=self.update_tracker, theme=self.current_theme)
 
     def _open_runtimes_manager(self) -> None:
         """Opens the Gaming & System Runtimes Manager modal."""
-        GameRuntimesDialog(
-            self,
-            theme=self.theme,
-            on_runtime_installed=self.start_scan,
-        )
+        try:
+            dlg = GameRuntimesDialog(
+                self,
+                theme=self.current_theme,
+                on_runtime_installed=self.start_scan,
+            )
+            dlg.focus_force()
+        except Exception as e:
+            logger.error(f"Failed to open GameRuntimesDialog: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to open Runtimes Manager:\n{e}", parent=self)
 
     def _launch_app_uninstaller(self) -> None:
         """Launches the standalone complete uninstaller executable or script."""

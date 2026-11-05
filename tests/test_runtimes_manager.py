@@ -106,3 +106,4 @@ def test_batch_install_missing(mock_winget_client):
     assert len(outcomes) == 1
     assert dummy_def_1.id in outcomes
     assert len(progress_calls) == 1
+
