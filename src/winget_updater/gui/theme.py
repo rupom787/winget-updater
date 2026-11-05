@@ -275,10 +275,10 @@ THEMES: Dict[str, ThemeColors] = {
 
 
 def get_theme(name: str) -> ThemeColors:
-    """Returns the ThemeColors corresponding to the given theme name (defaults to light)."""
+    """Returns the ThemeColors corresponding to the given theme name (defaults to DREAM / dark acrylic glass)."""
     if not name:
-        return WAKE_THEME
-    return THEMES.get(name.lower(), WAKE_THEME)
+        return DREAM_THEME
+    return THEMES.get(name.lower(), DREAM_THEME)
 
 
 @dataclass

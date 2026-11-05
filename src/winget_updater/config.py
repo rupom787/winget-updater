@@ -62,7 +62,7 @@ class ConfigManager:
         self.pinned_path = self.base_dir / DEFAULT_PINNED_FILE
         self.skipped_path = self.base_dir / DEFAULT_SKIPPED_FILE
         
-        self.theme: str = "light"
+        self.theme: str = "dark"
         self.font_scale: str = "normal"  # "compact", "normal", "large", "extra_large"
         self.auto_scan_on_startup: bool = True
         self.create_restore_point: bool = False

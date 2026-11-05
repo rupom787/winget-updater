@@ -129,7 +129,7 @@ def test_theme_system():
     from winget_updater.gui.theme import DARK_THEME, LIGHT_THEME, get_theme
     assert get_theme("dark").name == "dark"
     assert get_theme("light").name == "light"
-    assert get_theme("invalid").name == "light"
+    assert get_theme("invalid").name == "dark"
 
     root = tk.Tk()
     root.withdraw()
@@ -171,14 +171,14 @@ def test_main_window_theme_toggle():
         app = MainWindow(config_manager=cfg)
         app.withdraw()
 
-        assert app.current_theme.name == "light"
-        app.toggle_theme()
         assert app.current_theme.name == "dark"
-        assert cfg.theme == "dark"
-
         app.toggle_theme()
         assert app.current_theme.name == "light"
         assert cfg.theme == "light"
+
+        app.toggle_theme()
+        assert app.current_theme.name == "dark"
+        assert cfg.theme == "dark"
 
         app.destroy()
 

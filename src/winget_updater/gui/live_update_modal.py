@@ -27,7 +27,7 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         super().__init__(parent)
         self.parent = parent
         self.items = items
-        self.theme = theme or get_theme("light")
+        self.theme = theme or get_theme("dark")
         self.is_dark = getattr(self.theme, "name", "light") == "dark"
         self.on_run_in_background = on_run_in_background
         self.on_cancel_queue = on_cancel_queue

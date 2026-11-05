@@ -211,7 +211,29 @@ class MainWindow(tk.Tk):
         self.theme_box = tk.Frame(self.top_controls, bg=self.current_theme.bg_header)
         self.theme_box.pack(side=tk.LEFT, padx=(6, 0))
 
-        # iOS toggle switch matching Light / Dark in mockup
+        initial_theme_txt = (
+            "WAKE [○] / DREAM [●] / BLOOM [○]" if self.current_theme.name == "dark"
+            else ("WAKE [○] / DREAM [○] / BLOOM [●]" if self.current_theme.name == "bloom"
+            else "WAKE [●] / DREAM [○] / BLOOM [○]")
+        )
+        self.btn_theme_cycle = RoundedButton(
+            self.theme_box,
+            text=initial_theme_txt,
+            command=self.cycle_theme,
+            bg_color="#221c38" if self.current_theme.name == "dark" else self.current_theme.bg_card,
+            fg_color="#e2e8f0" if self.current_theme.name == "dark" else self.current_theme.fg_primary,
+            hover_bg="#352c54" if self.current_theme.name == "dark" else self.current_theme.bg_card_hover,
+            border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border,
+            radius=10,
+            width=210,
+            height=28,
+            font=("Segoe UI", 8, "bold"),
+            padding=(6, 2),
+            parent_bg=self.current_theme.bg_header,
+        )
+        self.btn_theme_cycle.pack(side=tk.LEFT, padx=(4, 0))
+
+        # Hidden iOS toggle switch retained for backwards test compatibility
         self.sw_theme = IOSStyleToggleSwitch(
             self.theme_box,
             variable=self.theme_var,
@@ -222,8 +244,6 @@ class MainWindow(tk.Tk):
             off_color="#1e2c45",
             parent_bg=self.current_theme.bg_header,
         )
-        self.sw_theme.pack(side=tk.LEFT, padx=(0, 6))
-
         self.lbl_theme_mode = tk.Label(
             self.theme_box,
             text="Light / Dark",
@@ -231,23 +251,6 @@ class MainWindow(tk.Tk):
             bg=self.current_theme.bg_header,
             fg=self.current_theme.fg_muted,
         )
-        self.lbl_theme_mode.pack(side=tk.LEFT, padx=(0, 4))
-
-        self.btn_theme_cycle = RoundedButton(
-            self.theme_box,
-            text="[●]",
-            command=self.cycle_theme,
-            bg_color=self.current_theme.bg_card,
-            fg_color=self.current_theme.fg_primary,
-            hover_bg=self.current_theme.bg_card_hover,
-            border_color=self.current_theme.border,
-            radius=6,
-            width=28,
-            height=24,
-            font=("Segoe UI", 8, "bold"),
-            padding=(4, 2),
-        )
-        # self.btn_theme_cycle.pack(side=tk.LEFT, padx=(8, 0))
 
         # 2. Top Left Brand & Status
         self.brand_title_box = tk.Frame(self.top_bar, bg=self.current_theme.bg_header)
@@ -274,7 +277,7 @@ class MainWindow(tk.Tk):
 
         self.lbl_app_sub = tk.Label(
             self.brand_title_box,
-            text="  •  Windows 11  •  Hardware Accelerated",
+            text=" • Win11",
             bg=self.current_theme.bg_header,
             fg=self.current_theme.fg_muted,
             font=("Segoe UI", 8),
@@ -758,7 +761,7 @@ class MainWindow(tk.Tk):
 
         self.configure(bg=t.bg_root)
         self.top_bar.config(bg=t.bg_header, highlightbackground=t.border)
-        self.lbl_app_title.config(bg=t.bg_header, fg=t.accent_burgundy)
+        self.lbl_app_title.config(bg=t.bg_header, fg="#ffffff" if t.name == "dark" else t.accent_burgundy)
         self.lbl_app_sub.config(bg=t.bg_header, fg=t.fg_muted)
         self.top_controls.config(bg=t.bg_header)
         if hasattr(self, "laser_header"):

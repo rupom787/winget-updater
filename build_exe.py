@@ -42,6 +42,7 @@ def build():
         "--uac-admin",  # Embeds Windows UAC administrator manifest directly into EXE
         "--add-data", f"{root_dir / 'exclusions.json'};.",
         "--add-data", f"{root_dir / 'sources.json'};.",
+        "--add-data", f"{root_dir / 'config.json'};.",
         "--add-data", f"{uninstaller_path};.",  # Embeds Uninstall.exe inside WingetUpdater.exe!
         str(root_dir / "run.py"),
     ]
