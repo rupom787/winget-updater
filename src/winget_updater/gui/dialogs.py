@@ -7,9 +7,9 @@ from tkinter import messagebox, ttk
 from typing import Callable, List, Optional
 from winget_updater.config import ConfigManager, ExclusionRule, VendorSourceEntry
 from winget_updater.engine.scheduler import SchedulerManager
-from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge
+from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge, apply_native_window_styling
 from winget_updater.engine.tracker import TrackedAppUpdate, UpdateTracker
-from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
+from winget_updater.gui.theme import DARK_THEME, DREAM_THEME, LIGHT_THEME, ThemeColors, get_theme
 from winget_updater.models import ProgramItem
 
 
@@ -29,7 +29,11 @@ class ExclusionManagerDialog(tk.Toplevel):
         self.minsize(540, 380)
         self.config = config
         self.on_change = on_change
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.configure(bg=self.theme.bg_root)
 
         self.transient(parent)
@@ -236,7 +240,11 @@ class ScheduleConfigDialog(tk.Toplevel):
         self.geometry("560x420")
         self.minsize(480, 360)
         self.scheduler = scheduler
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.configure(bg=self.theme.bg_root)
 
         self.transient(parent)
@@ -483,7 +491,11 @@ class BindWingetSourceDialog(tk.Toplevel):
         self.item = item
         self.config = config
         self.on_bound = on_bound
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.winget_client = winget_client
         self.configure(bg=self.theme.bg_root)
 
@@ -934,8 +946,8 @@ class SettingsDialog(tk.Toplevel):
     ):
         super().__init__(parent)
         self.title("Settings & Preferences")
-        self.geometry("740x620")
-        self.minsize(640, 520)
+        self.geometry("820x640")
+        self.minsize(720, 560)
         self.config = config
         self.on_theme_changed = on_theme_changed
         self.on_font_scale_changed = on_font_scale_changed
@@ -949,7 +961,11 @@ class SettingsDialog(tk.Toplevel):
         self.on_export_inventory = on_export_inventory
         self.on_uninstall_app = on_uninstall_app
         self.scheduler = scheduler
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.configure(bg=self.theme.bg_root)
 
         self.transient(parent)
@@ -987,38 +1003,38 @@ class SettingsDialog(tk.Toplevel):
         # Main notebook
         style = ttk.Style()
         style.configure("Settings.TNotebook", background=t.bg_root, borderwidth=0)
-        style.configure("Settings.TNotebook.Tab", padding=[14, 8], font=("Segoe UI", 9, "bold"))
+        style.configure("Settings.TNotebook.Tab", padding=[10, 6], font=("Segoe UI", 9, "bold"))
         self.notebook = ttk.Notebook(self, style="Settings.TNotebook")
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=14)
 
         # Tab 1: Appearance & Display
         self.tab_appearance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_appearance, text="🎨 Appearance & Text")
+        self.notebook.add(self.tab_appearance, text="Appearance")
         self._build_appearance_tab()
 
         # Tab 2: Package Ecosystems & Sources
         self.tab_managers = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_managers, text="📦 Package Managers")
+        self.notebook.add(self.tab_managers, text="Packages")
         self._build_managers_tab()
 
         # Tab 3: Safety & Exclusions
         self.tab_safety = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_safety, text="🛡️ Safety & Exclusions")
+        self.notebook.add(self.tab_safety, text="Safety")
         self._build_safety_tab()
 
         # Tab 4: Schedule & Automation
         self.tab_schedule = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_schedule, text="🕒 Schedule & Automation")
+        self.notebook.add(self.tab_schedule, text="Schedule")
         self._build_schedule_tab()
 
         # Tab 5: Backup & Export
         self.tab_backup = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_backup, text="💾 Backup & Export")
+        self.notebook.add(self.tab_backup, text="Backup")
         self._build_backup_tab()
 
         # Tab 6: Application Maintenance & Uninstaller
         self.tab_maintenance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_maintenance, text="🗑️ Maintenance")
+        self.notebook.add(self.tab_maintenance, text="Maintenance")
         self._build_maintenance_tab()
 
         # Bottom Action Bar
@@ -1104,10 +1120,11 @@ class SettingsDialog(tk.Toplevel):
         lbl_thead = tk.Label(card_theme, text="Color Theme", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
         lbl_thead.pack(anchor=tk.W)
 
-        self.theme_var = tk.StringVar(value=getattr(self.config, "theme", "light"))
+        self.theme_var = tk.StringVar(value=getattr(self.config, "theme", "dark"))
         theme_options = [
-            ("Clean Velvet Wine (Light)", "light"),
-            ("Cyber Burgundy (Dark Mode)", "dark"),
+            ("🌙 Obsidian Dream (Dark Glass • Default)", "dark"),
+            ("🌸 Amethyst Bloom (Surreal Architecture)", "bloom"),
+            ("☀️ Ivory Wake (Light Mode)", "light"),
         ]
         for label, val in theme_options:
             rb = tk.Radiobutton(
@@ -1588,7 +1605,11 @@ class UpdateSummaryDialog(tk.Toplevel):
         self.summary = summary
         self.failed_items = failed_items or []
         self.on_retry = on_retry
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.configure(bg=self.theme.bg_root)
 
         self.transient(parent)
@@ -1743,7 +1764,11 @@ class AppUpdateTrackerDialog(tk.Toplevel):
         self.geometry("820x560")
         self.minsize(700, 440)
         self.tracker = tracker
-        self.theme = theme or LIGHT_THEME
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
         self.on_update_requested = on_update_requested
         self.current_filter = "all"
 
