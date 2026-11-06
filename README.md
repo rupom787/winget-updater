@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.1/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.3.1)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.4.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.4.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.1/Uninstall.exe">
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.4.0/Uninstall.exe">
     <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.50_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
   </a>
 </p>
@@ -54,11 +54,11 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.3.1/WingetUpdater.exe) | Windows 11 (64-bit) | 34.32 MB | `7D5F9CF1C04EC76664CCCEFD77BF5133BE986CBE44A0FFEFB3BDABEE8C9F918A` |
-| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.3.1/Uninstall.exe) | Windows 11 (64-bit) | 13.50 MB | `DE2589E9910D990CD31A3EC789BD3DE36A61262678CBC2FAC75A6CD841FF487F` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.4.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.35 MB | `F4097E6F72E580302A9D7D7155A2F49E176A24347EC44B188F7276A745499DAA` |
+| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.4.0/Uninstall.exe) | Windows 11 (64-bit) | 13.50 MB | `1A0070265B798A39B3CB268E84C761284DF687AFDB0A9A6F7D49530244C02873` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.3.1/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.4.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.

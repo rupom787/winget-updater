@@ -8,6 +8,7 @@ from tkinter import ttk
 from typing import Callable, Dict, List, Optional
 from winget_updater.gui.theme import ThemeColors, get_theme
 from winget_updater.models import ProgramItem, UpdateOutcome
+from winget_updater.utils.sound import SoundManager
 
 
 class LiveUpdateProgressDialog(tk.Toplevel):
@@ -23,6 +24,7 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         on_run_in_background: Optional[Callable[[], None]] = None,
         on_cancel_queue: Optional[Callable[[], None]] = None,
         on_complete_view_summary: Optional[Callable[[], None]] = None,
+        on_retry_failed: Optional[Callable[[List[ProgramItem]], None]] = None,
     ):
         super().__init__(parent)
         self.parent = parent
@@ -32,6 +34,7 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         self.on_run_in_background = on_run_in_background
         self.on_cancel_queue = on_cancel_queue
         self.on_complete_view_summary = on_complete_view_summary
+        self.on_retry_failed = on_retry_failed
 
         self.title("Software Stack Update Engine")
         self.resizable(False, False)
@@ -635,6 +638,13 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         # Switch action buttons and update button label to accurately reflect final outcome
         self.btn_cancel.pack_forget()
         self.btn_background.pack_forget()
+
+        # Audio cue
+        if self.failed_count == 0:
+            SoundManager.play_update_success()
+        else:
+            SoundManager.play_warning()
+
         if self.failed_count > 0 and self.succeeded_count == 0:
             self.btn_complete_view.config(text="✕ Close", bg="#ef4444", fg="#ffffff")
         elif self.failed_count > 0:
@@ -642,6 +652,31 @@ class LiveUpdateProgressDialog(tk.Toplevel):
         else:
             self.btn_complete_view.config(text="✓ Done", bg="#10b981", fg="#ffffff")
         self.btn_complete_view.pack(side=tk.RIGHT)
+
+        # Retry Failed Updates button if failures occurred
+        if self.failed_count > 0 and self.on_retry_failed:
+            failed_items = [it for it in self.items if getattr(it, "outcome", None) == UpdateOutcome.FAILED]
+            if failed_items:
+                def _do_retry():
+                    self.destroy()
+                    if self.on_retry_failed:
+                        self.on_retry_failed(failed_items)
+
+                self.btn_retry_action = tk.Button(
+                    self.footer_actions_frame,
+                    text=f"🔄 Retry {len(failed_items)} Failed",
+                    command=_do_retry,
+                    bg="#881337" if not self.is_dark else "#e11d48",
+                    fg="#ffffff",
+                    activebackground="#9f1239",
+                    activeforeground="#ffffff",
+                    font=("Segoe UI", 9, "bold"),
+                    relief=tk.FLAT,
+                    padx=14,
+                    pady=4,
+                    cursor="hand2",
+                )
+                self.btn_retry_action.pack(side=tk.RIGHT, padx=(0, 8))
 
         # If window was minimized to background, restore it cleanly
         if self.is_minimized_background:

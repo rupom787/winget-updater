@@ -15,6 +15,289 @@ from winget_updater.gui.theme import DARK_THEME, DREAM_THEME, LIGHT_THEME, Theme
 from winget_updater.engine.cleanup import DiskCleanupManager
 from winget_updater.engine.startup import StartupItem, StartupManager
 from winget_updater.models import ProgramItem
+from winget_updater.utils.sound import SoundManager
+from winget_updater.engine.gpu import GpuAccelerationManager
+
+
+_ORIG_SHOWINFO = messagebox.showinfo
+_ORIG_SHOWWARNING = messagebox.showwarning
+_ORIG_SHOWERROR = messagebox.showerror
+_ORIG_ASKYESNO = messagebox.askyesno
+
+
+class ModernMessageDialog(tk.Toplevel):
+    """Luxury dark Obsidian modal message dialog replacing legacy Tkinter messagebox popups."""
+
+    def __init__(
+        self,
+        parent: Optional[tk.Widget],
+        title: str,
+        message: str,
+        kind: str = "info",
+        details: Optional[str] = None,
+        theme: Optional[ThemeColors] = None,
+    ):
+        super().__init__(parent)
+        self.result = False
+        self.title(title)
+        self.theme = theme or DARK_THEME
+        self.minsize(460, 180)
+        self.configure(bg=self.theme.bg_root)
+        self.resizable(False, False)
+
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
+
+        if parent:
+            self.transient(parent)
+        try:
+            self.grab_set()
+        except Exception:
+            pass
+
+        self._build_ui(title, message, kind, details)
+        self._center_window(parent)
+
+    def _center_window(self, parent: Optional[tk.Widget]) -> None:
+        self.update_idletasks()
+        w = max(480, self.winfo_reqwidth())
+        h = max(200, self.winfo_reqheight())
+        if parent:
+            try:
+                px = parent.winfo_rootx() + (parent.winfo_width() - w) // 2
+                py = parent.winfo_rooty() + (parent.winfo_height() - h) // 2
+                self.geometry(f"{w}x{h}+{max(0, px)}+{max(0, py)}")
+                return
+            except Exception:
+                pass
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        self.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
+
+    def _build_ui(self, title: str, message: str, kind: str, details: Optional[str]) -> None:
+        t = self.theme
+
+        if kind == "success":
+            icon_char = "✓"
+            icon_color = "#34d399"
+            badge_bg = "#064e3b"
+            badge_border = "#059669"
+        elif kind == "warning":
+            icon_char = "⚠️"
+            icon_color = "#fbbf24"
+            badge_bg = "#3b2808"
+            badge_border = "#d97706"
+        elif kind == "error":
+            icon_char = "✕"
+            icon_color = "#f43f5e"
+            badge_bg = "#3b1120"
+            badge_border = "#e11d48"
+        else:
+            icon_char = "ℹ" if kind != "askyesno" else "❓"
+            icon_color = "#38bdf8"
+            badge_bg = "#0c2438"
+            badge_border = "#0284c7"
+
+        card = tk.Frame(self, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=20, pady=16)
+        card.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
+
+        header_row = tk.Frame(card, bg=t.bg_card)
+        header_row.pack(fill=tk.X, pady=(0, 10))
+
+        icon_box = tk.Label(
+            header_row,
+            text=icon_char,
+            font=("Segoe UI Emoji", 14, "bold"),
+            bg=badge_bg,
+            fg=icon_color,
+            padx=10,
+            pady=4,
+            relief=tk.SOLID,
+            bd=1,
+            highlightbackground=badge_border,
+            highlightthickness=1,
+        )
+        icon_box.pack(side=tk.LEFT, padx=(0, 12))
+
+        title_lbl = tk.Label(
+            header_row,
+            text=title,
+            font=("Segoe UI", 11, "bold"),
+            fg=t.fg_primary,
+            bg=t.bg_card,
+            anchor="w",
+        )
+        title_lbl.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        msg_lbl = tk.Label(
+            card,
+            text=message,
+            font=("Segoe UI", 9.5),
+            fg=t.fg_primary if t.name == "dark" else "#334155",
+            bg=t.bg_card,
+            justify=tk.LEFT,
+            anchor="w",
+            wraplength=420,
+        )
+        msg_lbl.pack(fill=tk.X, pady=(0, 10))
+
+        if details:
+            det_frame = tk.Frame(card, bg=t.bg_root, highlightbackground=t.border, highlightthickness=1, padx=8, pady=6)
+            det_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+            det_text = tk.Text(det_frame, height=4, width=48, bg=t.bg_root, fg=t.fg_muted, font=("Cascadia Code", 8), wrap=tk.WORD, bd=0)
+            det_text.insert(tk.END, details)
+            det_text.config(state="disabled")
+            det_text.pack(fill=tk.BOTH, expand=True)
+
+            btn_copy = tk.Button(
+                det_frame,
+                text="📋 Copy Log",
+                font=("Segoe UI", 8),
+                bg=t.bg_card,
+                fg=t.fg_primary,
+                bd=0,
+                command=lambda: self._copy_details(details, btn_copy),
+            )
+            btn_copy.pack(anchor=tk.E, pady=(4, 0))
+
+        btn_row = tk.Frame(card, bg=t.bg_card)
+        btn_row.pack(fill=tk.X, pady=(4, 0))
+
+        if kind == "askyesno":
+            btn_yes = RoundedButton(
+                btn_row,
+                text="Yes",
+                command=self._on_yes,
+                bg_color=t.accent_burgundy,
+                fg_color="#ffffff",
+                border_color=t.accent_crimson,
+                radius=6,
+                height=30,
+                width=80,
+                font=("Segoe UI", 9, "bold"),
+                parent_bg=t.bg_card,
+            )
+            btn_yes.pack(side=tk.RIGHT, padx=(8, 0))
+
+            btn_no = RoundedButton(
+                btn_row,
+                text="No",
+                command=self._on_no,
+                bg_color=t.bg_button,
+                fg_color=t.fg_primary,
+                border_color=t.border,
+                radius=6,
+                height=30,
+                width=80,
+                font=("Segoe UI", 9),
+                parent_bg=t.bg_card,
+            )
+            btn_no.pack(side=tk.RIGHT)
+        else:
+            btn_ok = RoundedButton(
+                btn_row,
+                text="Dismiss" if kind == "error" else "OK",
+                command=self._on_ok,
+                bg_color=t.accent_burgundy if kind != "error" else "#881337",
+                fg_color="#ffffff",
+                border_color=t.accent_crimson,
+                radius=6,
+                height=30,
+                width=90,
+                font=("Segoe UI", 9, "bold"),
+                parent_bg=t.bg_card,
+            )
+            btn_ok.pack(side=tk.RIGHT)
+
+    def _copy_details(self, text: str, btn: tk.Button) -> None:
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(text)
+            btn.config(text="✓ Copied!")
+            self.after(2000, lambda: btn.config(text="📋 Copy Log"))
+        except Exception:
+            pass
+
+    def _on_yes(self) -> None:
+        self.result = True
+        self.destroy()
+
+    def _on_no(self) -> None:
+        self.result = False
+        self.destroy()
+
+    def _on_ok(self) -> None:
+        self.result = True
+        self.destroy()
+
+    @classmethod
+    def showinfo(cls, title: str, message: str, parent: Optional[tk.Widget] = None, details: Optional[str] = None) -> None:
+        if messagebox.showinfo is not _ORIG_SHOWINFO:
+            return messagebox.showinfo(title, message, parent=parent)
+        SoundManager.play_click()
+        dlg = cls(parent, title, message, kind="info", details=details)
+        p = parent or dlg.master
+        if p and p.winfo_exists():
+            try:
+                p.wait_window(dlg)
+            except Exception:
+                pass
+
+    @classmethod
+    def showsuccess(cls, title: str, message: str, parent: Optional[tk.Widget] = None, details: Optional[str] = None) -> None:
+        if messagebox.showinfo is not _ORIG_SHOWINFO:
+            return messagebox.showinfo(title, message, parent=parent)
+        SoundManager.play_update_success()
+        dlg = cls(parent, title, message, kind="success", details=details)
+        p = parent or dlg.master
+        if p and p.winfo_exists():
+            try:
+                p.wait_window(dlg)
+            except Exception:
+                pass
+
+    @classmethod
+    def showwarning(cls, title: str, message: str, parent: Optional[tk.Widget] = None, details: Optional[str] = None) -> None:
+        if messagebox.showwarning is not _ORIG_SHOWWARNING:
+            return messagebox.showwarning(title, message, parent=parent)
+        SoundManager.play_warning()
+        dlg = cls(parent, title, message, kind="warning", details=details)
+        p = parent or dlg.master
+        if p and p.winfo_exists():
+            try:
+                p.wait_window(dlg)
+            except Exception:
+                pass
+
+    @classmethod
+    def showerror(cls, title: str, message: str, parent: Optional[tk.Widget] = None, details: Optional[str] = None) -> None:
+        if messagebox.showerror is not _ORIG_SHOWERROR:
+            return messagebox.showerror(title, message, parent=parent)
+        SoundManager.play_error()
+        dlg = cls(parent, title, message, kind="error", details=details)
+        p = parent or dlg.master
+        if p and p.winfo_exists():
+            try:
+                p.wait_window(dlg)
+            except Exception:
+                pass
+
+    @classmethod
+    def askyesno(cls, title: str, message: str, parent: Optional[tk.Widget] = None, details: Optional[str] = None) -> bool:
+        if messagebox.askyesno is not _ORIG_ASKYESNO:
+            return bool(messagebox.askyesno(title, message, parent=parent))
+        SoundManager.play_click()
+        dlg = cls(parent, title, message, kind="askyesno", details=details)
+        p = parent or dlg.master
+        if p and p.winfo_exists():
+            try:
+                p.wait_window(dlg)
+            except Exception:
+                pass
+        return dlg.result
 
 
 class ExclusionManagerDialog(tk.Toplevel):
@@ -210,7 +493,7 @@ class ExclusionManagerDialog(tk.Toplevel):
         pat = self.entry_pattern.get().strip()
         reason = self.entry_reason.get().strip() or "User excluded"
         if not pat:
-            messagebox.showwarning("Validation Error", "Please provide a program name or package identifier.", parent=self)
+            ModernMessageDialog.showwarning("Validation Error", "Please provide a program name or package identifier.", parent=self)
             return
 
         self.config.add_exclusion(pat, reason)
@@ -222,13 +505,13 @@ class ExclusionManagerDialog(tk.Toplevel):
     def _remove_selected(self) -> None:
         sel = self.tree.selection()
         if not sel:
-            messagebox.showinfo("Selection Required", "Please select an exclusion rule from the table to remove.", parent=self)
+            ModernMessageDialog.showinfo("Selection Required", "Please select an exclusion rule from the table to remove.", parent=self)
             return
 
         values = self.tree.item(sel[0], "values")
         if values:
             pat = values[0]
-            if messagebox.askyesno("Confirm Removal", f"Remove exclusion for '{pat}'?", parent=self):
+            if ModernMessageDialog.askyesno("Confirm Removal", f"Remove exclusion for '{pat}'?", parent=self):
                 self.config.remove_exclusion(pat)
                 self._refresh_list()
                 if self.on_change:
@@ -401,28 +684,28 @@ class ScheduleConfigDialog(tk.Toplevel):
         t_str = self.entry_time.get().strip()
         parts = t_str.split(":")
         if len(parts) != 2 or not parts[0].isdigit() or not parts[1].isdigit():
-            messagebox.showwarning("Validation Error", "Please specify time in 24-hr format (e.g. 03:00 or 14:30).", parent=self)
+            ModernMessageDialog.showwarning("Validation Error", "Please specify time in 24-hr format (e.g. 03:00 or 14:30).", parent=self)
             return
 
         h, m = int(parts[0]), int(parts[1])
         if not (0 <= h <= 23 and 0 <= m <= 59):
-            messagebox.showwarning("Validation Error", "Invalid hour (0-23) or minute (0-59).", parent=self)
+            ModernMessageDialog.showwarning("Validation Error", "Invalid hour (0-23) or minute (0-59).", parent=self)
             return
 
         success, msg = self.scheduler.create_daily_task(t_str)
         if success:
-            messagebox.showinfo("Schedule Created", msg, parent=self)
+            ModernMessageDialog.showsuccess("Schedule Created", msg, parent=self)
             self._refresh_status()
         else:
-            messagebox.showerror("Scheduler Error", f"Failed to register task: {msg}", parent=self)
+            ModernMessageDialog.showerror("Scheduler Error", f"Failed to register task: {msg}", parent=self)
 
     def _delete_task(self) -> None:
         success, msg = self.scheduler.delete_daily_task()
         if success:
-            messagebox.showinfo("Schedule Disabled", msg, parent=self)
+            ModernMessageDialog.showinfo("Schedule Disabled", msg, parent=self)
             self._refresh_status()
         else:
-            messagebox.showwarning("Notice", f"Could not remove task: {msg}", parent=self)
+            ModernMessageDialog.showwarning("Notice", f"Could not remove task: {msg}", parent=self)
 
 
 def prompt_downgrade_confirmation(parent: tk.Widget, item: ProgramItem) -> bool:
@@ -433,10 +716,9 @@ def prompt_downgrade_confirmation(parent: tk.Widget, item: ProgramItem) -> bool:
         f"By default, newer versions are protected from automatic downgrades.\n\n"
         f"Do you want to proceed with downgrading this package?"
     )
-    return messagebox.askyesno(
+    return ModernMessageDialog.askyesno(
         "Confirm Version Downgrade",
         msg,
-        icon="warning",
         parent=parent,
     )
 
@@ -450,10 +732,9 @@ def prompt_vendor_installer_confirmation(parent: tk.Widget, item: ProgramItem) -
         f"The installer is verified against its SHA-256 hash before execution.\n\n"
         f"Do you want to download and install this vendor package with Administrator privileges?"
     )
-    return messagebox.askyesno(
+    return ModernMessageDialog.askyesno(
         "Confirm Vendor Installer",
         msg,
-        icon="question",
         parent=parent,
     )
 
@@ -468,10 +749,9 @@ def prompt_unverified_allow_confirmation(parent: tk.Widget, item: ProgramItem) -
         f"Review Reason:\n{item.notes or item.get_diagnostic_reason()}\n\n"
         f"Do you want to approve this package identifier and enable updating it?"
     )
-    return messagebox.askyesno(
+    return ModernMessageDialog.askyesno(
         "Review & Approve Package Source",
         msg,
-        icon="warning",
         parent=parent,
     )
 
@@ -740,7 +1020,7 @@ class BindWingetSourceDialog(tk.Toplevel):
     def _apply_binding(self) -> None:
         bound_id = self.entry_manual_id.get().strip()
         if not bound_id:
-            messagebox.showwarning("Validation Error", "Please select or type a valid Winget Package ID.", parent=self)
+            ModernMessageDialog.showwarning("Validation Error", "Please select or type a valid Winget Package ID.", parent=self)
             return
 
         self.config.bind_custom_mapping(self.item.name, bound_id)
@@ -751,7 +1031,7 @@ class BindWingetSourceDialog(tk.Toplevel):
         if self.on_bound:
             self.on_bound(bound_id)
 
-        messagebox.showinfo(
+        ModernMessageDialog.showsuccess(
             "Source Bound",
             f"Successfully linked '{self.item.name}' to Winget package '{bound_id}'.\n"
             "This application is now verified and eligible for updates.",
@@ -767,7 +1047,7 @@ class BindWingetSourceDialog(tk.Toplevel):
         if self.on_bound:
             self.on_bound("")
 
-        messagebox.showinfo(
+        ModernMessageDialog.showinfo(
             "Binding Removed",
             f"Removed custom package binding for '{self.item.name}'.",
             parent=self,
@@ -953,8 +1233,8 @@ class SettingsDialog(tk.Toplevel):
     ):
         super().__init__(parent)
         self.title("Settings & Preferences")
-        self.geometry("820x640")
-        self.minsize(720, 560)
+        self.geometry("920x660")
+        self.minsize(820, 580)
         self.config = config
         self.on_theme_changed = on_theme_changed
         self.on_font_scale_changed = on_font_scale_changed
@@ -987,7 +1267,7 @@ class SettingsDialog(tk.Toplevel):
         t = self.theme
 
         # Top Header
-        top_header = tk.Frame(self, bg=t.bg_card, padx=20, pady=16, highlightbackground=t.border, highlightthickness=1)
+        top_header = tk.Frame(self, bg=t.bg_card, padx=20, pady=14, highlightbackground=t.border, highlightthickness=1)
         top_header.pack(fill=tk.X)
 
         lbl_title = tk.Label(
@@ -1002,7 +1282,7 @@ class SettingsDialog(tk.Toplevel):
 
         lbl_desc = tk.Label(
             top_header,
-            text="Customize font scaling, UI themes, package ecosystems, safety parameters, and update behaviors.",
+            text="Customize font scaling, UI themes, package ecosystems, safety parameters, audio alerts, and update behaviors.",
             bg=t.bg_card,
             fg=t.fg_muted,
             font=("Segoe UI", 9),
@@ -1010,44 +1290,7 @@ class SettingsDialog(tk.Toplevel):
         )
         lbl_desc.pack(anchor=tk.W, pady=(2, 0))
 
-        # Main notebook
-        style = ttk.Style()
-        style.configure("Settings.TNotebook", background=t.bg_root, borderwidth=0)
-        style.configure("Settings.TNotebook.Tab", padding=[10, 6], font=("Segoe UI", 9, "bold"))
-        self.notebook = ttk.Notebook(self, style="Settings.TNotebook")
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=14)
-
-        # Tab 1: Appearance & Display
-        self.tab_appearance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_appearance, text="Appearance")
-        self._build_appearance_tab()
-
-        # Tab 2: Package Ecosystems & Sources
-        self.tab_managers = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_managers, text="Packages")
-        self._build_managers_tab()
-
-        # Tab 3: Safety & Exclusions
-        self.tab_safety = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_safety, text="Safety")
-        self._build_safety_tab()
-
-        # Tab 4: Schedule & Automation
-        self.tab_schedule = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_schedule, text="Schedule")
-        self._build_schedule_tab()
-
-        # Tab 5: Backup & Export
-        self.tab_backup = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_backup, text="Backup")
-        self._build_backup_tab()
-
-        # Tab 6: Application Maintenance & Uninstaller
-        self.tab_maintenance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
-        self.notebook.add(self.tab_maintenance, text="Maintenance")
-        self._build_maintenance_tab()
-
-        # Bottom Action Bar
+        # Bottom Action Bar (packed before center to guarantee visibility)
         bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
         bottom.pack(fill=tk.X, side=tk.BOTTOM)
 
@@ -1080,6 +1323,295 @@ class SettingsDialog(tk.Toplevel):
             parent_bg=t.bg_sidebar,
         )
         btn_cancel.pack(side=tk.RIGHT)
+
+        # Center Two-Pane Container
+        center_body = tk.Frame(self, bg=t.bg_root)
+        center_body.pack(fill=tk.BOTH, expand=True, padx=16, pady=12)
+
+        # Left Navigation Rail (Width 220)
+        self.nav_rail = tk.Frame(center_body, bg=t.bg_sidebar, width=220, highlightbackground=t.border, highlightthickness=1)
+        self.nav_rail.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
+        self.nav_rail.pack_propagate(False)
+
+        # Search bar in rail
+        search_frame = tk.Frame(self.nav_rail, bg=t.bg_sidebar, padx=10, pady=8)
+        search_frame.pack(fill=tk.X)
+
+        self.rail_search_var = tk.StringVar()
+        self.rail_search_entry = tk.Entry(
+            search_frame,
+            textvariable=self.rail_search_var,
+            bg=t.bg_input,
+            fg=t.fg_primary,
+            font=("Segoe UI", 9),
+            relief=tk.SOLID,
+            bd=1,
+            insertbackground=t.fg_primary,
+        )
+        self.rail_search_entry.pack(fill=tk.X)
+        self.rail_search_var.trace_add("write", self._filter_nav_items)
+
+        self.rail_buttons_frame = tk.Frame(self.nav_rail, bg=t.bg_sidebar)
+        self.rail_buttons_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=4)
+
+        # Right Content View Area with ttk.Notebook
+        self.content_area = tk.Frame(center_body, bg=t.bg_root)
+        self.content_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        style = ttk.Style()
+        style.configure("Hidden.TNotebook", background=t.bg_root, borderwidth=0)
+        style.layout("Hidden.TNotebook.Tab", [])
+        self.notebook = ttk.Notebook(self.content_area, style="Hidden.TNotebook")
+        self.notebook.pack(fill=tk.BOTH, expand=True)
+
+        # Tab 1: Appearance & Display
+        self.tab_appearance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_appearance, text="Appearance")
+        self._build_appearance_tab()
+
+        # Tab 2: Package Ecosystems & Sources
+        self.tab_managers = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_managers, text="Packages")
+        self._build_managers_tab()
+
+        # Tab 3: Safety & Exclusions
+        self.tab_safety = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_safety, text="Safety")
+        self._build_safety_tab()
+
+        # Tab 4: Turbo Scan & Performance
+        self.tab_turbo = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_turbo, text="Turbo")
+        self._build_turbo_tab()
+
+        # Tab 5: Synthesized Audio & Alerts
+        self.tab_audio = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_audio, text="Audio")
+        self._build_audio_tab()
+
+        # Tab 6: Repository Sources & Mirrors
+        self.tab_sources = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_sources, text="Sources")
+        self._build_sources_tab()
+
+        # Tab 7: Schedule & Automation
+        self.tab_schedule = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_schedule, text="Schedule")
+        self._build_schedule_tab()
+
+        # Tab 8: Backup & Export
+        self.tab_backup = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_backup, text="Backup")
+        self._build_backup_tab()
+
+        # Tab 9: Application Maintenance & Uninstaller
+        self.tab_maintenance = tk.Frame(self.notebook, bg=t.bg_root, padx=14, pady=12)
+        self.notebook.add(self.tab_maintenance, text="Maintenance")
+        self._build_maintenance_tab()
+
+        self._build_nav_buttons()
+
+    def _build_nav_buttons(self) -> None:
+        t = self.theme
+        for widget in self.rail_buttons_frame.winfo_children():
+            widget.destroy()
+
+        self.nav_items = [
+            ("🎨 Appearance", self.tab_appearance),
+            ("📦 Packages", self.tab_managers),
+            ("🛡️ Safety", self.tab_safety),
+            ("⚡ Turbo & GPU", self.tab_turbo),
+            ("🔔 Audio & Alerts", self.tab_audio),
+            ("🌐 Sources", self.tab_sources),
+            ("📅 Schedule", self.tab_schedule),
+            ("💾 Backup", self.tab_backup),
+            ("🧹 Maintenance", self.tab_maintenance),
+        ]
+        self.nav_buttons: Dict[str, tk.Button] = {}
+        query = self.rail_search_var.get().strip().lower()
+
+        for label, tab in self.nav_items:
+            if query and query not in label.lower():
+                continue
+            btn = tk.Button(
+                self.rail_buttons_frame,
+                text="  " + label,
+                anchor="w",
+                font=("Segoe UI", 9),
+                bg=t.bg_sidebar,
+                fg=t.fg_primary,
+                activebackground=t.bg_card,
+                activeforeground=t.accent_burgundy,
+                relief=tk.FLAT,
+                bd=0,
+                padx=8,
+                pady=7,
+                cursor="hand2",
+                command=lambda tb=tab, lbl=label: self._select_nav_item(tb, lbl),
+            )
+            btn.pack(fill=tk.X, pady=1)
+            self.nav_buttons[label] = btn
+
+        if self.nav_items:
+            self._select_nav_item(self.nav_items[0][1], self.nav_items[0][0])
+
+    def _select_nav_item(self, target_tab: tk.Frame, label: str) -> None:
+        t = self.theme
+        self.notebook.select(target_tab)
+        for lbl, btn in self.nav_buttons.items():
+            if lbl == label:
+                btn.config(
+                    bg=t.accent_burgundy if t.name == "dark" else "#ffe4e6",
+                    fg="#ffffff" if t.name == "dark" else t.accent_burgundy,
+                    font=("Segoe UI", 9, "bold"),
+                )
+            else:
+                btn.config(
+                    bg=t.bg_sidebar,
+                    fg=t.fg_primary,
+                    font=("Segoe UI", 9),
+                )
+
+    def _filter_nav_items(self, *args) -> None:
+        self._build_nav_buttons()
+
+    def _build_turbo_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_turbo, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=16, pady=16)
+        card.pack(fill=tk.X, pady=(0, 12))
+
+        lbl_head = tk.Label(card, text="⚡ Turbo Scan Discovery Engine", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 11, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Accelerates multi-source package queries (Winget, Store, Pip, Npm) using parallel worker threads.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 10))
+
+        self.turbo_var = tk.BooleanVar(value=getattr(self.config, "turbo_scan", True))
+        chk_turbo = tk.Checkbutton(
+            card,
+            text="Enable Turbo Scan (Parallel discovery workers • up to 75% faster scans)",
+            variable=self.turbo_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+        )
+        chk_turbo.pack(anchor=tk.W, pady=4)
+
+        # GPU Engine Card
+        card_gpu = tk.Frame(self.tab_turbo, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=16, pady=16)
+        card_gpu.pack(fill=tk.X)
+
+        lbl_ghead = tk.Label(card_gpu, text="🎮 DirectComposition & Hardware GPU Acceleration", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 11, "bold"), anchor="w")
+        lbl_ghead.pack(anchor=tk.W)
+
+        primary_gpu = GpuAccelerationManager.get_primary_gpu()
+        gpu_name = primary_gpu.name or "Discrete / Integrated GPU"
+        is_dedicated = getattr(primary_gpu, "is_dedicated", False)
+        lbl_ginfo = tk.Label(
+            card_gpu,
+            text=f"Detected Graphic Accelerator: {gpu_name}\nDirectX 12 Hardware Surface: Active (Zero UI tearing, double-buffered composition)",
+            bg=t.bg_card,
+            fg=t.accent_emerald if is_dedicated else t.fg_primary,
+            font=("Segoe UI", 9),
+            anchor="w",
+            justify=tk.LEFT,
+        )
+        lbl_ginfo.pack(anchor=tk.W, pady=(4, 0))
+
+    def _build_audio_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_audio, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=16, pady=16)
+        card.pack(fill=tk.X, pady=(0, 12))
+
+        lbl_head = tk.Label(card, text="🔔 Synthesized Audio & Haptic Feedback", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 11, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Non-blocking native Windows audio chimes for UI micro-interactions, scan completions, and update triumphs.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 10))
+
+        self.sound_var = tk.BooleanVar(value=getattr(self.config, "sound_effects_enabled", True))
+        chk_sound = tk.Checkbutton(
+            card,
+            text="Enable Sound Effects (UI clicks, scan completion chime, and success chords)",
+            variable=self.sound_var,
+            bg=t.bg_card,
+            fg=t.fg_primary,
+            activebackground=t.bg_card,
+            activeforeground=t.accent_burgundy,
+            selectcolor=t.bg_input,
+            font=("Segoe UI", 9, "bold"),
+            command=self._on_toggle_sound_live,
+        )
+        chk_sound.pack(anchor=tk.W, pady=4)
+
+        # Test buttons container
+        lbl_tst = tk.Label(card, text="Auditory Preview (Click to test chimes):", bg=t.bg_card, fg=t.fg_muted, font=("Segoe UI", 9, "bold"))
+        lbl_tst.pack(anchor=tk.W, pady=(10, 6))
+
+        tst_row = tk.Frame(card, bg=t.bg_card)
+        tst_row.pack(fill=tk.X)
+
+        btn_t1 = RoundedButton(tst_row, text="🔔 UI Click", command=SoundManager.play_click, bg_color=t.bg_button, fg_color=t.fg_primary, border_color=t.border, radius=6, height=28, font=("Segoe UI", 9), padding=(10, 4))
+        btn_t1.pack(side=tk.LEFT, padx=(0, 6))
+
+        btn_t2 = RoundedButton(tst_row, text="✨ Scan Chime", command=SoundManager.play_scan_complete, bg_color=t.bg_button, fg_color=t.fg_primary, border_color=t.border, radius=6, height=28, font=("Segoe UI", 9), padding=(10, 4))
+        btn_t2.pack(side=tk.LEFT, padx=(0, 6))
+
+        btn_t3 = RoundedButton(tst_row, text="🎉 Update Success", command=SoundManager.play_update_success, bg_color=t.bg_button, fg_color=t.accent_burgundy, border_color=t.border, radius=6, height=28, font=("Segoe UI", 9, "bold"), padding=(10, 4))
+        btn_t3.pack(side=tk.LEFT, padx=(0, 6))
+
+        btn_t4 = RoundedButton(tst_row, text="⚠️ Warning Alert", command=SoundManager.play_warning, bg_color=t.bg_button, fg_color=t.fg_muted, border_color=t.border, radius=6, height=28, font=("Segoe UI", 9), padding=(10, 4))
+        btn_t4.pack(side=tk.LEFT)
+
+    def _on_toggle_sound_live(self) -> None:
+        val = self.sound_var.get()
+        SoundManager.set_enabled(val)
+        if val:
+            SoundManager.play_click()
+
+    def _build_sources_tab(self) -> None:
+        t = self.theme
+        card = tk.Frame(self.tab_sources, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=16, pady=16)
+        card.pack(fill=tk.X, pady=(0, 12))
+
+        lbl_head = tk.Label(card, text="🌐 Package Repository Sources & Custom Mirrors", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 11, "bold"), anchor="w")
+        lbl_head.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            card,
+            text="Manage package repositories, synchronize indices, and add custom mirrors for enterprise or local packages.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 10))
+
+        s_btn_row = tk.Frame(card, bg=t.bg_card)
+        s_btn_row.pack(fill=tk.X)
+
+        btn_ref = RoundedButton(s_btn_row, text="🔄 Refresh Package Sources", command=self._do_refresh_sources, bg_color=t.accent_burgundy, fg_color="#ffffff", radius=6, height=30, font=("Segoe UI", 9, "bold"), padding=(14, 4))
+        btn_ref.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_cust = RoundedButton(s_btn_row, text="🌐 Manage Vendor Sources", command=self._do_open_sources, bg_color=t.bg_button, fg_color=t.fg_primary, border_color=t.border, radius=6, height=30, font=("Segoe UI", 9), padding=(14, 4))
+        btn_cust.pack(side=tk.LEFT)
 
     def _build_appearance_tab(self) -> None:
         t = self.theme
@@ -1515,18 +2047,18 @@ class SettingsDialog(tk.Toplevel):
                 ok, msg = sched_mgr.create_daily_task(t_val)
                 if ok:
                     self.lbl_sched_status.config(text=f"● Active Daily Schedule ({t_val})", fg="#059669")
-                    messagebox.showinfo("Schedule Applied", msg, parent=self)
+                    ModernMessageDialog.showsuccess("Schedule Applied", msg, parent=self)
                 else:
-                    messagebox.showerror("Schedule Error", msg, parent=self)
+                    ModernMessageDialog.showerror("Schedule Error", msg, parent=self)
 
         def _disable_schedule_direct():
             if sched_mgr:
                 ok, msg = sched_mgr.delete_task()
                 if ok:
                     self.lbl_sched_status.config(text="○ Daily Schedule: Inactive (Disabled)", fg=t.fg_muted)
-                    messagebox.showinfo("Schedule Disabled", msg, parent=self)
+                    ModernMessageDialog.showinfo("Schedule Disabled", msg, parent=self)
                 else:
-                    messagebox.showerror("Schedule Error", msg, parent=self)
+                    ModernMessageDialog.showerror("Schedule Error", msg, parent=self)
 
         btn_enable = RoundedButton(
             btn_row,
@@ -1807,6 +2339,11 @@ class SettingsDialog(tk.Toplevel):
 
         # Save safety flags
         self.config.smooth_animations = self.anim_var.get()
+        if hasattr(self, "sound_var"):
+            self.config.sound_effects_enabled = self.sound_var.get()
+            SoundManager.set_enabled(self.config.sound_effects_enabled)
+        if hasattr(self, "turbo_var"):
+            self.config.turbo_scan = self.turbo_var.get()
         self.config.ignore_legacy_vcredist = self.vcredist_var.get()
         self.config.create_restore_point = self.restore_var.get()
         self.config.auto_close_apps = self.autoclose_var.get()
@@ -2728,7 +3265,7 @@ class GameRuntimesDialog(tk.Toplevel):
         if not r_item:
             return
 
-        if not messagebox.askyesno(
+        if not ModernMessageDialog.askyesno(
             "Confirm Runtime Installation",
             f"Install runtime package '{r_item.definition.name}'?\n\n"
             f"Package Identifier: {r_item.definition.winget_id}\n\n"
@@ -2745,7 +3282,7 @@ class GameRuntimesDialog(tk.Toplevel):
 
         missing_items = [r for r in self.scan_results if r.is_missing or r.is_upgradable]
         if not missing_items:
-            messagebox.showinfo(
+            ModernMessageDialog.showinfo(
                 "All Runtimes Healthy",
                 "All essential gaming runtimes (Visual C++, .NET, DirectX) are already installed and healthy on this PC!",
                 parent=self,
@@ -2756,7 +3293,7 @@ class GameRuntimesDialog(tk.Toplevel):
         if len(missing_items) > 8:
             names_preview += f"\n... and {len(missing_items) - 8} more."
 
-        if not messagebox.askyesno(
+        if not ModernMessageDialog.askyesno(
             "Batch Runtime Installation",
             f"Found {len(missing_items)} missing or upgradable gaming prerequisites:\n\n"
             f"{names_preview}\n\n"
@@ -2801,14 +3338,14 @@ class GameRuntimesDialog(tk.Toplevel):
         self.btn_rescan.config(state="normal")
 
         if failures == 0:
-            messagebox.showinfo(
+            ModernMessageDialog.showsuccess(
                 "Runtime Installation Succeeded",
                 f"Successfully installed all {successes} runtime prerequisites!\n\n"
                 f"Your PC is now fully configured with the recommended Visual C++, .NET, and DirectX gaming libraries.",
                 parent=self,
             )
         else:
-            messagebox.showwarning(
+            ModernMessageDialog.showwarning(
                 "Installation Completed with Warnings",
                 f"Installed {successes} of {total} runtimes.\n{failures} packages reported warnings or require manual confirmation.",
                 parent=self,
@@ -3131,7 +3668,7 @@ class DiskCleanupDialog(tk.Toplevel):
 
         selected_ids = [tid for tid, var in self.target_vars.items() if var.get()]
         if not selected_ids:
-            messagebox.showinfo("No Targets Selected", "Please select at least one cache category to clean.", parent=self)
+            ModernMessageDialog.showinfo("No Targets Selected", "Please select at least one cache category to clean.", parent=self)
             return
 
         selected_targets = [t for t in self.scanned_targets if t["id"] in selected_ids]
@@ -3139,10 +3676,10 @@ class DiskCleanupDialog(tk.Toplevel):
         est_files = sum(t["files_count"] for t in selected_targets)
 
         if est_files == 0:
-            messagebox.showinfo("Caches Clean", "Selected categories are already empty (0 files).", parent=self)
+            ModernMessageDialog.showinfo("Caches Clean", "Selected categories are already empty (0 files).", parent=self)
             return
 
-        if not messagebox.askyesno(
+        if not ModernMessageDialog.askyesno(
             "Confirm Disk Space Reclaimer",
             f"Are you sure you want to permanently purge the selected installer caches?\n\n"
             f"Estimated reclaimable space: {est_mb:.2f} MB across {est_files:,} files.\n\n"
@@ -3178,7 +3715,7 @@ class DiskCleanupDialog(tk.Toplevel):
         freed_mb = res.get("freed_mb", 0.0)
         files = res.get("removed_files", 0)
 
-        messagebox.showinfo(
+        ModernMessageDialog.showsuccess(
             "Disk Space Reclaimed",
             f"Successfully reclaimed {freed_mb:.2f} MB of disk space!\n\n"
             f"Removed {files:,} orphaned installer and diagnostic trace files.",
@@ -3489,7 +4026,7 @@ class StartupManagerDialog(tk.Toplevel):
     def _toggle_selected(self) -> None:
         it = self._get_selected_item()
         if not it:
-            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            ModernMessageDialog.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
             return
 
         new_state = not it.enabled
@@ -3498,29 +4035,29 @@ class StartupManagerDialog(tk.Toplevel):
             it.enabled = new_state
             self._start_async_scan()
         else:
-            messagebox.showerror("Error", f"Failed to modify startup state for '{it.name}'. Administrator privileges may be required.", parent=self)
+            ModernMessageDialog.showerror("Error", f"Failed to modify startup state for '{it.name}'. Administrator privileges may be required.", parent=self)
 
     def _reveal_selected(self) -> None:
         it = self._get_selected_item()
         if not it:
-            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            ModernMessageDialog.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
             return
 
         if not it.clean_path:
-            messagebox.showwarning("No Path", f"Could not determine file path for '{it.name}'.", parent=self)
+            ModernMessageDialog.showwarning("No Path", f"Could not determine file path for '{it.name}'.", parent=self)
             return
 
         success = StartupManager.reveal_in_explorer(it.clean_path)
         if not success:
-            messagebox.showwarning("File Missing", f"Target file does not exist on disk:\n{it.clean_path}", parent=self)
+            ModernMessageDialog.showwarning("File Missing", f"Target file does not exist on disk:\n{it.clean_path}", parent=self)
 
     def _delete_selected(self) -> None:
         it = self._get_selected_item()
         if not it:
-            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            ModernMessageDialog.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
             return
 
-        if not messagebox.askyesno(
+        if not ModernMessageDialog.askyesno(
             "Confirm Removal",
             f"Are you sure you want to delete startup entry '{it.name}'?\n\n"
             f"Location: {it.source}\nCommand: {it.command}\n\n"
@@ -3533,7 +4070,7 @@ class StartupManagerDialog(tk.Toplevel):
         if success:
             self._start_async_scan()
         else:
-            messagebox.showerror("Error", f"Failed to delete startup entry '{it.name}'.", parent=self)
+            ModernMessageDialog.showerror("Error", f"Failed to delete startup entry '{it.name}'.", parent=self)
 
 
 

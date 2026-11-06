@@ -58,6 +58,7 @@ from winget_updater.gui.dialogs import (
     DiskCleanupDialog,
     ExclusionManagerDialog,
     GameRuntimesDialog,
+    ModernMessageDialog,
     ScheduleConfigDialog,
     SettingsDialog,
     StartupManagerDialog,
@@ -66,6 +67,7 @@ from winget_updater.gui.dialogs import (
     prompt_unverified_allow_confirmation,
     prompt_vendor_installer_confirmation,
 )
+from winget_updater.utils.sound import SoundManager
 from winget_updater.gui.live_update_modal import LiveUpdateProgressDialog
 from winget_updater.gui.rounded_widgets import (
     IOSStyleToggleSwitch,
@@ -209,11 +211,28 @@ class MainWindow(tk.Tk):
         )
         self.btn_settings.pack(side=tk.LEFT, padx=(4, 0))
 
-        # Secondary options are housed in top_dock_bar and Settings
-
         # 3-Way Luxury Glass Mode Switcher: WAKE [●] / DREAM [○] / BLOOM [○]
         self.theme_box = tk.Frame(self.top_controls, bg=self.current_theme.bg_header)
         self.theme_box.pack(side=tk.LEFT, padx=(6, 0))
+
+        # Sound Effects Quick Toggle Pill (inside theme box to keep top_controls clean)
+        sound_on = getattr(self.config, "sound_effects_enabled", True)
+        SoundManager.set_enabled(sound_on)
+        self.btn_sound_toggle = RoundedButton(
+            self.theme_box,
+            text="🔊 SOUND" if sound_on else "🔇 MUTED",
+            command=self._toggle_sound_effects,
+            bg_color="#221c38" if self.current_theme.name == "dark" else self.current_theme.bg_card,
+            fg_color="#34d399" if (sound_on and self.current_theme.name == "dark") else ("#059669" if sound_on else self.current_theme.fg_muted),
+            hover_bg="#352c54" if self.current_theme.name == "dark" else self.current_theme.bg_card_hover,
+            border_color="#3d335c" if self.current_theme.name == "dark" else self.current_theme.border,
+            radius=10,
+            height=28,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 4),
+            parent_bg=self.current_theme.bg_header,
+        )
+        self.btn_sound_toggle.pack(side=tk.LEFT, padx=(0, 4))
 
         initial_theme_txt = (
             "🌙 DREAM" if self.current_theme.name == "dark"
@@ -856,6 +875,13 @@ class MainWindow(tk.Tk):
         st_hov = "#352c54" if t.name == "dark" else t.accent_burgundy_hover
         st_bd = "#3d335c" if t.name == "dark" else t.border
         self.btn_settings.config(bg=st_bg, fg=st_fg, hover_bg=st_hov, border_color=st_bd)
+        if hasattr(self, "btn_sound_toggle"):
+            snd_on = SoundManager.is_enabled()
+            snd_bg = "#221c38" if t.name == "dark" else t.bg_card
+            snd_fg = ("#34d399" if t.name == "dark" else "#059669") if snd_on else t.fg_muted
+            snd_hov = "#352c54" if t.name == "dark" else t.bg_card_hover
+            snd_bd = "#3d335c" if t.name == "dark" else t.border
+            self.btn_sound_toggle.config(bg=snd_bg, fg=snd_fg, hover_bg=snd_hov, border_color=snd_bd)
         if hasattr(self, "top_dock_bar"):
             self.top_dock_bar.config(bg=t.bg_root)
         for b in (getattr(self, "btn_restore", None), getattr(self, "btn_backup", None), getattr(self, "btn_sources", None), getattr(self, "btn_exclusions", None), getattr(self, "btn_schedule", None), getattr(self, "btn_export", None)):
@@ -1032,7 +1058,7 @@ class MainWindow(tk.Tk):
             dlg.focus_force()
         except Exception as e:
             logger.error(f"Failed to open GameRuntimesDialog: {e}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to open Runtimes Manager:\n{e}", parent=self)
+            ModernMessageDialog.showerror("Error", f"Failed to open Runtimes Manager:\n{e}", parent=self)
 
     def _open_disk_cleanup(self) -> None:
         """Opens the Disk Space Reclaimer & Installer Purge dialog."""
@@ -1045,7 +1071,7 @@ class MainWindow(tk.Tk):
             dlg.focus_force()
         except Exception as e:
             logger.error(f"Failed to open DiskCleanupDialog: {e}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to open Disk Cleanup:\n{e}", parent=self)
+            ModernMessageDialog.showerror("Error", f"Failed to open Disk Cleanup:\n{e}", parent=self)
 
     def _open_startup_manager(self) -> None:
         """Opens the Windows Startup & Autorun Optimizer modal."""
@@ -1057,7 +1083,7 @@ class MainWindow(tk.Tk):
             dlg.focus_force()
         except Exception as e:
             logger.error(f"Failed to open StartupManagerDialog: {e}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to open Startup Manager:\n{e}", parent=self)
+            ModernMessageDialog.showerror("Error", f"Failed to open Startup Manager:\n{e}", parent=self)
 
     def _launch_app_uninstaller(self) -> None:
         """Launches the standalone complete uninstaller executable or script."""
@@ -1101,9 +1127,27 @@ class MainWindow(tk.Tk):
             self.sidebar.apply_typography(self.typography)
         self._show_floating_toast(f"Font scale set to {scale.replace('_', ' ').capitalize()}", "🔍")
 
+    def _toggle_sound_effects(self) -> None:
+        new_state = SoundManager.toggle_enabled()
+        self.config.sound_effects_enabled = new_state
+        self.config.save_settings()
+        is_dark = (self.current_theme.name == "dark")
+        txt = "🔊 SOUND" if new_state else "🔇 MUTED"
+        fg = ("#34d399" if is_dark else "#059669") if new_state else self.current_theme.fg_muted
+        if hasattr(self, "btn_sound_toggle"):
+            self.btn_sound_toggle.config(text=txt, fg=fg)
+        self._show_floating_toast(f"Sound effects {'enabled' if new_state else 'muted'}", "🔊" if new_state else "🔇")
+
     def _on_settings_saved(self) -> None:
         """Invoked when user updates configuration settings."""
         self._show_floating_toast("Settings saved successfully", "✓")
+        if hasattr(self, "btn_sound_toggle"):
+            snd_on = getattr(self.config, "sound_effects_enabled", True)
+            SoundManager.set_enabled(snd_on)
+            is_dark = (self.current_theme.name == "dark")
+            txt = "🔊 SOUND" if snd_on else "🔇 MUTED"
+            fg = ("#34d399" if is_dark else "#059669") if snd_on else self.current_theme.fg_muted
+            self.btn_sound_toggle.config(text=txt, fg=fg)
 
     def _open_complete_system_update(self) -> None:
         """Launches the 4-stage Complete System Update workflow dialog."""
@@ -1378,7 +1422,7 @@ class MainWindow(tk.Tk):
             + (f"\n...and {len(eligible) - 6} more." if len(eligible) > 6 else "")
             + f"\n\nExecution Mode: {mode_str}\nProceed with updating {len(eligible)} selected packages?"
         )
-        if not messagebox.askyesno("Confirm Batch Update", msg, icon="question", parent=self):
+        if not ModernMessageDialog.askyesno("Confirm Batch Update", msg, parent=self):
             return
 
         self._execute_update_queue(eligible, dry_run=dry_run)
@@ -1597,6 +1641,7 @@ class MainWindow(tk.Tk):
         )
 
         self.apply_filter()
+        SoundManager.play_scan_complete()
 
         if updates > 0:
             self.btn_update.config(state="normal", text=f"Update all eligible ({updates})", bg="#881337", fg="#ffffff")
@@ -1765,7 +1810,7 @@ class MainWindow(tk.Tk):
             f"Do you want to proceed with updating all {len(candidates)} packages?"
         )
 
-        if not messagebox.askyesno("Confirm Software Updates", msg, icon="question", parent=self):
+        if not ModernMessageDialog.askyesno("Confirm Software Updates", msg, parent=self):
             return
 
         self._execute_update_queue(candidates, dry_run=dry_run)
@@ -1822,6 +1867,7 @@ class MainWindow(tk.Tk):
                 on_run_in_background=on_run_in_background,
                 on_cancel_queue=on_cancel_queue,
                 on_complete_view_summary=on_complete_view_summary,
+                on_retry_failed=self._retry_failed_updates,
             )
         except Exception as e:
             logger.warning(f"Failed to create LiveUpdateProgressDialog: {e}")
@@ -1949,7 +1995,7 @@ class MainWindow(tk.Tk):
             matcher.match_all([item], {}, {})
             self._show_floating_toast(f"Removed '{pat}' from exclusions", "✓")
         else:
-            if messagebox.askyesno(
+            if ModernMessageDialog.askyesno(
                 "Confirm Exclusion",
                 f"Exclude '{item.name}' from all future updates?\n"
                 f"Package: {pat}",
@@ -1990,7 +2036,7 @@ class MainWindow(tk.Tk):
             return
 
         # Confirm before starting an update
-        if messagebox.askyesno(
+        if ModernMessageDialog.askyesno(
             "Confirm Update",
             f"Update '{item.name}' to version {item.latest_version or 'latest'}?\n\n"
             f"Package ID: {item.id}\n"
@@ -2005,7 +2051,7 @@ class MainWindow(tk.Tk):
             return
         pkg_id = item.id or item.name
         source_name = (item.source or "winget").lower()
-        if messagebox.askyesno(
+        if ModernMessageDialog.askyesno(
             "Confirm Installation",
             f"Install '{item.name}' ({pkg_id}) from source '{source_name.upper()}'?\n\n"
             f"This will download and install the package using the appropriate package manager.",
@@ -2035,14 +2081,13 @@ class MainWindow(tk.Tk):
             return
         pkg_id = item.id or item.name
         source_label = (item.source or "winget").upper()
-        if messagebox.askyesno(
+        if ModernMessageDialog.askyesno(
             "Confirm Uninstallation",
             f"Are you sure you want to uninstall '{item.name}'?\n\n"
             f"Package Identifier: {pkg_id}\n"
             f"Package Manager: {source_label}\n\n"
             f"This will remove the application from your computer.",
             parent=self,
-            icon="warning",
         ):
             self.status_lbl.config(text=f"Uninstalling {item.name}...")
             self._show_floating_toast(f"Uninstalling {item.name}...", "i")
@@ -2374,12 +2419,11 @@ class MainWindow(tk.Tk):
         if not file_path:
             return
 
-        if not messagebox.askyesno(
+        if not ModernMessageDialog.askyesno(
             "Confirm Software Stack Restoration",
             f"Do you want to restore and install software packages listed in:\n{os.path.basename(file_path)}?\n\n"
             "This will download and install the verified packages using Windows Package Manager.",
             parent=self,
-            icon="question",
         ):
             return
 

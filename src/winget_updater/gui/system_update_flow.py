@@ -10,10 +10,11 @@ import os
 import queue
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from typing import Callable, Optional
 from winget_updater.engine.windows_update import OemCompanionInfo, WindowsUpdateManager
 from winget_updater.gui.animations import TimelinePipelineHUD
+from winget_updater.gui.dialogs import ModernMessageDialog
 from winget_updater.gui.rounded_widgets import RoundedButton, apply_native_window_styling
 from winget_updater.gui.theme import LIGHT_THEME, ThemeColors
 from winget_updater.utils.logger import get_logger
@@ -344,7 +345,7 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
                 "A system restart is required to finalize OS patches and device drivers.\n"
                 "Would you like to restart your computer now?"
             )
-            if messagebox.askyesno("Restart Required", msg, icon="warning", parent=self):
+            if ModernMessageDialog.askyesno("Restart Required", msg, parent=self):
                 os.system("shutdown /r /t 10 /c \"Restarting to finalize Windows updates\"")
 
         if self.on_finished:
@@ -358,14 +359,14 @@ class CompleteSystemUpdateDialog(tk.Toplevel):
         needed, reason = WindowsUpdateManager.is_reboot_pending()
         if needed:
             self._log(f"⚠️ System restart IS required: {reason}", "red")
-            messagebox.showwarning("Reboot Required", f"A computer restart is required:\n{reason}", parent=self)
+            ModernMessageDialog.showwarning("Reboot Required", f"A computer restart is required:\n{reason}", parent=self)
         else:
             self._log("✓ System does not require a restart.", "green")
-            messagebox.showinfo("System Ready", "No restart required. All updates are active.", parent=self)
+            ModernMessageDialog.showinfo("System Ready", "No restart required. All updates are active.", parent=self)
 
     def _on_close(self) -> None:
         if self.is_running:
-            if not messagebox.askyesno("Update in Progress", "An update task is currently running. Stop and close?", parent=self):
+            if not ModernMessageDialog.askyesno("Update in Progress", "An update task is currently running. Stop and close?", parent=self):
                 return
         self.destroy()
 

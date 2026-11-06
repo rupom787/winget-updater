@@ -70,6 +70,8 @@ class ConfigManager:
         self.cleanup_temp_cache: bool = True
         self.ignore_legacy_vcredist: bool = True
         self.smooth_animations: bool = True
+        self.sound_effects_enabled: bool = True
+        self.turbo_scan: bool = True
         self.enabled_managers: Dict[str, bool] = {
             "winget": True,
             "pip": True,
@@ -266,6 +268,8 @@ class ConfigManager:
                     self.cleanup_temp_cache = bool(data.get("cleanup_temp_cache", True))
                     self.ignore_legacy_vcredist = bool(data.get("ignore_legacy_vcredist", True))
                     self.smooth_animations = bool(data.get("smooth_animations", True))
+                    self.sound_effects_enabled = bool(data.get("sound_effects_enabled", True))
+                    self.turbo_scan = bool(data.get("turbo_scan", True))
                     managers = data.get("enabled_managers", {})
                     if isinstance(managers, dict):
                         for k, v in managers.items():
@@ -291,6 +295,8 @@ class ConfigManager:
             data["cleanup_temp_cache"] = self.cleanup_temp_cache
             data["ignore_legacy_vcredist"] = self.ignore_legacy_vcredist
             data["smooth_animations"] = self.smooth_animations
+            data["sound_effects_enabled"] = self.sound_effects_enabled
+            data["turbo_scan"] = self.turbo_scan
             data["enabled_managers"] = self.enabled_managers
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

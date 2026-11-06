@@ -3,10 +3,12 @@ Features smooth rounded widgets, refined typography, two-column layout, and bott
 """
 
 import os
+import time
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageFont, ImageTk
 from tkinter import messagebox, ttk
 from typing import Callable, Dict, List, Optional
+from winget_updater.utils.sound import SoundManager
 from winget_updater.gui.animations import (
     AnimatedSkeletonOverlay,
     DeckCounterAnimator,
@@ -1759,6 +1761,10 @@ class ProgramTableView(tk.Frame):
         self.tree.bind("<Double-1>", self._handle_double_click)
         self.tree.bind("<Button-3>", self._show_context_menu)
         self.tree.bind("<<TreeviewSelect>>", self._handle_select)
+        self.tree.bind("<KeyRelease-Up>", self._handle_select)
+        self.tree.bind("<KeyRelease-Down>", self._handle_select)
+        self.tree.bind("<KeyRelease-Prior>", self._handle_select)
+        self.tree.bind("<KeyRelease-Next>", self._handle_select)
         self.tree.bind("<MouseWheel>", self._on_mousewheel)
         self.tree.bind("<Motion>", self._on_tree_motion)
         self.tree.bind("<Leave>", self._on_tree_leave)
@@ -2150,6 +2156,12 @@ class ProgramTableView(tk.Frame):
                 self.on_batch_select([])
             return
 
+        now = time.time()
+        last_s = getattr(self, "_last_select_sound_time", 0.0)
+        if now - last_s > 0.08:
+            self._last_select_sound_time = now
+            SoundManager.play_click()
+
         selected_items = [self.items_by_iid[iid] for iid in sel if iid in self.items_by_iid]
         if len(selected_items) == 1:
             if self.on_select_item:
@@ -2382,14 +2394,23 @@ class ProgramTableView(tk.Frame):
             self.on_batch_exclude(items)
 
     def _sort_column(self, col: str, reverse: bool) -> None:
-        if col in ("name", "#0"):
+        actual_col = "#0" if col in ("name", "#0") else col
+        if actual_col == "#0":
             l = [(self.tree.item(k, "text").strip().lower(), k) for k in self.tree.get_children("")]
         else:
             l = [(str(self.tree.set(k, col)).lower(), k) for k in self.tree.get_children("")]
         l.sort(reverse=reverse)
         for index, (_, k) in enumerate(l):
             self.tree.move(k, "", index)
-        self.tree.heading(col, command=lambda: self._sort_column(col, not reverse))
+
+        arrow = " ▼" if reverse else " ▲"
+        for col_id, col_text, _ in self.COLUMNS:
+            target_id = "#0" if col_id == "name" else col_id
+            if col_id == col or target_id == col:
+                self.tree.heading(col_id, text=col_text + arrow, command=lambda c=col: self._sort_column(c, not reverse))
+            else:
+                self.tree.heading(col_id, text=col_text, command=lambda c=col_id: self._sort_column(c, False))
+        SoundManager.play_click()
 
 
 class FloatingGlassBatchDock(tk.Frame):
