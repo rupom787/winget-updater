@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.2.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.0/WingetUpdater.exe">
+    <img src="https://img.shields.io/badge/⚡_Direct_Download-WingetUpdater.exe_(v2.3.0)-800020?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone EXE" />
   </a>
-  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.2.0/Uninstall.exe">
+  <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.0/Uninstall.exe">
     <img src="https://img.shields.io/badge/🗑️_Uninstaller-Uninstall.exe_(13.49_MB)-475569?style=for-the-badge&logo=windows11&logoColor=white" alt="Download Standalone Uninstaller" />
   </a>
 </p>
@@ -54,11 +54,11 @@ No Python installation, compilers, or complex setup required. Simply download th
 
 | Package | Platform | Size | Integrity Check (SHA-256) |
 | :--- | :--- | :--- | :--- |
-| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.24 MB | `1B92F355F3428472EF4CB3F7ED139426FDAABBC0AB8E61C6DC6BE32419463FE8` |
-| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `1211D561B402EE726E72B2BA1DAD03651BFA46FFE922CC85FE443717FA88F33A` |
+| [**WingetUpdater.exe** (Direct Download)](https://github.com/rupom787/winget-updater/releases/download/v2.3.0/WingetUpdater.exe) | Windows 11 (64-bit) | 34.32 MB | `8E7060F3CEBDAEE1AD8DB156B17C4436C55FE913D456A6B3AFBE9E60F6DDA828` |
+| [**Uninstall.exe** (Standalone Uninstaller)](https://github.com/rupom787/winget-updater/releases/download/v2.3.0/Uninstall.exe) | Windows 11 (64-bit) | 13.49 MB | `306BD9F191EE74F3159923A6B916B3DB42280A5B48F5FA780D3125D194A8870D` |
 
 ### ⚡ Quick Start (Run in 10 Seconds)
-1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.2.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
+1. **Download:** Click [**WingetUpdater.exe**](https://github.com/rupom787/winget-updater/releases/download/v2.3.0/WingetUpdater.exe) (or download from the [Releases](https://github.com/rupom787/winget-updater/releases) page).
 2. **Launch:** Double-click `WingetUpdater.exe`.
 3. **Approve Elevation:** When prompted by Windows User Account Control (UAC), click **Yes** to grant Administrator rights (required for installing and updating software).
 4. **Scan & Update:** Click **"Check for updates"** or launch **"⚡ Complete system update"** for the full 4-stage maintenance routine.
@@ -119,7 +119,26 @@ Unlike tools that check only one registry location, Software & Package Updater a
 - **Exclusion Management (`exclusions.json`):** Easily ignore specific programs from all future scans and updates.
 - **Daily Automated Scheduling:** Configure an automated background check via Windows Task Scheduler that runs only on AC power and interactive sign-in sessions.
 
-### 🔗 5. Source Resolution & Package Binding ("Could Not Verify" Solutions)
+### 🧹 6. Interactive Disk Space Reclaimer & Installer Cache Cleaner
+- **Deep Storage Audit:** Scans multi-gigabyte orphaned WinGet installer downloads (`%LOCALAPPDATA%\Temp\WinGet`), Microsoft diagnostic trace logs (`DiagOutputDir`), vendor direct downloads, and installer crash dumps.
+- **Categorized Breakdown:** Displays exact byte and file counts across each cache target with safety status indicators (100% safe, zero personal data loss).
+- **1-Click Batch Purge:** Reclaim hundreds of megabytes or gigabytes of disk space with background multithreaded cleanup and live telemetry.
+- **Instant Access:** Accessible via the top dock **`🧹 Clean Disk`** button, sidebar **`🧹 Disk Space Reclaimer`**, Settings Maintenance tab, or keyboard shortcut `Ctrl+K`.
+
+### 🚀 7. Windows Startup & Autorun Optimizer
+- **Comprehensive Logon Inspection:** Enumerates background applications configured to launch on Windows startup across `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, `HKLM\Software\Microsoft\Windows\CurrentVersion\Run`, and user Startup folders.
+- **Native Windows 11 Task Manager Synchronization:** Directly reads and writes to `StartupApproved\Run` registry binary flags, ensuring seamless bidirectional state synchronization with Windows 11 Task Manager.
+- **Orphan / Broken Binary Detection:** Automatically checks binary existence on disk and flags missing or deleted executables in red so you can remove dead startup entries safely.
+- **1-Click Control:** Toggle applications between Enabled and Disabled states, reveal target files in Windows File Explorer, or permanently delete obsolete startup entries.
+- **Instant Access:** Accessible via Settings Maintenance tab or shortcut `Ctrl+Shift+S`.
+
+### 🛡️ 8. Self-Contained Interactive HTML Audit Report & Automated Setup Scripts
+- **Luxury Dark Obsidian HTML Report:** Exports a standalone single-file HTML inventory audit with dynamic real-time search, status filter pills (Updates Available, Up to Date, Ignored), hardware telemetry headers (OS, Architecture, Device name), copyable Winget install commands, and print-ready stylesheets (`@media print`).
+- **Automated PC Migration Batch Script (`setup_pc.bat`):** Generates an executable batch file containing silent Winget installation commands for all your installed software, allowing 1-click recreation of your entire software suite on a brand new PC.
+- **Automated PowerShell Script (`setup_pc.ps1`):** Generates a modern PowerShell provisioning script with progress bars and error handling.
+- **Instant Access:** Click the **`Export`** button in the top dock or Settings Backup tab.
+
+### 🔗 9. Source Resolution & Package Binding ("Could Not Verify" Solutions)
 - **Intelligent Publisher Matching:** Bidirectionally normalizes corporate suffixes (`LLC`, `Corp`, `Inc`, `GmbH`) eliminating false-positive publisher mismatches.
 - **Curated Package Aliases (120+ apps):** Built-in alias dictionary instantly matches 120+ essential Windows applications to their verified Winget identifiers (Chrome, Git, Python, VS Code, JetBrains IDEs, Blender, VLC, Discord, Steam, 7-Zip, etc.).
 - **Automatic Version-Suffix Stripping:** Automatically matches names like `Blender 4.2.0` or `Python 3.12 (64-bit)` against base packages, eliminating false-negative "No update source" results.

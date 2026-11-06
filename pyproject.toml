@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "winget-software-updater"
-version = "2.2.0"
+version = "2.3.0"
 description = "Production-ready Windows 11 Software & Package Update Management Tool"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -19,6 +19,7 @@ from winget_updater.config import ConfigManager
 from winget_updater.discovery.composite import CompositeScanner
 from winget_updater.winget.catalog import get_popular_catalog, search_catalog_packages
 from winget_updater.engine.cleanup import DiskCleanupManager
+from winget_updater.engine.reports import ReportGenerator
 from winget_updater.engine.process_lock import ProcessLockDetector
 from winget_updater.engine.restore_point import RestorePointManager
 from winget_updater.engine.scheduler import SchedulerManager
@@ -54,10 +55,12 @@ from winget_updater.gui.dialogs import (
     BindWingetSourceDialog,
     AppUpdateTrackerDialog,
     CannotUpdateHelpDialog,
+    DiskCleanupDialog,
     ExclusionManagerDialog,
     GameRuntimesDialog,
     ScheduleConfigDialog,
     SettingsDialog,
+    StartupManagerDialog,
     UpdateSummaryDialog,
     prompt_downgrade_confirmation,
     prompt_unverified_allow_confirmation,
@@ -331,6 +334,7 @@ class MainWindow(tk.Tk):
             on_category_changed=self._on_sidebar_category_changed,
             on_open_tracker=self._open_update_tracker,
             on_open_runtimes=self._open_runtimes_manager,
+            on_open_disk_cleanup=self._open_disk_cleanup,
             sys_info=self.sys_info,
         )
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=(12, 6), pady=12)
@@ -549,6 +553,21 @@ class MainWindow(tk.Tk):
         )
         self.btn_runtimes.pack(side=tk.LEFT, padx=(0, 4))
 
+        self.btn_disk_clean = RoundedButton(
+            self.top_dock_bar,
+            text="🧹 Clean Disk",
+            command=self._open_disk_cleanup,
+            bg_color="#182738" if self.current_theme.name == "dark" else "#f0f9ff",
+            fg_color="#38bdf8" if self.current_theme.name == "dark" else "#0284c7",
+            border_color="#075985" if self.current_theme.name == "dark" else "#bae6fd",
+            radius=10,
+            height=26,
+            font=("Segoe UI", 8, "bold"),
+            padding=(8, 2),
+            parent_bg=self.current_theme.bg_root,
+        )
+        self.btn_disk_clean.pack(side=tk.LEFT, padx=(0, 4))
+
         # 3. Unified Center Card: Frosted Glass container housing All Software header and Data Table
         self.table_card = tk.Frame(
             self.right_container,
@@ -731,6 +750,10 @@ class MainWindow(tk.Tk):
         self.bind("<Control-T>", lambda e: self._open_update_tracker())
         self.bind("<Control-g>", lambda e: self._open_runtimes_manager())
         self.bind("<Control-G>", lambda e: self._open_runtimes_manager())
+        self.bind("<Control-k>", lambda e: self._open_disk_cleanup())
+        self.bind("<Control-K>", lambda e: self._open_disk_cleanup())
+        self.bind("<Control-Shift-S>", lambda e: self._open_startup_manager())
+        self.bind("<Control-Shift-s>", lambda e: self._open_startup_manager())
         self.bind("<Control-Shift-U>", lambda e: self._open_complete_system_update())
         self.bind("<Control-Shift-u>", lambda e: self._open_complete_system_update())
 
@@ -1011,6 +1034,31 @@ class MainWindow(tk.Tk):
             logger.error(f"Failed to open GameRuntimesDialog: {e}", exc_info=True)
             messagebox.showerror("Error", f"Failed to open Runtimes Manager:\n{e}", parent=self)
 
+    def _open_disk_cleanup(self) -> None:
+        """Opens the Disk Space Reclaimer & Installer Purge dialog."""
+        try:
+            dlg = DiskCleanupDialog(
+                self,
+                theme=self.current_theme,
+                on_cleanup_done=lambda freed: self._show_floating_toast(f"Reclaimed {freed / (1024*1024):.1f} MB disk space", "🧹"),
+            )
+            dlg.focus_force()
+        except Exception as e:
+            logger.error(f"Failed to open DiskCleanupDialog: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to open Disk Cleanup:\n{e}", parent=self)
+
+    def _open_startup_manager(self) -> None:
+        """Opens the Windows Startup & Autorun Optimizer modal."""
+        try:
+            dlg = StartupManagerDialog(
+                self,
+                theme=self.current_theme,
+            )
+            dlg.focus_force()
+        except Exception as e:
+            logger.error(f"Failed to open StartupManagerDialog: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to open Startup Manager:\n{e}", parent=self)
+
     def _launch_app_uninstaller(self) -> None:
         """Launches the standalone complete uninstaller executable or script."""
         import subprocess, sys
@@ -1036,6 +1084,8 @@ class MainWindow(tk.Tk):
             on_open_exclusions=self._open_exclusions,
             on_open_schedule=self._open_schedule,
             on_open_runtimes=self._open_runtimes_manager,
+            on_open_disk_cleanup=self._open_disk_cleanup,
+            on_open_startup_manager=self._open_startup_manager,
             on_export_inventory=self._export_report_dialog,
             on_uninstall_app=self._launch_app_uninstaller,
             scheduler=self.scheduler,
@@ -2158,15 +2208,34 @@ class MainWindow(tk.Tk):
 
         file_path = filedialog.asksaveasfilename(
             parent=self,
-            title="Export Software Inventory Report",
-            defaultextension=".csv",
-            filetypes=[("CSV Spreadsheet (*.csv)", "*.csv"), ("JSON File (*.json)", "*.json")],
+            title="Export Software Inventory & Setup Scripts",
+            defaultextension=".html",
+            filetypes=[
+                ("Interactive HTML Audit Report (*.html)", "*.html"),
+                ("Automated PC Setup Script (*.bat)", "*.bat"),
+                ("PowerShell Setup Script (*.ps1)", "*.ps1"),
+                ("CSV Spreadsheet (*.csv)", "*.csv"),
+                ("JSON Data File (*.json)", "*.json"),
+            ],
         )
         if not file_path:
             return
 
         try:
-            if file_path.lower().endswith(".json"):
+            lower = file_path.lower()
+            if lower.endswith(".html"):
+                html_content = ReportGenerator.generate_html_report(self.all_programs, app_version="2.3.0")
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(html_content)
+            elif lower.endswith(".bat"):
+                bat_content = ReportGenerator.generate_batch_script(self.all_programs)
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(bat_content)
+            elif lower.endswith(".ps1"):
+                ps1_content = ReportGenerator.generate_ps1_script(self.all_programs)
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(ps1_content)
+            elif lower.endswith(".json"):
                 data = [
                     {
                         "name": it.name,
@@ -2197,7 +2266,7 @@ class MainWindow(tk.Tk):
                             it.install_location or "",
                             it.notes or "",
                         ])
-            self._show_floating_toast(f"Report saved: {os.path.basename(file_path)}", "✓")
+            self._show_floating_toast(f"Saved: {os.path.basename(file_path)}", "✓")
         except Exception as e:
             self._show_floating_toast(f"Export error: {e}", "✕")
 

@@ -12,6 +12,8 @@ from winget_updater.engine.scheduler import SchedulerManager
 from winget_updater.gui.rounded_widgets import RoundedButton, RoundedPillBadge, apply_native_window_styling
 from winget_updater.engine.tracker import TrackedAppUpdate, UpdateTracker
 from winget_updater.gui.theme import DARK_THEME, DREAM_THEME, LIGHT_THEME, ThemeColors, get_theme
+from winget_updater.engine.cleanup import DiskCleanupManager
+from winget_updater.engine.startup import StartupItem, StartupManager
 from winget_updater.models import ProgramItem
 
 
@@ -942,6 +944,8 @@ class SettingsDialog(tk.Toplevel):
         on_open_sources: Optional[Callable[[], None]] = None,
         on_open_schedule: Optional[Callable[[], None]] = None,
         on_open_runtimes: Optional[Callable[[], None]] = None,
+        on_open_disk_cleanup: Optional[Callable[[], None]] = None,
+        on_open_startup_manager: Optional[Callable[[], None]] = None,
         on_export_inventory: Optional[Callable[[], None]] = None,
         on_uninstall_app: Optional[Callable[[], None]] = None,
         scheduler=None,
@@ -962,6 +966,8 @@ class SettingsDialog(tk.Toplevel):
         self.on_open_sources = on_open_sources
         self.on_open_schedule = on_open_schedule
         self.on_open_runtimes = on_open_runtimes
+        self.on_open_disk_cleanup = on_open_disk_cleanup
+        self.on_open_startup_manager = on_open_startup_manager
         self.on_export_inventory = on_export_inventory
         self.on_uninstall_app = on_uninstall_app
         self.scheduler = scheduler
@@ -1628,33 +1634,97 @@ class SettingsDialog(tk.Toplevel):
 
     def _build_maintenance_tab(self) -> None:
         t = self.theme
-        card = tk.Frame(self.tab_maintenance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=14)
-        card.pack(fill=tk.BOTH, expand=True)
 
-        lbl_head = tk.Label(card, text="Complete Application Uninstaller", bg=t.bg_card, fg=t.accent_crimson, font=("Segoe UI", 10, "bold"), anchor="w")
+        # 1. Disk Space Reclaimer Card
+        card_disk = tk.Frame(self.tab_maintenance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_disk.pack(fill=tk.X, pady=(0, 10))
+
+        lbl_dhead = tk.Label(card_disk, text="🧹 Disk Space Reclaimer & Cache Purge", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_dhead.pack(anchor=tk.W)
+
+        lbl_ddesc = tk.Label(
+            card_disk,
+            text="Scan and reclaim disk space from WinGet installer caches, diagnostic logs, and temporary setup residues.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_ddesc.pack(anchor=tk.W, pady=(2, 8))
+
+        btn_disk = RoundedButton(
+            card_disk,
+            text="🧹 Launch Disk Space Reclaimer",
+            command=self._do_open_disk_cleanup,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            border_color=t.accent_crimson,
+            radius=6,
+            height=30,
+            font=("Segoe UI", 9, "bold"),
+            padding=(14, 4),
+        )
+        btn_disk.pack(anchor=tk.W)
+
+        # 2. Windows Startup & Autorun Optimizer Card
+        card_startup = tk.Frame(self.tab_maintenance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_startup.pack(fill=tk.X, pady=(0, 10))
+
+        lbl_shead = tk.Label(card_startup, text="🚀 Windows Startup & Autorun Optimizer", bg=t.bg_card, fg=t.fg_primary, font=("Segoe UI", 10, "bold"), anchor="w")
+        lbl_shead.pack(anchor=tk.W)
+
+        lbl_sdesc = tk.Label(
+            card_startup,
+            text="Inspect and toggle background apps running at logon across HKCU, HKLM, and startup folders to accelerate boot times.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 8),
+            anchor="w",
+        )
+        lbl_sdesc.pack(anchor=tk.W, pady=(2, 8))
+
+        btn_startup = RoundedButton(
+            card_startup,
+            text="🚀 Manage Startup Applications",
+            command=self._do_open_startup_manager,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=30,
+            font=("Segoe UI", 9),
+            padding=(14, 4),
+        )
+        btn_startup.pack(anchor=tk.W)
+
+        # 3. Complete Application Uninstaller Card
+        card_uninst = tk.Frame(self.tab_maintenance, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=12)
+        card_uninst.pack(fill=tk.X)
+
+        lbl_head = tk.Label(card_uninst, text="🗑️ Complete Application Uninstaller", bg=t.bg_card, fg=t.accent_crimson, font=("Segoe UI", 10, "bold"), anchor="w")
         lbl_head.pack(anchor=tk.W)
 
         lbl_desc = tk.Label(
-            card,
+            card_uninst,
             text="Permanently remove Software & Package Updater, shortcuts, registry keys, and cache files with nothing left behind.",
             bg=t.bg_card,
             fg=t.fg_muted,
             font=("Segoe UI", 8),
             anchor="w",
         )
-        lbl_desc.pack(anchor=tk.W, pady=(2, 12))
+        lbl_desc.pack(anchor=tk.W, pady=(2, 8))
 
         btn_uninst = RoundedButton(
-            card,
+            card_uninst,
             text="🗑️ Launch Complete Uninstaller (Uninstall.exe)",
             command=self._do_uninstall_app,
             bg_color="#fee2e2",
             fg_color="#b91c1c",
             border_color="#fca5a5",
             radius=6,
-            height=34,
+            height=30,
             font=("Segoe UI", 9, "bold"),
-            padding=(16, 6),
+            padding=(14, 4),
         )
         btn_uninst.pack(anchor=tk.W)
 
@@ -1687,6 +1757,18 @@ class SettingsDialog(tk.Toplevel):
             self.on_open_runtimes()
         elif hasattr(self.master, "_open_runtimes_manager"):
             self.master._open_runtimes_manager()
+
+    def _do_open_disk_cleanup(self) -> None:
+        if self.on_open_disk_cleanup:
+            self.on_open_disk_cleanup()
+        elif hasattr(self.master, "_open_disk_cleanup"):
+            self.master._open_disk_cleanup()
+
+    def _do_open_startup_manager(self) -> None:
+        if self.on_open_startup_manager:
+            self.on_open_startup_manager()
+        elif hasattr(self.master, "_open_startup_manager"):
+            self.master._open_startup_manager()
 
     def _do_backup_stack(self) -> None:
         if self.on_backup_stack:
@@ -2736,5 +2818,722 @@ class GameRuntimesDialog(tk.Toplevel):
             self.on_runtime_installed()
 
         self._start_async_scan()
+
+
+class DiskCleanupDialog(tk.Toplevel):
+    """Interactive Disk Space Reclaimer & Installer Purge dialog.
+    Scans temporary installer files, WinGet diagnostic logs, and package caches,
+    allowing users to safely reclaim disk space with 1 click.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        theme: Optional[ThemeColors] = None,
+        on_cleanup_done: Optional[Callable[[int], None]] = None,
+    ):
+        super().__init__(parent)
+        self.title("Disk Space Reclaimer & Cache Purge — Windows 11")
+        self.geometry("860x600")
+        self.minsize(740, 480)
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
+
+        self.on_cleanup_done = on_cleanup_done
+        self.scanned_targets: List[Dict[str, Any]] = []
+        self.target_vars: Dict[str, tk.BooleanVar] = {}
+        self._is_busy = False
+        self.msg_queue: queue.Queue = queue.Queue()
+
+        self.configure(bg=self.theme.bg_root)
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+        self._process_queue()
+        self._start_async_scan()
+
+    def _process_queue(self) -> None:
+        """Processes cross-thread asynchronous UI messages."""
+        try:
+            while True:
+                msg_type, payload = self.msg_queue.get_nowait()
+                if msg_type == "SCAN_COMPLETE":
+                    self._on_scan_completed(payload)
+                elif msg_type == "STATUS":
+                    self.lbl_status.config(text=payload)
+                elif msg_type == "PROGRESS":
+                    self.progress_bar.config(value=payload)
+                elif msg_type == "CLEAN_DONE":
+                    self._on_cleanup_completed(payload)
+        except queue.Empty:
+            pass
+        finally:
+            self.after(50, self._process_queue)
+
+    def _build_ui(self) -> None:
+        t = self.theme
+
+        # Top Header
+        top_header = tk.Frame(self, bg=t.bg_card, padx=22, pady=16, highlightbackground=t.border, highlightthickness=1)
+        top_header.pack(fill=tk.X)
+
+        header_row = tk.Frame(top_header, bg=t.bg_card)
+        header_row.pack(fill=tk.X)
+
+        lbl_icon = tk.Label(header_row, text="🧹", font=("Segoe UI Emoji", 20), bg=t.bg_card)
+        lbl_icon.pack(side=tk.LEFT, padx=(0, 10))
+
+        header_text_box = tk.Frame(header_row, bg=t.bg_card)
+        header_text_box.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        lbl_title = tk.Label(
+            header_text_box,
+            text="Disk Space Reclaimer & Installer Purge",
+            bg=t.bg_card,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            header_text_box,
+            text="Scan and purge accumulated WinGet installer binaries, diagnostic trace logs, and vendor cache files.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 0))
+
+        # Main Body
+        main_body = tk.Frame(self, bg=t.bg_root, padx=20, pady=14)
+        main_body.pack(fill=tk.BOTH, expand=True)
+
+        # Metrics Deck
+        metrics_deck = tk.Frame(main_body, bg=t.bg_root)
+        metrics_deck.pack(fill=tk.X, pady=(0, 12))
+
+        # Metric 1: Space Reclaimable
+        self.card_space = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_space.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        self.lbl_space_val = tk.Label(self.card_space, text="Scanning...", font=("Segoe UI", 16, "bold"), fg=t.accent_crimson, bg=t.bg_card)
+        self.lbl_space_val.pack(anchor=tk.W)
+        lbl_s_sub = tk.Label(self.card_space, text="Total Reclaimable Space", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_s_sub.pack(anchor=tk.W)
+
+        # Metric 2: Total Files
+        self.card_files = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_files.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        self.lbl_files_val = tk.Label(self.card_files, text="Scanning...", font=("Segoe UI", 16, "bold"), fg="#38bdf8", bg=t.bg_card)
+        self.lbl_files_val.pack(anchor=tk.W)
+        lbl_f_sub = tk.Label(self.card_files, text="Installer & Log Files", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_f_sub.pack(anchor=tk.W)
+
+        # Metric 3: Safety Status
+        self.card_safety = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_safety.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.lbl_safety_val = tk.Label(self.card_safety, text="100% Safe", font=("Segoe UI", 16, "bold"), fg="#34d399", bg=t.bg_card)
+        self.lbl_safety_val.pack(anchor=tk.W)
+        lbl_safe_sub = tk.Label(self.card_safety, text="Zero Personal Data Loss", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_safe_sub.pack(anchor=tk.W)
+
+        # Targets Container
+        self.table_card = tk.Frame(main_body, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=2, pady=2)
+        self.table_card.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        columns = ("select", "name", "files", "size", "description")
+        self.tree = ttk.Treeview(self.table_card, columns=columns, show="headings", height=8, selectmode="browse")
+
+        self.tree.heading("select", text="Clean?")
+        self.tree.heading("name", text="Cache Category")
+        self.tree.heading("files", text="Files")
+        self.tree.heading("size", text="Reclaimable")
+        self.tree.heading("description", text="Description")
+
+        self.tree.column("select", width=65, anchor="center")
+        self.tree.column("name", width=220, anchor="w")
+        self.tree.column("files", width=80, anchor="center")
+        self.tree.column("size", width=110, anchor="center")
+        self.tree.column("description", width=340, anchor="w")
+
+        tree_scroll = ttk.Scrollbar(self.table_card, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=tree_scroll.set)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.tree.bind("<ButtonRelease-1>", self._on_tree_click)
+
+        # Selection bar
+        sel_row = tk.Frame(main_body, bg=t.bg_root)
+        sel_row.pack(fill=tk.X, pady=(0, 6))
+
+        btn_sel_all = tk.Button(sel_row, text="Select All", font=("Segoe UI", 8), bg=t.bg_card, fg=t.fg_primary, bd=0, command=self._select_all)
+        btn_sel_all.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_desel_all = tk.Button(sel_row, text="Deselect All", font=("Segoe UI", 8), bg=t.bg_card, fg=t.fg_muted, bd=0, command=self._deselect_all)
+        btn_desel_all.pack(side=tk.LEFT)
+
+        # Progress bar
+        self.progress_bar = ttk.Progressbar(main_body, mode="indeterminate")
+        self.progress_bar.pack(fill=tk.X, pady=(0, 10))
+
+        # Bottom Action Bar
+        bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
+        bottom.pack(fill=tk.X, side=tk.BOTTOM)
+
+        self.lbl_status = tk.Label(bottom, text="Scanning disk caches...", bg=t.bg_sidebar, fg=t.fg_muted, font=("Segoe UI", 9))
+        self.lbl_status.pack(side=tk.LEFT)
+
+        self.btn_close = RoundedButton(
+            bottom,
+            text="Close",
+            command=self.destroy,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            hover_bg=t.bg_button_hover,
+            radius=6,
+            font=("Segoe UI", 9),
+            width=90,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        self.btn_close.pack(side=tk.RIGHT, padx=(8, 0))
+
+        self.btn_clean = RoundedButton(
+            bottom,
+            text="🧹 Clean Selected Space",
+            command=self._do_purge,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            hover_bg=t.accent_burgundy_hover,
+            radius=6,
+            font=("Segoe UI", 9, "bold"),
+            padding=(16, 4),
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        self.btn_clean.pack(side=tk.RIGHT, padx=(8, 0))
+
+        self.btn_rescan = RoundedButton(
+            bottom,
+            text="🔄 Rescan",
+            command=self._start_async_scan,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            hover_bg=t.bg_button_hover,
+            radius=6,
+            font=("Segoe UI", 9),
+            padding=(12, 4),
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        self.btn_rescan.pack(side=tk.RIGHT)
+
+    def _start_async_scan(self) -> None:
+        if self._is_busy:
+            return
+        self._is_busy = True
+        self.btn_clean.config(state="disabled")
+        self.btn_rescan.config(state="disabled")
+        self.progress_bar.config(mode="indeterminate")
+        self.progress_bar.start(10)
+        self.lbl_status.config(text="Scanning installer directories and diagnostic logs...")
+
+        def worker():
+            try:
+                results = DiskCleanupManager.scan_targets()
+                self.msg_queue.put(("SCAN_COMPLETE", results))
+            except Exception as e:
+                self.msg_queue.put(("STATUS", f"Scan error: {e}"))
+                self.msg_queue.put(("SCAN_COMPLETE", []))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_scan_completed(self, results: List[Dict[str, Any]]) -> None:
+        self._is_busy = False
+        self.progress_bar.stop()
+        self.progress_bar.config(mode="determinate", value=0)
+        self.btn_clean.config(state="normal")
+        self.btn_rescan.config(state="normal")
+
+        self.scanned_targets = results
+        total_bytes = sum(t["bytes"] for t in results)
+        total_files = sum(t["files_count"] for t in results)
+        total_mb = total_bytes / (1024 * 1024)
+
+        if total_mb < 1024:
+            self.lbl_space_val.config(text=f"{total_mb:.2f} MB")
+        else:
+            self.lbl_space_val.config(text=f"{total_mb / 1024:.2f} GB")
+
+        self.lbl_files_val.config(text=f"{total_files:,}")
+
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        for t in results:
+            tid = t["id"]
+            if tid not in self.target_vars:
+                # Select by default if it has files
+                self.target_vars[tid] = tk.BooleanVar(value=t["files_count"] > 0)
+            check_str = "☑ YES" if self.target_vars[tid].get() else "☐ NO"
+            self.tree.insert(
+                "",
+                tk.END,
+                iid=tid,
+                values=(
+                    check_str,
+                    t["name"],
+                    f"{t['files_count']:,}",
+                    t["formatted_size"],
+                    t["description"],
+                ),
+            )
+
+        self.lbl_status.config(text=f"Scan complete: Found {total_files:,} files ready for cleanup.")
+
+    def _on_tree_click(self, event: tk.Event) -> None:
+        item_id = self.tree.focus()
+        if not item_id or item_id not in self.target_vars:
+            return
+        var = self.target_vars[item_id]
+        var.set(not var.get())
+        new_check = "☑ YES" if var.get() else "☐ NO"
+        vals = list(self.tree.item(item_id, "values"))
+        if vals:
+            vals[0] = new_check
+            self.tree.item(item_id, values=vals)
+
+    def _select_all(self) -> None:
+        for tid, var in self.target_vars.items():
+            var.set(True)
+            if self.tree.exists(tid):
+                vals = list(self.tree.item(tid, "values"))
+                vals[0] = "☑ YES"
+                self.tree.item(tid, values=vals)
+
+    def _deselect_all(self) -> None:
+        for tid, var in self.target_vars.items():
+            var.set(False)
+            if self.tree.exists(tid):
+                vals = list(self.tree.item(tid, "values"))
+                vals[0] = "☐ NO"
+                self.tree.item(tid, values=vals)
+
+    def _do_purge(self) -> None:
+        if self._is_busy:
+            return
+
+        selected_ids = [tid for tid, var in self.target_vars.items() if var.get()]
+        if not selected_ids:
+            messagebox.showinfo("No Targets Selected", "Please select at least one cache category to clean.", parent=self)
+            return
+
+        selected_targets = [t for t in self.scanned_targets if t["id"] in selected_ids]
+        est_mb = sum(t["mb"] for t in selected_targets)
+        est_files = sum(t["files_count"] for t in selected_targets)
+
+        if est_files == 0:
+            messagebox.showinfo("Caches Clean", "Selected categories are already empty (0 files).", parent=self)
+            return
+
+        if not messagebox.askyesno(
+            "Confirm Disk Space Reclaimer",
+            f"Are you sure you want to permanently purge the selected installer caches?\n\n"
+            f"Estimated reclaimable space: {est_mb:.2f} MB across {est_files:,} files.\n\n"
+            f"This will safely remove transient setup files with zero impact on installed applications.",
+            parent=self,
+        ):
+            return
+
+        self._is_busy = True
+        self.btn_clean.config(state="disabled")
+        self.btn_rescan.config(state="disabled")
+        self.progress_bar.config(mode="indeterminate")
+        self.progress_bar.start(10)
+        self.lbl_status.config(text="Purging selected caches and temporary installer files...")
+
+        def worker():
+            try:
+                res = DiskCleanupManager.purge_targets(selected_ids)
+                self.msg_queue.put(("CLEAN_DONE", res))
+            except Exception as e:
+                self.msg_queue.put(("STATUS", f"Cleanup error: {e}"))
+                self.msg_queue.put(("CLEAN_DONE", {"freed_bytes": 0, "freed_mb": 0.0, "removed_files": 0, "summary": str(e)}))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_cleanup_completed(self, res: Dict[str, Any]) -> None:
+        self._is_busy = False
+        self.progress_bar.stop()
+        self.progress_bar.config(mode="determinate", value=0)
+        self.btn_clean.config(state="normal")
+        self.btn_rescan.config(state="normal")
+
+        freed_mb = res.get("freed_mb", 0.0)
+        files = res.get("removed_files", 0)
+
+        messagebox.showinfo(
+            "Disk Space Reclaimed",
+            f"Successfully reclaimed {freed_mb:.2f} MB of disk space!\n\n"
+            f"Removed {files:,} orphaned installer and diagnostic trace files.",
+            parent=self,
+        )
+
+        if self.on_cleanup_done:
+            self.on_cleanup_done(res.get("freed_bytes", 0))
+
+        self._start_async_scan()
+
+
+class StartupManagerDialog(tk.Toplevel):
+    """Interactive Windows Startup & Autorun Optimizer dialog.
+    Inspects, enables, disables, and removes startup programs across HKCU, HKLM,
+    and user startup folders using Windows 11 StartupApproved standards.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        theme: Optional[ThemeColors] = None,
+    ):
+        super().__init__(parent)
+        self.title("Windows Startup & Autorun Optimizer — Windows 11")
+        self.geometry("920x620")
+        self.minsize(760, 500)
+        self.theme = theme or DARK_THEME
+        try:
+            apply_native_window_styling(self, self.theme)
+        except Exception:
+            pass
+
+        self.items: List[StartupItem] = []
+        self._is_busy = False
+        self.msg_queue: queue.Queue = queue.Queue()
+
+        self.configure(bg=self.theme.bg_root)
+        self.transient(parent)
+        self.grab_set()
+
+        self._build_ui()
+        self._process_queue()
+        self._start_async_scan()
+
+    def _process_queue(self) -> None:
+        try:
+            while True:
+                msg_type, payload = self.msg_queue.get_nowait()
+                if msg_type == "SCAN_COMPLETE":
+                    self._on_scan_completed(payload)
+                elif msg_type == "STATUS":
+                    self.lbl_status.config(text=payload)
+        except queue.Empty:
+            pass
+        finally:
+            self.after(50, self._process_queue)
+
+    def _build_ui(self) -> None:
+        t = self.theme
+
+        # Top Header
+        top_header = tk.Frame(self, bg=t.bg_card, padx=22, pady=16, highlightbackground=t.border, highlightthickness=1)
+        top_header.pack(fill=tk.X)
+
+        header_row = tk.Frame(top_header, bg=t.bg_card)
+        header_row.pack(fill=tk.X)
+
+        lbl_icon = tk.Label(header_row, text="🚀", font=("Segoe UI Emoji", 20), bg=t.bg_card)
+        lbl_icon.pack(side=tk.LEFT, padx=(0, 10))
+
+        header_text_box = tk.Frame(header_row, bg=t.bg_card)
+        header_text_box.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        lbl_title = tk.Label(
+            header_text_box,
+            text="Windows Startup & Autorun Optimizer",
+            bg=t.bg_card,
+            fg=t.accent_burgundy,
+            font=("Segoe UI", 13, "bold"),
+            anchor="w",
+        )
+        lbl_title.pack(anchor=tk.W)
+
+        lbl_desc = tk.Label(
+            header_text_box,
+            text="Inspect and toggle background apps running at logon across HKCU, HKLM, and startup folders to accelerate boot times.",
+            bg=t.bg_card,
+            fg=t.fg_muted,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        lbl_desc.pack(anchor=tk.W, pady=(2, 0))
+
+        # Main Body
+        main_body = tk.Frame(self, bg=t.bg_root, padx=20, pady=14)
+        main_body.pack(fill=tk.BOTH, expand=True)
+
+        # Metrics Deck
+        metrics_deck = tk.Frame(main_body, bg=t.bg_root)
+        metrics_deck.pack(fill=tk.X, pady=(0, 12))
+
+        # Metric 1: Total
+        self.card_total = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_total.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        self.lbl_total_val = tk.Label(self.card_total, text="Scanning...", font=("Segoe UI", 16, "bold"), fg=t.fg_primary, bg=t.bg_card)
+        self.lbl_total_val.pack(anchor=tk.W)
+        lbl_tot_sub = tk.Label(self.card_total, text="Total Startup Apps", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_tot_sub.pack(anchor=tk.W)
+
+        # Metric 2: Enabled
+        self.card_enabled = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_enabled.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        self.lbl_enabled_val = tk.Label(self.card_enabled, text="Scanning...", font=("Segoe UI", 16, "bold"), fg="#34d399", bg=t.bg_card)
+        self.lbl_enabled_val.pack(anchor=tk.W)
+        lbl_en_sub = tk.Label(self.card_enabled, text="Active at Boot", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_en_sub.pack(anchor=tk.W)
+
+        # Metric 3: Disabled
+        self.card_disabled = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_disabled.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        self.lbl_disabled_val = tk.Label(self.card_disabled, text="Scanning...", font=("Segoe UI", 16, "bold"), fg=t.fg_muted, bg=t.bg_card)
+        self.lbl_disabled_val.pack(anchor=tk.W)
+        lbl_dis_sub = tk.Label(self.card_disabled, text="Disabled / Optimized", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_dis_sub.pack(anchor=tk.W)
+
+        # Metric 4: Broken (Missing files)
+        self.card_broken = tk.Frame(metrics_deck, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=14, pady=10)
+        self.card_broken.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.lbl_broken_val = tk.Label(self.card_broken, text="0", font=("Segoe UI", 16, "bold"), fg="#f43f5e", bg=t.bg_card)
+        self.lbl_broken_val.pack(anchor=tk.W)
+        lbl_brk_sub = tk.Label(self.card_broken, text="Orphan / Missing Exe", font=("Segoe UI", 8), fg=t.fg_muted, bg=t.bg_card)
+        lbl_brk_sub.pack(anchor=tk.W)
+
+        # Table Container
+        self.table_card = tk.Frame(main_body, bg=t.bg_card, highlightbackground=t.border, highlightthickness=1, padx=2, pady=2)
+        self.table_card.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        columns = ("name", "status", "source", "path")
+        self.tree = ttk.Treeview(self.table_card, columns=columns, show="headings", height=10, selectmode="browse")
+
+        self.tree.heading("name", text="Application Name")
+        self.tree.heading("status", text="Startup State")
+        self.tree.heading("source", text="Location")
+        self.tree.heading("path", text="Command / Executable Path")
+
+        self.tree.column("name", width=200, anchor="w")
+        self.tree.column("status", width=120, anchor="center")
+        self.tree.column("source", width=160, anchor="w")
+        self.tree.column("path", width=380, anchor="w")
+
+        tree_scroll = ttk.Scrollbar(self.table_card, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=tree_scroll.set)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.tree.bind("<<TreeviewSelect>>", self._on_select)
+
+        # Action bar under table
+        btn_bar = tk.Frame(main_body, bg=t.bg_root)
+        btn_bar.pack(fill=tk.X, pady=(0, 6))
+
+        self.btn_toggle = RoundedButton(
+            btn_bar,
+            text="⚡ Toggle Enabled / Disabled",
+            command=self._toggle_selected,
+            bg_color=t.accent_burgundy,
+            fg_color="#ffffff",
+            border_color=t.accent_crimson,
+            radius=6,
+            height=28,
+            font=("Segoe UI", 9, "bold"),
+            padding=(12, 3),
+        )
+        self.btn_toggle.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.btn_reveal = RoundedButton(
+            btn_bar,
+            text="📁 Reveal in File Explorer",
+            command=self._reveal_selected,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            border_color=t.border,
+            radius=6,
+            height=28,
+            font=("Segoe UI", 9),
+            padding=(12, 3),
+        )
+        self.btn_reveal.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.btn_delete = RoundedButton(
+            btn_bar,
+            text="🗑️ Remove Entry",
+            command=self._delete_selected,
+            bg_color="#3b1120" if t.name == "dark" else "#fee2e2",
+            fg_color="#f43f5e" if t.name == "dark" else "#b91c1c",
+            border_color="#7c1e38" if t.name == "dark" else "#fca5a5",
+            radius=6,
+            height=28,
+            font=("Segoe UI", 9, "bold"),
+            padding=(12, 3),
+        )
+        self.btn_delete.pack(side=tk.LEFT)
+
+        # Bottom Bar
+        bottom = tk.Frame(self, bg=t.bg_sidebar, padx=20, pady=12, highlightbackground=t.border, highlightthickness=1)
+        bottom.pack(fill=tk.X, side=tk.BOTTOM)
+
+        self.lbl_status = tk.Label(bottom, text="Scanning startup registry keys...", bg=t.bg_sidebar, fg=t.fg_muted, font=("Segoe UI", 9))
+        self.lbl_status.pack(side=tk.LEFT)
+
+        self.btn_close = RoundedButton(
+            bottom,
+            text="Close",
+            command=self.destroy,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            hover_bg=t.bg_button_hover,
+            radius=6,
+            font=("Segoe UI", 9),
+            width=90,
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        self.btn_close.pack(side=tk.RIGHT, padx=(8, 0))
+
+        self.btn_rescan = RoundedButton(
+            bottom,
+            text="🔄 Refresh",
+            command=self._start_async_scan,
+            bg_color=t.bg_button,
+            fg_color=t.fg_primary,
+            hover_bg=t.bg_button_hover,
+            radius=6,
+            font=("Segoe UI", 9),
+            padding=(12, 4),
+            height=32,
+            parent_bg=t.bg_sidebar,
+        )
+        self.btn_rescan.pack(side=tk.RIGHT)
+
+    def _start_async_scan(self) -> None:
+        if self._is_busy:
+            return
+        self._is_busy = True
+        self.lbl_status.config(text="Inspecting Windows startup programs...")
+
+        def worker():
+            try:
+                items = StartupManager.get_startup_items()
+                self.msg_queue.put(("SCAN_COMPLETE", items))
+            except Exception as e:
+                self.msg_queue.put(("STATUS", f"Scan error: {e}"))
+                self.msg_queue.put(("SCAN_COMPLETE", []))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_scan_completed(self, items: List[StartupItem]) -> None:
+        self._is_busy = False
+        self.items = items
+
+        total = len(items)
+        enabled = sum(1 for it in items if it.enabled)
+        disabled = total - enabled
+        broken = sum(1 for it in items if not it.exists)
+
+        self.lbl_total_val.config(text=str(total))
+        self.lbl_enabled_val.config(text=str(enabled))
+        self.lbl_disabled_val.config(text=str(disabled))
+        self.lbl_broken_val.config(text=str(broken))
+
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        for idx, it in enumerate(items):
+            status_text = "● Enabled" if it.enabled else "○ Disabled"
+            if not it.exists:
+                status_text += " [Missing File]"
+            self.tree.insert(
+                "",
+                tk.END,
+                iid=str(idx),
+                values=(
+                    it.name,
+                    status_text,
+                    it.source,
+                    it.command,
+                ),
+            )
+
+        self.lbl_status.config(text=f"Loaded {total} startup applications.")
+
+    def _get_selected_item(self) -> Optional[StartupItem]:
+        sel = self.tree.selection()
+        if not sel:
+            return None
+        idx = int(sel[0])
+        if 0 <= idx < len(self.items):
+            return self.items[idx]
+        return None
+
+    def _on_select(self, event: tk.Event) -> None:
+        it = self._get_selected_item()
+        if it:
+            toggle_text = "○ Disable Program" if it.enabled else "● Enable Program"
+            self.btn_toggle.config(text=toggle_text)
+
+    def _toggle_selected(self) -> None:
+        it = self._get_selected_item()
+        if not it:
+            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            return
+
+        new_state = not it.enabled
+        success = StartupManager.set_enabled(it, new_state)
+        if success:
+            it.enabled = new_state
+            self._start_async_scan()
+        else:
+            messagebox.showerror("Error", f"Failed to modify startup state for '{it.name}'. Administrator privileges may be required.", parent=self)
+
+    def _reveal_selected(self) -> None:
+        it = self._get_selected_item()
+        if not it:
+            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            return
+
+        if not it.clean_path:
+            messagebox.showwarning("No Path", f"Could not determine file path for '{it.name}'.", parent=self)
+            return
+
+        success = StartupManager.reveal_in_explorer(it.clean_path)
+        if not success:
+            messagebox.showwarning("File Missing", f"Target file does not exist on disk:\n{it.clean_path}", parent=self)
+
+    def _delete_selected(self) -> None:
+        it = self._get_selected_item()
+        if not it:
+            messagebox.showinfo("Select Item", "Please select a startup program from the list.", parent=self)
+            return
+
+        if not messagebox.askyesno(
+            "Confirm Removal",
+            f"Are you sure you want to delete startup entry '{it.name}'?\n\n"
+            f"Location: {it.source}\nCommand: {it.command}\n\n"
+            f"This will stop the program from launching on boot. The application files will not be deleted.",
+            parent=self,
+        ):
+            return
+
+        success = StartupManager.delete_item(it)
+        if success:
+            self._start_async_scan()
+        else:
+            messagebox.showerror("Error", f"Failed to delete startup entry '{it.name}'.", parent=self)
+
 
 
