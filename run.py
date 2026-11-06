@@ -87,7 +87,7 @@ def _register_add_remove_programs(app_dir: Path, uninstaller_path: Path) -> None
 
         reg_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WingetUpdater"
 
-        version = "2.3.0"
+        version = "2.3.1"
         try:
             from winget_updater import __version__
             version = __version__

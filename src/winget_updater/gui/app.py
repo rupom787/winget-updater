@@ -2224,7 +2224,8 @@ class MainWindow(tk.Tk):
         try:
             lower = file_path.lower()
             if lower.endswith(".html"):
-                html_content = ReportGenerator.generate_html_report(self.all_programs, app_version="2.3.0")
+                from winget_updater import __version__
+                html_content = ReportGenerator.generate_html_report(self.all_programs, app_version=__version__)
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(html_content)
             elif lower.endswith(".bat"):

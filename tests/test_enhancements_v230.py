@@ -76,10 +76,10 @@ def test_report_generator_html():
         source="WINGET",
     )
 
-    html = ReportGenerator.generate_html_report([p1, p2], app_version="2.3.0")
+    html = ReportGenerator.generate_html_report([p1, p2], app_version="2.3.1")
     assert "Google.Chrome" in html
     assert "Git.Git" in html
-    assert "v2.3.0" in html
+    assert "v2.3.1" in html
     assert "Software Inventory &amp; System Audit" in html
 
 

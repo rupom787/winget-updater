@@ -334,7 +334,7 @@ class UpdateEngine:
                         if not is_elevated():
                             logger.info(f"Retrying '{item.name}' with elevated privileges to bypass locked files...")
                             if item.source == "npm":
-                                elev_arg = f"Start-Process cmd -ArgumentList '/c npm install -g --no-audit --no-fund --loglevel=error {item.name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
+                                elev_arg = f"Start-Process cmd -ArgumentList '/c npm install -g --force --no-audit --no-fund --loglevel=error {item.name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
                                 silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=180)
                             elif item.source == "pip":
                                 elev_arg = f"Start-Process cmd -ArgumentList '/c py -m pip install --upgrade --no-warn-script-location {item.name}' -Verb RunAs -Wait -WindowStyle Hidden"

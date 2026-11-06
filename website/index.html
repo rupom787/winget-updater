@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="lenis-stopped">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <title>Winget Updater — Windows 11 Edition // DirectComposition Engine</title>
-  <meta name="description" content="Ultra-premium Windows 11 package updater inspired by Daiki Fujita's Awwwards design. Native Acrylic & Mica glassmorphism, reality verification engine, and 60 FPS hardware acceleration.">
-  <meta name="keywords" content="Winget Updater, Windows 11, package manager, software updater, DirectComposition, Scoop, Chocolatey, Pip, Npm, Microsoft Store">
+  <meta name="description"
+    content="Ultra-premium Windows 11 package updater inspired by Daiki Fujita's Awwwards design. Native Acrylic & Mica glassmorphism, reality verification engine, and 60 FPS hardware acceleration.">
+  <meta name="keywords"
+    content="Winget Updater, Windows 11, package manager, software updater, DirectComposition, Scoop, Chocolatey, Pip, Npm, Microsoft Store">
   <meta name="author" content="Rupom">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://winget-updater-rupom.vercel.app/">
@@ -17,14 +20,16 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://winget-updater-rupom.vercel.app/">
   <meta property="og:title" content="Winget Updater — Windows 11 Edition">
-  <meta property="og:description" content="Ultra-premium Windows 11 package updater with DirectComposition GPU acceleration and multi-subsystem discovery.">
+  <meta property="og:description"
+    content="Ultra-premium Windows 11 package updater with DirectComposition GPU acceleration and multi-subsystem discovery.">
   <meta property="og:image" content="https://winget-updater-rupom.vercel.app/assets/startup-editorial-screen.jpg">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://winget-updater-rupom.vercel.app/">
   <meta property="twitter:title" content="Winget Updater — Windows 11 Edition">
-  <meta property="twitter:description" content="Ultra-premium Windows 11 package updater with DirectComposition GPU acceleration and multi-subsystem discovery.">
+  <meta property="twitter:description"
+    content="Ultra-premium Windows 11 package updater with DirectComposition GPU acceleration and multi-subsystem discovery.">
   <meta property="twitter:image" content="https://winget-updater-rupom.vercel.app/assets/startup-editorial-screen.jpg">
 
   <!-- Structured Data (JSON-LD) for Google Search Rich Snippets -->
@@ -47,7 +52,9 @@
   <!-- Typography: Inter Tight + Instrument Serif + DM Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
 
@@ -58,19 +65,20 @@
       if (storedTheme === "dark") {
         document.documentElement.classList.add("dream-mode");
       }
-    } catch (e) {}
+    } catch (e) { }
   </script>
 </head>
+
 <body class="wake-mode">
 
   <!-- Organic Analog Noise / Paper Tooth Grain Overlay -->
   <div class="analog-noise-overlay" aria-hidden="true">
     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="noise-svg">
       <filter id="washiNoise">
-        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch"/>
-        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.05 0"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch" />
+        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.05 0" />
       </filter>
-      <rect width="100%" height="100%" filter="url(#washiNoise)"/>
+      <rect width="100%" height="100%" filter="url(#washiNoise)" />
     </svg>
   </div>
 
@@ -121,18 +129,23 @@
       <a href="#hero" class="brand-link" data-sound="click">
         <span class="brand-monogram">&#x25C7;</span>
         <span class="brand-title" data-scramble>UPDATER.WIN11</span>
-        <span class="brand-version">v2.3.0</span>
+        <span class="brand-version">v2.3.1</span>
       </a>
 
       <!-- Dual Precision World Clocks & Real-time Live Visitor Metric -->
       <div class="header-clocks" aria-label="Global engineering clocks and live verified public visitors">
-        <span class="clock-item"><span class="clock-city">TYO</span> <span id="clock-tyo" class="clock-time">00:00:00</span></span>
+        <span class="clock-item"><span class="clock-city">TYO</span> <span id="clock-tyo"
+            class="clock-time">00:00:00</span></span>
         <span class="clock-divider">/</span>
-        <span class="clock-item"><span class="clock-city">RED</span> <span id="clock-red" class="clock-time">00:00:00</span></span>
+        <span class="clock-item"><span class="clock-city">RED</span> <span id="clock-red"
+            class="clock-time">00:00:00</span></span>
         <span class="clock-divider">/</span>
-        <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="header-visitor-pill" title="Public Real-Time Verified Visitors (visitorbadge.io)">
+        <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer"
+          class="header-visitor-pill" title="Public Real-Time Verified Visitors (visitorbadge.io)">
           <span class="visitor-pulse-dot"></span>
-          <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=VISITORS&labelColor=0f172a&countColor=025a5f&style=flat" alt="Live Verified Visitors" height="18" class="header-visitor-badge-img" loading="eager" />
+          <img
+            src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=VISITORS&labelColor=0f172a&countColor=025a5f&style=flat"
+            alt="Live Verified Visitors" height="18" class="header-visitor-badge-img" loading="eager" />
         </a>
       </div>
 
@@ -143,14 +156,18 @@
         <a href="#works" class="nav-item" data-sound="hover" data-scramble><span>(03) Works</span></a>
         <a href="#dream" class="nav-item" data-sound="hover" data-scramble><span>(04) Dream</span></a>
         <a href="#benchmarks" class="nav-item" data-sound="hover" data-scramble><span>(05) Benchmarks</span></a>
-        <a href="#download" class="nav-item nav-download-pill" data-sound="click" data-magnetic><span>Get Binary &darr;</span></a>
+        <a href="#download" class="nav-item nav-download-pill" data-sound="click" data-magnetic><span>Get Binary
+            &darr;</span></a>
       </nav>
 
       <div class="header-controls">
         <!-- Interactive Procedural Audio Waveform Toggle -->
-        <button type="button" id="sound-btn" class="sound-toggle-btn" aria-pressed="false" aria-label="Toggle Sound" data-sound="click" data-magnetic>
-          <svg class="sound-wave-icon" width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
-            <polyline class="wave-line animated" points="1.6,6 3.3,7.7 5,8.8 6.6,8.8 8.3,7.7 10,6 11.7,4.3 13.4,3.2 15,3.2 16.7,4.3 18.4,6"></polyline>
+        <button type="button" id="sound-btn" class="sound-toggle-btn" aria-pressed="false" aria-label="Toggle Sound"
+          data-sound="click" data-magnetic>
+          <svg class="sound-wave-icon" width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor"
+            stroke-width="1.3" aria-hidden="true">
+            <polyline class="wave-line animated"
+              points="1.6,6 3.3,7.7 5,8.8 6.6,8.8 8.3,7.7 10,6 11.7,4.3 13.4,3.2 15,3.2 16.7,4.3 18.4,6"></polyline>
           </svg>
           <span class="sound-label" id="sound-label">Sound on</span>
         </button>
@@ -165,9 +182,12 @@
     <section id="hero" class="hero-section">
       <!-- Fullscreen 3D Interactive Quartz Crystal Rock & Amethyst Crystal Pedestal -->
       <div class="hero-canvas-fullscreen" id="canvas-frame">
-        <canvas id="hero-webgl-canvas" class="hero-webgl-canvas" aria-label="Interactive 3D Quartz Crystal Rock"></canvas>
-        <div id="bloom-pedestal-container" class="bloom-pedestal-container" aria-label="3D Amethyst Crystal Pedestal Video">
-          <video id="bloom-pedestal-video" class="bloom-pedestal-video" loop muted playsinline preload="none" poster="assets/bloom_pedestal_poster.jpg">
+        <canvas id="hero-webgl-canvas" class="hero-webgl-canvas"
+          aria-label="Interactive 3D Quartz Crystal Rock"></canvas>
+        <div id="bloom-pedestal-container" class="bloom-pedestal-container"
+          aria-label="3D Amethyst Crystal Pedestal Video">
+          <video id="bloom-pedestal-video" class="bloom-pedestal-video" loop muted playsinline preload="none"
+            poster="assets/bloom_pedestal_poster.jpg">
             <source src="assets/bloom_pedestal.webm" type="video/webm">
             <source src="assets/bloom_pedestal.mp4" type="video/mp4">
           </video>
@@ -185,10 +205,13 @@
           <span class="meta-item" id="hero-gpu-telemetry">0.0% IDLE CPU // 27.06 MB</span>
           <span class="meta-item live-pulse-pill" id="live-hardware-pill">GPU: DETECTING...</span>
           <span class="meta-item" id="live-hz-pill">REFRESH: --Hz</span>
-          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="meta-item meta-visitor-pill" title="Live Verified Public Visitors">
+          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer"
+            class="meta-item meta-visitor-pill" title="Live Verified Public Visitors">
             <span class="visitor-pulse-dot"></span>
             <span>PUBLIC VISITORS:</span>
-            <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=&countColor=025a5f&style=flat" alt="Real Visitors" height="16" class="meta-visitor-badge-img" loading="eager" />
+            <img
+              src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=&countColor=025a5f&style=flat"
+              alt="Real Visitors" height="16" class="meta-visitor-badge-img" loading="eager" />
           </a>
         </div>
 
@@ -203,7 +226,8 @@
           <div class="subgrid-col-left">
             <p class="hero-role-label">DESKTOP SYSTEM ARCHITECTURE — WINDOWS 11</p>
             <p class="hero-intro-text">
-              A high-precision Windows package orchestrator engineered to eliminate phantom installer exits, abolish GDI UI micro-stutters, and synthesize Winget, Store, Pip, and Npm into one fluid direct-composited reality.
+              A high-precision Windows package orchestrator engineered to eliminate phantom installer exits, abolish GDI
+              UI micro-stutters, and synthesize Winget, Store, Pip, and Npm into one fluid direct-composited reality.
             </p>
             <div class="hero-buttons">
               <a href="#download" class="action-btn action-primary" data-sound="click" data-magnetic>
@@ -249,9 +273,12 @@
 
         <div class="statement-wrapper">
           <h2 class="editorial-statement">
-            <div class="split-line"><span class="line-inner">"Traditional package managers celebrate an exit code 0</span></div>
-            <div class="split-line"><span class="line-inner">as victory. In reality, broken semver locks and silent MSI aborts</span></div>
-            <div class="split-line"><span class="line-inner">leave stale binaries on disk. We built the truth engine."</span></div>
+            <div class="split-line"><span class="line-inner">"Traditional package managers celebrate an exit code
+                0</span></div>
+            <div class="split-line"><span class="line-inner">as victory. In reality, broken semver locks and silent MSI
+                aborts</span></div>
+            <div class="split-line"><span class="line-inner">leave stale binaries on disk. We built the truth
+                engine."</span></div>
           </h2>
         </div>
 
@@ -259,13 +286,18 @@
           <div class="about-col">
             <h3 class="col-head" data-scramble>The Phantom Update Dilemma</h3>
             <p class="col-body">
-              Every Windows power user has witnessed it: Winget or an updater reports "Successfully Updated", yet launching the app reveals the stale version is still executing. Winget Updater implements mandatory post-update reality verification—probing Authenticode signatures and filesystem byte hashes before granting approval.
+              Every Windows power user has witnessed it: Winget or an updater reports "Successfully Updated", yet
+              launching the app reveals the stale version is still executing. Winget Updater implements mandatory
+              post-update reality verification—probing Authenticode signatures and filesystem byte hashes before
+              granting approval.
             </p>
           </div>
           <div class="about-col">
             <h3 class="col-head" data-scramble>Hardware DirectComposition</h3>
             <p class="col-body">
-              Standard Windows UI frameworks flood the message queue with synchronous GDI invalidations, dropping framerates to 12 FPS during scroll. Winget Updater runs on a completely decoupled background scheduler with 120Hz velocity lerp and native Windows 11 Acrylic backdrops, delivering 0.0% idle CPU load.
+              Standard Windows UI frameworks flood the message queue with synchronous GDI invalidations, dropping
+              framerates to 12 FPS during scroll. Winget Updater runs on a completely decoupled background scheduler
+              with 120Hz velocity lerp and native Windows 11 Acrylic backdrops, delivering 0.0% idle CPU load.
             </p>
           </div>
         </div>
@@ -302,7 +334,8 @@
               <div class="panel-terminal">
                 <div class="terminal-line text-cyan">&gt; winget_updater.orchestrate('npm')</div>
                 <div class="terminal-line text-amber">&gt; Post-install reality check: probing disk byte hash...</div>
-                <div class="terminal-line text-pink">&gt; Stale version detected: auto-elevating file replacement...</div>
+                <div class="terminal-line text-pink">&gt; Stale version detected: auto-elevating file replacement...
+                </div>
                 <div class="terminal-line text-green">&gt; Subsurface Authenticode audit: PASS (v12.2.1 verified)</div>
                 <div class="audit-flag flag-pass">
                   <span class="flag-icon">&#10004;</span>
@@ -336,18 +369,13 @@
 
         <div class="theater-wrapper">
           <div class="theater-card" id="theater-card">
-            <video
-              id="launch-video"
-              class="theater-video"
-              playsinline
-              preload="metadata"
-              poster="assets/brag.jpg"
-              src="assets/brag.mp4"
-            ></video>
+            <video id="launch-video" class="theater-video" playsinline preload="metadata" poster="assets/brag.jpg"
+              src="assets/brag.mp4"></video>
 
             <!-- Custom Elegant Video Overlay Controls -->
             <div class="theater-overlay" id="video-overlay">
-              <button type="button" class="theater-play-btn" id="play-btn" aria-label="Play launch film" data-sound="click" data-magnetic>
+              <button type="button" class="theater-play-btn" id="play-btn" aria-label="Play launch film"
+                data-sound="click" data-magnetic>
                 <span class="play-icon-shape">&#9654;</span>
               </button>
               <div class="theater-badge-top">1080P &bull; 60 FPS &bull; SERENE VOICEOVER &bull; AMBIENT AUDIO</div>
@@ -361,7 +389,8 @@
           <div class="theater-caption-row">
             <div class="caption-left">
               <span class="cap-tag">ARCHITECTURE FILM &bull; SERENE NARRATION</span>
-              <p class="cap-desc">DirectComposition 120Hz velocity lerp, subsurface Authenticode audit, and obsidian cyber blueprints narrated with tranquil, soft voice aesthetics.</p>
+              <p class="cap-desc">DirectComposition 120Hz velocity lerp, subsurface Authenticode audit, and obsidian
+                cyber blueprints narrated with tranquil, soft voice aesthetics.</p>
             </div>
             <div class="caption-right">
               <button type="button" class="sound-toggle-video" id="video-sound-toggle" data-sound="click" data-magnetic>
@@ -398,7 +427,8 @@
                 <div class="layer-tab">LAYER 01 // DWM COMPOSITOR</div>
                 <div class="layer-content">
                   <span class="layer-title">Hardware DirectComposition 120Hz Surface</span>
-                  <p class="layer-desc">Decoupled rendering queue bypassing legacy Win32 GDI invalidation loops. Delivers 0.0% idle CPU and buttery 120 FPS velocity lerp.</p>
+                  <p class="layer-desc">Decoupled rendering queue bypassing legacy Win32 GDI invalidation loops.
+                    Delivers 0.0% idle CPU and buttery 120 FPS velocity lerp.</p>
                   <span class="layer-stat">REFRESH: 120Hz &bull; LATENCY: &lt;8.3ms</span>
                 </div>
               </div>
@@ -408,7 +438,8 @@
                 <div class="layer-tab">LAYER 02 // PROCESS LOCK TERMINATOR</div>
                 <div class="layer-content">
                   <span class="layer-title">Error 1618 Process Lock Auto-Bypass</span>
-                  <p class="layer-desc">Detects mutex locks on executables like Chrome, Git, and Discord. Gracefully signals running processes to prevent installer aborts.</p>
+                  <p class="layer-desc">Detects mutex locks on executables like Chrome, Git, and Discord. Gracefully
+                    signals running processes to prevent installer aborts.</p>
                   <span class="layer-stat">LOCK RESOLUTION: 100% &bull; ERROR 1618: NULL</span>
                 </div>
               </div>
@@ -418,7 +449,8 @@
                 <div class="layer-tab">LAYER 03 // ADAPTER MESH</div>
                 <div class="layer-content">
                   <span class="layer-title">Multi-Source Synthesis Mesh</span>
-                  <p class="layer-desc">Unified abstraction combining Microsoft WinGet, Store MSIX, Python PIP, and global NPM with authoritative binary path precedence.</p>
+                  <p class="layer-desc">Unified abstraction combining Microsoft WinGet, Store MSIX, Python PIP, and
+                    global NPM with authoritative binary path precedence.</p>
                   <span class="layer-stat">REPOSITORIES: 4 UNIFIED &bull; DISCOVERY: 1.8s</span>
                 </div>
               </div>
@@ -428,7 +460,8 @@
                 <div class="layer-tab">LAYER 04 // CRYPTOGRAPHIC AUDIT</div>
                 <div class="layer-content">
                   <span class="layer-title">Authenticode SHA-256 Reality Verification</span>
-                  <p class="layer-desc">Subsurface PE certificate validation and filesystem byte hashing ensuring stale binaries are never falsely marked up-to-date.</p>
+                  <p class="layer-desc">Subsurface PE certificate validation and filesystem byte hashing ensuring stale
+                    binaries are never falsely marked up-to-date.</p>
                   <span class="layer-stat">VERIFICATION: CRYPTOGRAPHIC SHA-256 &bull; PHANTOM: 0%</span>
                 </div>
               </div>
@@ -441,7 +474,8 @@
             <span class="disc-num">(01)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>Multi-Registry Orchestration</span>
-              <span class="disc-desc">Simultaneous non-blocking scanner for Winget, Microsoft Store, PIP, and global NPM.</span>
+              <span class="disc-desc">Simultaneous non-blocking scanner for Winget, Microsoft Store, PIP, and global
+                NPM.</span>
             </div>
             <span class="disc-badge">CORE_REPO</span>
           </li>
@@ -450,7 +484,8 @@
             <span class="disc-num">(02)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>Post-Update Reality Verification</span>
-              <span class="disc-desc">Subsurface registry interrogation & Authenticode hash audit ensuring the new binary is on disk.</span>
+              <span class="disc-desc">Subsurface registry interrogation & Authenticode hash audit ensuring the new
+                binary is on disk.</span>
             </div>
             <span class="disc-badge">TRUTH_CHECK</span>
           </li>
@@ -459,7 +494,8 @@
             <span class="disc-num">(03)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>DirectComposition & Mica Glass</span>
-              <span class="disc-desc">Hardware DWM compositor bypassing legacy Win32 GDI locks for 120Hz buttery frame rendering.</span>
+              <span class="disc-desc">Hardware DWM compositor bypassing legacy Win32 GDI locks for 120Hz buttery frame
+                rendering.</span>
             </div>
             <span class="disc-badge">DWM_GPU</span>
           </li>
@@ -468,7 +504,8 @@
             <span class="disc-num">(04)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>Zero-Lag Non-Blocking Scheduler</span>
-              <span class="disc-desc">Sleeping render loops and asynchronous queue worker threads guaranteeing 0.0% idle CPU consumption.</span>
+              <span class="disc-desc">Sleeping render loops and asynchronous queue worker threads guaranteeing 0.0% idle
+                CPU consumption.</span>
             </div>
             <span class="disc-badge">ZERO_CPU</span>
           </li>
@@ -477,7 +514,8 @@
             <span class="disc-num">(05)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>Cryptographic Authenticode Validation</span>
-              <span class="disc-desc">Strict SHA-256 certificate and hash matching shielding users from supply-chain hijacking.</span>
+              <span class="disc-desc">Strict SHA-256 certificate and hash matching shielding users from supply-chain
+                hijacking.</span>
             </div>
             <span class="disc-badge">SHA_256</span>
           </li>
@@ -486,7 +524,8 @@
             <span class="disc-num">(06)</span>
             <div class="disc-main">
               <span class="disc-title" data-scramble>Automated Rollback & Pinning Engine</span>
-              <span class="disc-desc">One-click system restore points, package version exclusions, and instant failure rollback.</span>
+              <span class="disc-desc">One-click system restore points, package version exclusions, and instant failure
+                rollback.</span>
             </div>
             <span class="disc-badge">SNAPSHOT</span>
           </li>
@@ -514,7 +553,8 @@
           <article class="work-slide" data-slide="0">
             <div class="slide-inner">
               <div class="slide-media-wrap">
-                <img src="assets/updater-desktop-mockup.jpg" alt="Acrylic Glassmorphism Desktop Interface" class="slide-img" loading="eager">
+                <img src="assets/updater-desktop-mockup.jpg" alt="Acrylic Glassmorphism Desktop Interface"
+                  class="slide-img" loading="eager">
                 <div class="slide-media-badge">01 // ACRYLIC UI</div>
               </div>
               <div class="slide-info-wrap">
@@ -524,7 +564,8 @@
                 </div>
                 <h3 class="slide-title" data-scramble>Translucent Acrylic Glass Table</h3>
                 <p class="slide-description">
-                  Scans 200+ local applications across 4 repositories in under 2 seconds. Features color-coded status badges, instant search debouncing, and 3-row velocity mousewheel scrolling.
+                  Scans 200+ local applications across 4 repositories in under 2 seconds. Features color-coded status
+                  badges, instant search debouncing, and 3-row velocity mousewheel scrolling.
                 </p>
                 <div class="slide-telemetry-tags">
                   <span class="tag">SCAN TIME: 1.8s</span>
@@ -539,7 +580,8 @@
           <article class="work-slide" data-slide="1">
             <div class="slide-inner">
               <div class="slide-media-wrap">
-                <img src="assets/startup-editorial-screen.jpg" alt="Editorial Obsidian Startup Screen" class="slide-img" loading="lazy">
+                <img src="assets/startup-editorial-screen.jpg" alt="Editorial Obsidian Startup Screen" class="slide-img"
+                  loading="lazy">
                 <div class="slide-media-badge">02 // STARTUP ENGINE</div>
               </div>
               <div class="slide-info-wrap">
@@ -549,7 +591,9 @@
                 </div>
                 <h3 class="slide-title" data-scramble>Editorial Startup Loading System</h3>
                 <p class="slide-description">
-                  Obsidian dark theme with neon cyan &amp; crimson edge flares. Masked display typography, technical status lines, and micro-animated percentage counters deliver an editorial luxury studio aesthetic from the moment the binary launches.
+                  Obsidian dark theme with neon cyan &amp; crimson edge flares. Masked display typography, technical
+                  status lines, and micro-animated percentage counters deliver an editorial luxury studio aesthetic from
+                  the moment the binary launches.
                 </p>
                 <div class="slide-telemetry-tags">
                   <span class="tag">BOOT TIME: &lt; 350ms</span>
@@ -575,10 +619,14 @@
                   <!-- Package Selector Bar -->
                   <div class="hud-target-bar">
                     <span class="target-label">SELECT TARGET:</span>
-                    <button type="button" class="hud-target-chip active" data-pkg="git" data-sound="toggle">Git (v2.56.0)</button>
-                    <button type="button" class="hud-target-chip" data-pkg="node" data-sound="toggle">Node (v24.20.0)</button>
-                    <button type="button" class="hud-target-chip" data-pkg="npm" data-sound="toggle">Npm (v12.2.1)</button>
-                    <button type="button" class="hud-target-chip" data-pkg="lock1618" data-sound="toggle">⚠ Test Lock (1618)</button>
+                    <button type="button" class="hud-target-chip active" data-pkg="git" data-sound="toggle">Git
+                      (v2.56.0)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="node" data-sound="toggle">Node
+                      (v24.20.0)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="npm" data-sound="toggle">Npm
+                      (v12.2.1)</button>
+                    <button type="button" class="hud-target-chip" data-pkg="lock1618" data-sound="toggle">⚠ Test Lock
+                      (1618)</button>
                   </div>
                   <div class="hud-center-content">
                     <div class="neon-morph-spinner" id="neon-spinner">
@@ -594,10 +642,14 @@
                   </div>
                   <!-- Interactive Simulator Buttons -->
                   <div class="hud-action-bar">
-                    <button type="button" class="hud-btn" id="hud-sim-btn" data-sound="click" data-magnetic>▶ Execute Update</button>
-                    <button type="button" class="hud-btn" id="hud-verify-btn" data-sound="click" data-magnetic>◈ SHA-256 Hash</button>
-                    <button type="button" class="hud-btn" id="hud-lock-btn" data-sound="click" data-magnetic>⚡ Clear Locks</button>
-                    <button type="button" class="hud-btn" id="hud-rollback-btn" data-sound="click" data-magnetic>⟲ Rollback</button>
+                    <button type="button" class="hud-btn" id="hud-sim-btn" data-sound="click" data-magnetic>▶ Execute
+                      Update</button>
+                    <button type="button" class="hud-btn" id="hud-verify-btn" data-sound="click" data-magnetic>◈ SHA-256
+                      Hash</button>
+                    <button type="button" class="hud-btn" id="hud-lock-btn" data-sound="click" data-magnetic>⚡ Clear
+                      Locks</button>
+                    <button type="button" class="hud-btn" id="hud-rollback-btn" data-sound="click" data-magnetic>⟲
+                      Rollback</button>
                   </div>
                 </div>
                 <div class="slide-media-badge">03 // LIVE EXECUTION SIMULATOR</div>
@@ -609,7 +661,9 @@
                 </div>
                 <h3 class="slide-title" data-scramble>Real-Time Live Update Pipeline</h3>
                 <p class="slide-description">
-                  Features revolving neon gradient arcs that smoothly morph into drawn SVG checkmarks upon completion. Delivers real-time download speed meters, non-blocking UI queue draining, and automatic rollback on failure. Try the interactive simulator above!
+                  Features revolving neon gradient arcs that smoothly morph into drawn SVG checkmarks upon completion.
+                  Delivers real-time download speed meters, non-blocking UI queue draining, and automatic rollback on
+                  failure. Try the interactive simulator above!
                 </p>
                 <div class="slide-telemetry-tags">
                   <span class="tag">MORPH DURATION: 280ms</span>
@@ -624,7 +678,8 @@
           <article class="work-slide" data-slide="3">
             <div class="slide-inner">
               <div class="slide-media-wrap">
-                <video class="slide-img slide-video-preview" loop muted playsinline preload="none" poster="assets/bloom_pedestal_poster.jpg">
+                <video class="slide-img slide-video-preview" loop muted playsinline preload="none"
+                  poster="assets/bloom_pedestal_poster.jpg">
                   <source src="assets/bloom_pedestal.webm" type="video/webm">
                   <source src="assets/bloom_pedestal.mp4" type="video/mp4">
                 </video>
@@ -637,7 +692,9 @@
                 </div>
                 <h3 class="slide-title" data-scramble>Surreal Amethyst Architecture Pavilion</h3>
                 <p class="slide-description">
-                  A floating faceted quartz crystal gem with internal chromatic violet light dispersion, levitating above a tiered porcelain cylindrical podium with 3 metallic holographic crypto medallions and drifting volumetric cumulus clouds.
+                  A floating faceted quartz crystal gem with internal chromatic violet light dispersion, levitating
+                  above a tiered porcelain cylindrical podium with 3 metallic holographic crypto medallions and drifting
+                  volumetric cumulus clouds.
                 </p>
                 <div class="slide-telemetry-tags">
                   <span class="tag">60 FPS SEAMLESS LOOP</span>
@@ -645,7 +702,8 @@
                   <span class="tag">VIOLET CAUSTICS</span>
                 </div>
                 <div style="margin-top: 18px;">
-                  <button type="button" class="action-btn action-primary activate-bloom-btn" id="activate-bloom-btn" data-sound="toggle" data-magnetic>
+                  <button type="button" class="action-btn action-primary activate-bloom-btn" id="activate-bloom-btn"
+                    data-sound="toggle" data-magnetic>
                     <span>Launch Bloom Mode &rarr;</span>
                   </button>
                 </div>
@@ -669,7 +727,8 @@
           <p class="dream-line-1">There is another way</p>
           <p class="dream-line-2">to <em>experience</em> this architecture.</p>
           <p class="dream-caption">
-            Invert the warm editorial paper into an obsidian cyber blueprint with neon cyan laser lines and glowing telemetry.
+            Invert the warm editorial paper into an obsidian cyber blueprint with neon cyan laser lines and glowing
+            telemetry.
           </p>
           <button type="button" id="dream-trigger-btn" class="dream-trigger-cta" data-sound="toggle" data-magnetic>
             <span class="dream-icon">&#x25C8;</span>
@@ -694,7 +753,8 @@
           </div>
           <div class="benchmarks-intro">
             <p>
-              Engineered to standards other Windows utilities compromise on. Each metric is continuously profiled in headless CI/CD runs on Windows 11 24H2 hardware.
+              Engineered to standards other Windows utilities compromise on. Each metric is continuously profiled in
+              headless CI/CD runs on Windows 11 24H2 hardware.
             </p>
           </div>
         </div>
@@ -706,7 +766,8 @@
               <span class="race-tag">LIVE PROFILER // ZERO MICRO-STUTTER PROOF</span>
               <h3 class="race-title">Cold Boot &amp; 200-Package Discovery Speedrun</h3>
             </div>
-            <button type="button" class="action-btn action-primary race-start-btn" id="race-start-btn" data-sound="click" data-magnetic>
+            <button type="button" class="action-btn action-primary race-start-btn" id="race-start-btn"
+              data-sound="click" data-magnetic>
               <span>▶ RUN BENCHMARK RACE</span>
             </button>
           </div>
@@ -881,7 +942,8 @@
             <div class="split-line"><span class="line-inner font-italic">Zero phantom updates.</span></div>
           </h2>
           <p class="download-sub">
-            Download the standalone compiled executable or install via PowerShell. No dependencies, runtime installers, or administrator elevation required for scans.
+            Download the standalone compiled executable or install via PowerShell. No dependencies, runtime installers,
+            or administrator elevation required for scans.
           </p>
 
           <!-- 10 INTERACTIVE COMMAND GENERATOR -->
@@ -890,8 +952,10 @@
             <div class="flag-chips-row" id="flag-chips">
               <button type="button" class="flag-chip active" data-flag="-e" data-sound="toggle">--exact (-e)</button>
               <button type="button" class="flag-chip active" data-flag="--silent" data-sound="toggle">--silent</button>
-              <button type="button" class="flag-chip" data-flag="--accept-source-agreements" data-sound="toggle">--accept-source</button>
-              <button type="button" class="flag-chip" data-flag="--accept-package-agreements" data-sound="toggle">--accept-packages</button>
+              <button type="button" class="flag-chip" data-flag="--accept-source-agreements"
+                data-sound="toggle">--accept-source</button>
+              <button type="button" class="flag-chip" data-flag="--accept-package-agreements"
+                data-sound="toggle">--accept-packages</button>
               <button type="button" class="flag-chip" data-flag="--force" data-sound="toggle">--force</button>
             </div>
           </div>
@@ -903,18 +967,23 @@
               <span class="shell-dot dot-amber"></span>
               <span class="shell-dot dot-green"></span>
               <span class="shell-title">PowerShell / Windows Terminal</span>
-              <button class="shell-copy-action" id="copy-btn" aria-label="Copy terminal command" data-sound="click" data-magnetic>Copy</button>
+              <button class="shell-copy-action" id="copy-btn" aria-label="Copy terminal command" data-sound="click"
+                data-magnetic>Copy</button>
             </div>
-            <pre class="shell-body"><code id="code-snippet">winget install --id rupom.WingetUpdater -e --silent</code></pre>
+            <pre
+              class="shell-body"><code id="code-snippet">winget install --id rupom.WingetUpdater -e --silent</code></pre>
           </div>
 
           <div class="download-action-row">
-            <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.0/WingetUpdater.exe" class="download-big-btn action-primary" download data-sound="click" data-magnetic>
-              <span class="btn-top">Download WingetUpdater.exe (v2.3.0)</span>
+            <a href="https://github.com/rupom787/winget-updater/releases/download/v2.3.1/WingetUpdater.exe"
+              class="download-big-btn action-primary" download data-sound="click" data-magnetic>
+              <span class="btn-top">Download WingetUpdater.exe (v2.3.1)</span>
               <span class="btn-sub">Direct Standalone Executable &bull; Bundled Uninstaller &bull; Auto-Updating</span>
             </a>
-            <a href="https://github.com/rupom787/winget-updater/releases/tag/v2.3.0" class="download-big-btn action-secondary" target="_blank" rel="noopener noreferrer" data-sound="click" data-magnetic>
-              <span class="btn-top">View Release Notes (v2.3.0) &rarr;</span>
+            <a href="https://github.com/rupom787/winget-updater/releases/tag/v2.3.1"
+              class="download-big-btn action-secondary" target="_blank" rel="noopener noreferrer" data-sound="click"
+              data-magnetic>
+              <span class="btn-top">View Release Notes (v2.3.1) &rarr;</span>
               <span class="btn-sub">GitHub Release &bull; Auto-Update Tracker &bull; Pure x64</span>
             </a>
           </div>
@@ -929,17 +998,22 @@
             <div class="gh-item">
               <span class="gh-icon">&#x21E9;</span>
               <span class="gh-label">LATEST RELEASE:</span>
-              <strong id="gh-release-val">v2.3.0</strong>
+              <strong id="gh-release-val">v2.3.1</strong>
             </div>
             <div class="gh-item">
               <span class="gh-icon">&#x1F4BE;</span>
               <span class="gh-label">STANDALONE BINARY:</span>
-              <strong id="gh-size-val">34.32 MB</strong>
+              <strong id="gh-size-val">34.33 MB</strong>
             </div>
             <div class="gh-item">
               <span class="gh-icon">&#x2714;</span>
               <span class="gh-label">TEST COVERAGE:</span>
               <strong>153/153 PASS (100%)</strong>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">&#x2714;</span>
+              <span class="gh-label">TEST COVERAGE:</span>
+              <strong>143/143 PASS (100%)</strong>
             </div>
           </div>
         </div>
@@ -958,12 +1032,18 @@
       <div class="footer-col-center">
         <span class="coord-label">LAT 35.6762° N &bull; LON 139.6503° E // TOKYO &bull; REDMOND</span>
         <div class="footer-live-metrics">
-          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer" class="footer-metric-pill" title="Live Verified Public Visitors (visitorbadge.io)">
+          <a href="https://github.com/rupom787/winget-updater" target="_blank" rel="noopener noreferrer"
+            class="footer-metric-pill" title="Live Verified Public Visitors (visitorbadge.io)">
             <span class="visitor-pulse-dot"></span>
-            <img src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=LIVE%20VISITORS&labelColor=0f172a&countColor=025a5f&style=flat" alt="Live Visitors" height="18" loading="lazy" />
+            <img
+              src="https://api.visitorbadge.io/api/visitors?path=winget-updater-rupom.vercel.app&label=LIVE%20VISITORS&labelColor=0f172a&countColor=025a5f&style=flat"
+              alt="Live Visitors" height="18" loading="lazy" />
           </a>
-          <a href="https://github.com/rupom787/winget-updater/releases" target="_blank" rel="noopener noreferrer" class="footer-metric-pill" title="GitHub Verified Release Downloads">
-            <img src="https://img.shields.io/github/downloads/rupom787/winget-updater/total?label=DOWNLOADS&labelColor=0f172a&color=025a5f&style=flat" alt="GitHub Downloads" height="18" loading="lazy" />
+          <a href="https://github.com/rupom787/winget-updater/releases" target="_blank" rel="noopener noreferrer"
+            class="footer-metric-pill" title="GitHub Verified Release Downloads">
+            <img
+              src="https://img.shields.io/github/downloads/rupom787/winget-updater/total?label=DOWNLOADS&labelColor=0f172a&color=025a5f&style=flat"
+              alt="GitHub Downloads" height="18" loading="lazy" />
           </a>
         </div>
       </div>
@@ -975,7 +1055,8 @@
 
   <!-- Fixed Bottom Wake / Dream / Bloom Mode Toggle -->
   <aside class="fixed-mode-toggle" aria-label="Theme mode switcher">
-    <button type="button" id="fixed-theme-btn" class="fixed-theme-btn" aria-label="Switch between Wake Mode, Dream Mode, and Bloom Mode" data-sound="toggle" data-magnetic>
+    <button type="button" id="fixed-theme-btn" class="fixed-theme-btn"
+      aria-label="Switch between Wake Mode, Dream Mode, and Bloom Mode" data-sound="toggle" data-magnetic>
       <span class="theme-mode-text" id="theme-mode-text">WAKE [●] / DREAM [○] / BLOOM [○]</span>
     </button>
   </aside>
@@ -1004,4 +1085,5 @@
   <script src="assets/webgl-fluid.min.js?v=2.1.1"></script>
   <script src="script.js?v=2.1.1"></script>
 </body>
+
 </html>

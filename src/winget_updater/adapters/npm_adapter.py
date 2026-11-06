@@ -254,15 +254,29 @@ class NpmAdapter(BaseSourceAdapter):
             return True, "Verified trusted npm registry source"
         return False, "Not an npm package"
 
+    def _post_process_package(self, pkg_name: str) -> None:
+        """Runs post-install binary link scripts for complex CLI packages like pnpm."""
+        if pkg_name == "pnpm":
+            try:
+                res = silent_run([self.npm_path, "root", "-g"], timeout=15)
+                if res.returncode == 0:
+                    root_dir = res.stdout.strip()
+                    pnpm_install_js = Path(root_dir) / "pnpm" / "install.js"
+                    if pnpm_install_js.exists():
+                        silent_run(["node", str(pnpm_install_js)], timeout=30)
+            except Exception as e:
+                logger.debug(f"pnpm post-process warning: {e}")
+
     def install_package(self, pkg_id: str, dry_run: bool = False) -> Tuple[bool, str]:
-        """Installs a global npm package using npm install -g."""
+        """Installs a global npm package using npm install -g --force."""
         clean_name = pkg_id.replace("npm:", "")
         if dry_run:
             return True, f"[Dry Run] Simulated npm install -g for '{clean_name}'"
 
         try:
-            res = silent_run([self.npm_path, "install", "-g", "--no-audit", "--no-fund", "--loglevel=error", clean_name], timeout=180)
+            res = silent_run([self.npm_path, "install", "-g", "--force", "--no-audit", "--no-fund", "--loglevel=error", clean_name], timeout=180)
             if res.returncode == 0:
+                self._post_process_package(clean_name)
                 return True, f"Successfully installed npm global package '{clean_name}'"
             return False, f"npm install failed (Code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"
         except Exception as e:
@@ -339,27 +353,44 @@ class NpmAdapter(BaseSourceAdapter):
         except Exception:
             pass
 
-        # Use npm install -g <pkg>@latest to ensure major and breaking updates apply correctly
-        cmd = [self.npm_path, "install", "-g", "--no-audit", "--no-fund", "--loglevel=error", f"{clean_name}@latest"]
+        # Use npm install -g --force <pkg>@latest to ensure major and breaking updates apply correctly and overwrite conflicting shims (EEXIST)
+        cmd = [self.npm_path, "install", "-g", "--force", "--no-audit", "--no-fund", "--loglevel=error", f"{clean_name}@latest"]
         try:
             if log_callback:
                 ret, out = silent_popen_stream(cmd, line_callback=log_callback, timeout=240)
                 if ret == 0:
+                    self._post_process_package(clean_name)
                     return True, f"Successfully updated npm package '{clean_name}'"
+
+                # If failed due to permissions or file locks, attempt elevated retry
+                from winget_updater.elevation import is_elevated
+                err_text = out.lower()
+                if not is_elevated() and (any(k in err_text for k in ["eperm", "access", "denied", "operation not permitted", "permission", "eexist"]) or clean_name in ("npm", "pnpm")):
+                    if log_callback:
+                        log_callback(f"[INFO] Retrying {clean_name} update with administrator elevation...")
+                    logger.info(f"Retrying npm update for '{clean_name}' with administrator elevation...")
+                    elev_arg = f"Start-Process cmd -ArgumentList '/c \"{self.npm_path}\" install -g --force --no-audit --no-fund --loglevel=error {clean_name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
+                    elev_res = silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=240)
+                    if elev_res.returncode == 0:
+                        self._post_process_package(clean_name)
+                        return True, f"Successfully updated npm package '{clean_name}' (elevated)"
+
                 lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
                 return False, f"npm update failed: {lines[-1] if lines else f'Code {ret}'}"
             res = silent_run(cmd, timeout=240)
             if res.returncode == 0:
+                self._post_process_package(clean_name)
                 return True, f"Successfully updated npm package '{clean_name}'"
 
             # If standard execution failed due to permissions or locked files, attempt elevated execution
             from winget_updater.elevation import is_elevated
             err_text = res.stderr.strip() or res.stdout.strip()
-            if not is_elevated() and any(k in err_text.lower() for k in ["eperm", "access", "denied", "operation not permitted", "permission", "eexist"]) or clean_name == "npm":
+            if not is_elevated() and (any(k in err_text.lower() for k in ["eperm", "access", "denied", "operation not permitted", "permission", "eexist"]) or clean_name in ("npm", "pnpm")):
                 logger.info(f"Retrying npm update for '{clean_name}' with administrator elevation...")
-                elev_arg = f"Start-Process cmd -ArgumentList '/c \"{self.npm_path}\" install -g --no-audit --no-fund --loglevel=error {clean_name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
+                elev_arg = f"Start-Process cmd -ArgumentList '/c \"{self.npm_path}\" install -g --force --no-audit --no-fund --loglevel=error {clean_name}@latest' -Verb RunAs -Wait -WindowStyle Hidden"
                 elev_res = silent_run(["powershell", "-NoProfile", "-NonInteractive", "-Command", elev_arg], timeout=240)
                 if elev_res.returncode == 0:
+                    self._post_process_package(clean_name)
                     return True, f"Successfully updated npm package '{clean_name}' (elevated)"
 
             return False, f"npm update failed (Code {res.returncode}): {err_text}"
